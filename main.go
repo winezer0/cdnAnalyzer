@@ -1,8 +1,8 @@
 package main
 
 import (
-	"cdnAnalyzer/cdn_ecs"
-	"cdnAnalyzer/lib_file"
+	"cdnAnalyzer/ecs_query"
+	"cdnAnalyzer/file_utils"
 	"flag"
 	"fmt"
 	"os"
@@ -26,7 +26,7 @@ func main() {
 
 	// 读取文件并将内容添加到 domains 列表中
 	if *inputFile != "" {
-		domains2, err := lib_file.ReadFileToList(*inputFile)
+		domains2, err := file_utils.ReadFileToList(*inputFile)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error reading file [%s]: %v\n", *inputFile, err)
 			os.Exit(1)
@@ -44,7 +44,7 @@ func main() {
 	// 遍历每个域名并调用 DoEcsQuery 函数
 	var results []map[string]string
 	for index, domain := range domains {
-		adders, err := cdn_ecs.DoEcsQuery(domain)
+		adders, err := ecs_query.DoEcsQuery(domain)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error querying domain %s: %v\n", domain, err)
 			continue
@@ -64,7 +64,7 @@ func main() {
 	// 将结果写入输出文件
 	headers := []string{"domain", "ipNumbers", "likeCdn", "ipAddress"}
 
-	if err := lib_file.WriteCSV(*outputFile, results, true, "a+", headers); err != nil {
+	if err := file_utils.WriteCSV(*outputFile, results, true, "a+", headers); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing output file: %v\n", err)
 		os.Exit(1)
 	} else {

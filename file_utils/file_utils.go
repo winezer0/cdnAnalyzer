@@ -1,12 +1,56 @@
-package lib_file
+package file_utils
 
 import (
+	"bufio"
 	"encoding/csv"
 	"fmt"
 	"os"
 	"sort"
 	"strings"
+	"time"
 )
+
+// IsFileEmpty checks if a file is empty or does not exist.
+// Returns true if the file does not exist or is empty, otherwise returns false.
+func IsFileEmpty(filename string) bool {
+	// Get file info
+	fileInfo, err := os.Stat(filename)
+	if os.IsNotExist(err) || fileInfo.Size() == 0 {
+		return true
+	}
+	return false
+}
+
+func getTimesFileName(outputFile string) string {
+	// 自定义时间格式
+	timeInfo := time.Now().Format("20060102_150405")
+	return fmt.Sprintf("output.%s.csv", timeInfo)
+}
+
+// WriteListToFile writes a slice of strings to a file, with each element written as a separate line.
+func WriteListToFile(filename string, data []string) error {
+	// Create or truncate the file
+	file, err := os.Create(filename)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
+	}
+	defer file.Close()
+
+	// Create a writer and write each line to the file
+	writer := bufio.NewWriter(file)
+	for _, line := range data {
+		if _, err := writer.WriteString(line + "\n"); err != nil {
+			return fmt.Errorf("failed to write line: %w", err)
+		}
+	}
+
+	// Flush any buffered data to the underlying file
+	if err := writer.Flush(); err != nil {
+		return fmt.Errorf("failed to flush writer: %w", err)
+	}
+
+	return nil
+}
 
 func WriteCSVFromMapSlice(filename string, data []map[string]string, forceQuote bool) error {
 	if len(data) == 0 {
@@ -148,4 +192,57 @@ func WriteCSV(filename string, data []map[string]string, forceQuote bool, writeM
 		}
 	}
 	return nil
+}
+
+// ReadFileToList reads a text file and returns its contents as a slice of strings, where each element is a line from the file.
+func ReadFileToList(filename string) ([]string, error) {
+	// Open the file
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(file)
+
+	// Read the file line by line
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	// Check for any errors that occurred during the scan
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return lines, nil
+}
+
+func ReadCSVToMap(filename string) ([]map[string]string, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	reader := csv.NewReader(f)
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+
+	// 假设第一行是列名
+	headers := records[0]
+	var result []map[string]string
+
+	for _, record := range records[1:] { // 跳过头部
+		row := make(map[string]string)
+		for i, header := range headers {
+			row[header] = record[i]
+		}
+		result = append(result, row)
+	}
+
+	return result, nil
 }

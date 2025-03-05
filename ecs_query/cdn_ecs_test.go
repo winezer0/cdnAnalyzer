@@ -1,4 +1,4 @@
-package cdn_ecs
+package ecs_query
 
 import (
 	"fmt"
