@@ -1,10 +1,10 @@
 package main
 
 import (
-	"cdnAnalyzer/ecs_query"
-	"cdnAnalyzer/file_utils"
 	"flag"
 	"fmt"
+	"github.com/winezer0/cdnAnalyzer/ecs_query"
+	"github.com/winezer0/cdnAnalyzer/file_utils"
 	"os"
 	"strings"
 )
