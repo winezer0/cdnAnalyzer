@@ -3,6 +3,10 @@ cdnAnalyzer 基于智能DNS.ECS扩展技术实现的CDN判断程序
 
 代码层原理请参考： burpheart 大佬的 https://github.com/burpheart/cdnlookup
 
+### Install 安装
+```
+go install github.com/winezer0/cdnAnalyzer@latest
+```
 ### Edns-Client-Subnet (ECS) 介绍
 Edns-Client-Subnet (ECS) 是一种DNS扩展机制，允许递归DNS服务器在查询权威DNS服务器时附加上客户端的子网信息。这项技术主要用于优化内容分发网络(CDN)和其他基于地理位置的服务，通过更精确地定位用户位置来提升服务性能和用户体验。
 
