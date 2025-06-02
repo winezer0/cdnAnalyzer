@@ -1,9 +1,9 @@
-package main
+package dns_query
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/miekg/dns"
+	"time"
 )
 
 // DNSResult 统一返回结构
@@ -17,9 +17,10 @@ type DNSResult struct {
 	Error map[string]string `json:"error,omitempty"`
 }
 
-// queryDNS 查询指定类型的DNS记录
-func queryDNS(domain, dnsServer, qtype string) ([]string, error) {
+// queryDNS 查询指定类型的DNS记录，支持超时
+func queryDNS(domain, dnsServer, qtype string, timeout time.Duration) ([]string, error) {
 	c := new(dns.Client)
+	c.Timeout = timeout
 	m := new(dns.Msg)
 	m.SetQuestion(dns.Fqdn(domain), dns.StringToType[qtype])
 	resp, _, err := c.Exchange(m, dnsServer)
@@ -46,41 +47,41 @@ func queryDNS(domain, dnsServer, qtype string) ([]string, error) {
 	return result, nil
 }
 
-// QueryAllDNS 查询所有常用DNS记录
-func QueryAllDNS(domain, dnsServer string) DNSResult {
+// QueryAllDNS 查询所有常用DNS记录，支持超时
+func QueryAllDNS(domain, dnsServer string, timeout time.Duration) DNSResult {
 	result := DNSResult{Error: make(map[string]string)}
 	// A
-	a, err := queryDNS(domain, dnsServer, "A")
+	a, err := queryDNS(domain, dnsServer, "A", timeout)
 	if err != nil {
 		result.Error["A"] = err.Error()
 	}
 	result.A = a
 	// AAAA
-	aaaa, err := queryDNS(domain, dnsServer, "AAAA")
+	aaaa, err := queryDNS(domain, dnsServer, "AAAA", timeout)
 	if err != nil {
 		result.Error["AAAA"] = err.Error()
 	}
 	result.AAAA = aaaa
 	// CNAME
-	cname, err := queryDNS(domain, dnsServer, "CNAME")
+	cname, err := queryDNS(domain, dnsServer, "CNAME", timeout)
 	if err != nil {
 		result.Error["CNAME"] = err.Error()
 	}
-	result.CNAME = cname
+	result.CNAME = cname // 列表
 	// NS
-	ns, err := queryDNS(domain, dnsServer, "NS")
+	ns, err := queryDNS(domain, dnsServer, "NS", timeout)
 	if err != nil {
 		result.Error["NS"] = err.Error()
 	}
-	result.NS = ns
+	result.NS = ns // 列表
 	// MX
-	mx, err := queryDNS(domain, dnsServer, "MX")
+	mx, err := queryDNS(domain, dnsServer, "MX", timeout)
 	if err != nil {
 		result.Error["MX"] = err.Error()
 	}
 	result.MX = mx
 	// TXT
-	txt, err := queryDNS(domain, dnsServer, "TXT")
+	txt, err := queryDNS(domain, dnsServer, "TXT", timeout)
 	if err != nil {
 		result.Error["TXT"] = err.Error()
 	}
@@ -92,14 +93,13 @@ func QueryAllDNS(domain, dnsServer string) DNSResult {
 	return result
 }
 
-func main() {
-	domain := "www.baidu.com"
-	dnsServer := "8.8.8.8:53" // 可自定义DNS服务器
-
-	result := QueryAllDNS(domain, dnsServer)
-	b, _ := json.MarshalIndent(result, "", "  ")
-	fmt.Println(string(b))
-
-	// 如需将结果写入文件
-	// os.WriteFile("dns_result.json", b, 0644)
-}
+//// 仅用于单文件测试
+//func main() {
+//	domain := "example.com"
+//	dnsServer := "8.8.8.8:53"
+//	timeout := 3 * time.Second
+//
+//	result := QueryAllDNS(domain, dnsServer, timeout)
+//	b, _ := json.MarshalIndent(result, "", "  ")
+//	fmt.Println(string(b))
+//}
