@@ -18,12 +18,12 @@ type DNSResult struct {
 }
 
 // queryDNS 查询指定类型的DNS记录，支持超时
-func queryDNS(domain, dnsServer, qtype string, timeout time.Duration) ([]string, error) {
-	c := new(dns.Client)
-	c.Timeout = timeout
+func queryDNS(domain, dnsServer, queryType string, timeout time.Duration) ([]string, error) {
+	client := new(dns.Client)
+	client.Timeout = timeout
 	m := new(dns.Msg)
-	m.SetQuestion(dns.Fqdn(domain), dns.StringToType[qtype])
-	resp, _, err := c.Exchange(m, dnsServer)
+	m.SetQuestion(dns.Fqdn(domain), dns.StringToType[queryType])
+	resp, _, err := client.Exchange(m, dnsServer)
 	if err != nil {
 		return nil, err
 	}
@@ -92,14 +92,3 @@ func QueryAllDNS(domain, dnsServer string, timeout time.Duration) DNSResult {
 	}
 	return result
 }
-
-//// 仅用于单文件测试
-//func main() {
-//	domain := "example.com"
-//	dnsServer := "8.8.8.8:53"
-//	timeout := 3 * time.Second
-//
-//	result := QueryAllDNS(domain, dnsServer, timeout)
-//	b, _ := json.MarshalIndent(result, "", "  ")
-//	fmt.Println(string(b))
-//}

@@ -100,18 +100,3 @@ func QueryAllDNSWithMultiResolvers(domain string, resolvers []string, timeout ti
 	wg.Wait()
 	return MergeDNSResults(results)
 }
-
-//// 示例main函数
-//func main() {
-//	domain := "example.com"
-//	timeout := 3 * time.Second
-//
-//	resolvers, err := LoadResolvers("resolvers.txt")
-//	if err != nil {
-//		panic(err)
-//	}
-//
-//	result := QueryAllDNSWithMultiResolvers(domain, resolvers, timeout)
-//	b, _ := json.MarshalIndent(result, "", "  ")
-//	os.Stdout.Write(b)
-//}
