@@ -1,8 +1,11 @@
 package dns_query
 
 import (
+	"errors"
+	"fmt"
 	"github.com/miekg/dns"
 	"net"
+	"strings"
 	"sync"
 	"time"
 )
@@ -105,84 +108,113 @@ var cityMap = map[string]string{
 	"加拿大 蒙特利尔 Bell Canada": "64.230.0.0",
 }
 
-// DoEcsQueryWithMultiCities 并发进行多个地理位置的EDNS查询，返回每个位置的原始解析结果
-func DoEcsQueryWithMultiCities(domain string, timeout time.Duration) map[string][]string {
+type ECSResult struct {
+	IPs    []string
+	CNAMEs []string
+	Errors []string // 支持多个错误
+}
+
+func EDNSQuery(domain string, EDNSAddr string, dnsServer string) ECSResult {
 	domain = dns.Fqdn(domain)
 
-	// 获取 CNAME 链并取最后一个
-	lastCNAME := domain
-	cnameChain, _ := LookupCNAMEChain(domain, defaultServerAddress, timeout)
-	if len(cnameChain) > 0 {
-		lastCNAME = cnameChain[len(cnameChain)-1]
+	c := new(dns.Client)
+	m := newEDNSMessage(domain, EDNSAddr)
+
+	in, _, err := c.Exchange(m, dnsServer)
+	if err != nil {
+		return ECSResult{
+			Errors: []string{err.Error()},
+		}
 	}
 
-	// 获取 NS 服务器
-	nsServer := "8.8.8.8:53"
-	nsServers, _ := LookupNSServers(lastCNAME, defaultServerAddress, timeout)
-	if len(nsServers) > 0 {
-		nsServer = nsServers[0]
+	var ips []string
+	var cnames []string
+
+	for _, answer := range in.Answer {
+		switch answer.Header().Rrtype {
+		case dns.TypeCNAME:
+			cnames = append(cnames, answer.(*dns.CNAME).Target)
+		case dns.TypeA:
+			ips = append(ips, answer.(*dns.A).A.String())
+		}
 	}
 
-	// 随机选择 5 个城市
-	randCities := getRandomCities(cityMap, 5)
+	return ECSResult{
+		IPs:    ips,
+		CNAMEs: cnames,
+	}
+}
+
+func DoEcsQueryWithMultiCities(domain string, timeout time.Duration, cityNum int, queryCNAME bool) map[string]ECSResult {
+	finalDomain := domain
+	dnsServers := []string{"8.8.8.8:53"}
+
+	if queryCNAME {
+		// 获取 CNAME 链并取最后一个
+		cnameChain, err := LookupCNAMEChain(domain, defaultServerAddress, timeout)
+		if err != nil {
+			fmt.Printf("Failed to lookup CNAME chain for %s: %v\n", domain, err)
+		} else if len(cnameChain) > 0 {
+			fmt.Printf("CNAME chain for %s found\n", cnameChain)
+			finalDomain = cnameChain[len(cnameChain)-1]
+		}
+		// 获取 NS 服务器，并加上默认 DNS // 发现 ns1.a.shifen.com:53 查询原始域名结果是空的, 如果没有查询cname的话 最好为每个域名补充个默认dns服务器
+		//nsServers, err := lookupNSServers(finalDomain, defaultServerAddress)
+		//nsServers, err := LookupNSServers(finalDomain, defaultServerAddress, timeout)
+		nsServers, err := LookupNSServersMutex(finalDomain, defaultServerAddress, timeout)
+		if err != nil || len(nsServers) == 0 {
+			fmt.Printf("Failed to lookup NS servers for %s, using fallback: 8.8.8.8:53\n", finalDomain)
+		} else {
+			dnsServers = append([]string{"8.8.8.8:53"}, NSServerAddPort(nsServers[0]))
+		}
+	}
+
+	// 随机选择 几个 城市
+	randCities := getRandomCities(cityMap, cityNum)
+	if len(randCities) == 0 {
+		fmt.Println("No cities selected, check cityMap or getRandomCities")
+		return nil
+	}
 
 	// 并发执行查询
 	var wg sync.WaitGroup
-	resultsChan := make(chan map[string][]string, len(randCities))
-	errorChan := make(chan error, len(randCities))
+	resultsChan := make(chan map[string]ECSResult, len(randCities)*len(dnsServers))
+	resultMap := make(map[string]ECSResult)
+	var mu sync.Mutex // 用于并发安全写入 resultMap
 
-	for city, ecsIP := range randCities {
-		wg.Add(1)
-		go func(city string, ecsIP string) {
-			defer wg.Done()
-			addresses, err := EDNSQuery(domain, ecsIP, NSServerAddPort(nsServer))
-			if err != nil {
-				errorChan <- err
-				return
-			}
-			resultsChan <- map[string][]string{
-				city: addresses,
-			}
-		}(city, ecsIP)
+	for _, dnsServer := range dnsServers {
+		for city, ecsIP := range randCities {
+			wg.Add(1)
+			go func(city string, ecsIP string, dnsServer string) {
+				defer wg.Done()
+
+				result := EDNSQuery(finalDomain, ecsIP, dnsServer)
+
+				key := fmt.Sprintf("%s@%s", city, dnsServer)
+
+				mu.Lock()
+				resultMap[key] = result
+				mu.Unlock()
+
+				resultsChan <- map[string]ECSResult{
+					key: result,
+				}
+			}(city, ecsIP, dnsServer)
+		}
 	}
 
 	// 等待所有协程完成
 	go func() {
 		wg.Wait()
 		close(resultsChan)
-		close(errorChan)
 	}()
 
-	// 收集结果
-	queryResults := make(map[string][]string)
-	for res := range resultsChan {
-		for city, records := range res {
-			queryResults[city] = append(queryResults[city], records...)
-		}
+	// 可选：收集日志或其他用途的结果
+	for range resultsChan {
+		// 这里只是为了等待所有 goroutine 完成
 	}
 
-	return queryResults
-}
-
-// EDNSQuery 使用 EDNS 模拟地域，来查询解析的IP地址，
-// 需要 DNSServer 支持 EDNS0SUBNET，目前国内主流 DNS 均不支持该功能
-// 通过 NS 记录查询得到的权威 DNS 服务器，通常会支持该功能
-func EDNSQuery(domain string, EDNSAddr string, dnsServer string) (adders []string, err error) {
-	c := new(dns.Client)
-	m := newEDNSMessage(domain, EDNSAddr)
-	in, _, err := c.Exchange(m, dnsServer) //注意:要选择支持自定义 EDNS 的DNS 或者是 目标NS服务器  国内DNS大部分不支持自定义 EDNS 数据
-	if err != nil {
-		return nil, err
-	}
-	for _, answer := range in.Answer {
-		if answer.Header().Rrtype == dns.TypeCNAME {
-			adders = append(adders, answer.(*dns.CNAME).Target)
-		}
-		if answer.Header().Rrtype == dns.TypeA {
-			adders = append(adders, answer.(*dns.A).A.String())
-		}
-	}
-	return adders, nil
+	return resultMap
 }
 
 // newEDNSMessage 创建并返回一个包含 EDNS（扩展 DNS）选项的 DNS 查询消息
@@ -206,4 +238,123 @@ func newEDNSMessage(domain, EDNSAddr string) *dns.Msg {
 	m.SetQuestion(domain, dns.TypeA)
 	m.Extra = append(m.Extra, o)
 	return m
+}
+
+// lookupNS 查询该域名的权威名称服务器（Name Server, NS）记录
+func lookupNS(domain string, dnsServer string) (adders []string, err error) {
+	msg := new(dns.Msg)
+	msg.SetQuestion(dns.Fqdn(domain), dns.TypeNS)
+	client := &dns.Client{}
+	resp, _, err := client.Exchange(msg, dnsServer)
+	if err != nil {
+		return nil, err
+	}
+	// 检查 Authority Section 是否有 SOA
+	for _, rr := range resp.Ns {
+		if soa, ok := rr.(*dns.SOA); ok {
+			adders = append(adders, soa.Ns)
+		}
+	}
+	for _, ans := range resp.Answer {
+		if ns, ok := ans.(*dns.NS); ok {
+			adders = append(adders, ns.Ns)
+		}
+	}
+	if len(adders) == 0 {
+		return nil, errors.New("no ns record")
+	}
+	return adders, nil
+}
+
+// lookupNSServers 是递归地查找给定域名的父域名（从最底层开始逐级向上）的名称服务器（NS记录），直到找到一个有效的NS记录或者遍历完所有可能的父域名
+func lookupNSServers(domain, serverAddress string) (adders []string, err error) {
+	dots := strings.Split(domain, ".")
+	for i := 0; i < len(dots)-1; i++ {
+		parent := strings.Join(dots[i:], ".")
+		adders, err = lookupNS(parent, serverAddress)
+		if err != nil {
+			var DNSError *net.DNSError
+			if errors.As(err, &DNSError) {
+				continue
+			}
+			return nil, err
+		}
+		return adders, nil
+	}
+	return nil, errors.New("no ns record")
+}
+
+// LookupNSServersMutex 并发地对每个父级域名进行 NS 查询，并返回最长域名的结果
+func LookupNSServersMutex(domain, dnsServer string, timeout time.Duration) ([]string, error) {
+	// 规范化域名：去除首尾空格和点号
+	domain = strings.TrimSpace(strings.Trim(domain, "."))
+	domain = dns.Fqdn(domain) // 确保是 FQDN
+
+	// 拆分域名标签
+	labels := strings.Split(domain, ".")
+	if len(labels) < 2 {
+		return nil, fmt.Errorf("invalid domain: %s", domain)
+	}
+
+	var wg sync.WaitGroup
+	resultsChan := make(chan struct {
+		domain string
+		ns     []string
+	}, len(labels))
+
+	// 启动并发查询
+	for i := 0; i < len(labels); i++ {
+		parentDomain := strings.Join(labels[i:], ".")
+		parentDomain = dns.Fqdn(parentDomain)
+
+		wg.Add(1)
+		go func(pd string) {
+			defer wg.Done()
+
+			nsRecords, err := queryDNS(pd, dnsServer, "NS", timeout)
+			if err != nil {
+				fmt.Printf("[DEBUG] Failed to lookup NS for %s: %v\n", pd, err)
+				return
+			}
+			if len(nsRecords) > 0 {
+				resultsChan <- struct {
+					domain string
+					ns     []string
+				}{
+					domain: pd,
+					ns:     nsRecords,
+				}
+			}
+		}(parentDomain)
+	}
+
+	// 等待所有协程完成
+	go func() {
+		wg.Wait()
+		close(resultsChan)
+	}()
+
+	// 收集所有成功的结果
+	resultsMap := make(map[string][]string)
+	for result := range resultsChan {
+		resultsMap[result.domain] = result.ns
+	}
+
+	// 如果没有任何结果，返回错误
+	if len(resultsMap) == 0 {
+		return nil, fmt.Errorf("no ns record found for any parent domain of %s", domain)
+	}
+
+	// 查找最长域名（最具体）
+	var longestDomain string
+	var longestNS []string
+	for domain, ns := range resultsMap {
+		if len(domain) > len(longestDomain) {
+			longestDomain = domain
+			longestNS = ns
+		}
+	}
+
+	fmt.Printf("[INFO] Returning NS from most specific domain: %s\n", longestDomain)
+	return longestNS, nil
 }
