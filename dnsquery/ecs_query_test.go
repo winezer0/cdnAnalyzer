@@ -27,10 +27,10 @@ func TestEDNSQueryWithMultiCities(t *testing.T) {
 	}
 
 	// 随机选择 5 个城市
-	randCities := getRandomCities(cityMap, 5)
+	randCities := filetools.GetRandMaps(cityMap, 5)
 	// 随机选择 几个 城市
 	if len(randCities) == 0 {
-		fmt.Println("No cities selected, check cityMap or getRandomCities")
+		fmt.Println("No cities selected, check cityMap or getRandMaps")
 	} else {
 		t.Logf("randCities: %v", randCities)
 	}
