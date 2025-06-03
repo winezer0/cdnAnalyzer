@@ -1,0 +1,84 @@
+package filetools
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"time"
+)
+
+// IsFileEmpty checks if a file is empty or does not exist.
+// Returns true if the file does not exist or is empty, otherwise returns false.
+func IsFileEmpty(filename string) bool {
+	// Get file info
+	fileInfo, err := os.Stat(filename)
+	if os.IsNotExist(err) || fileInfo.Size() == 0 {
+		return true
+	}
+	return false
+}
+
+func getTimesFileName(outputFile string) string {
+	// 自定义时间格式
+	timeInfo := time.Now().Format("20060102_150405")
+	return fmt.Sprintf("output.%s.csv", timeInfo)
+}
+
+// FindFile 按照优先级查找文件是否存在，返回所有找到的完整路径
+func FindFile(filename string) []string {
+	var searchPaths []string
+
+	// 1. 获取当前工作目录
+	wd, err := os.Getwd()
+	if err == nil {
+		searchPaths = append(searchPaths, wd)
+	}
+
+	// 2. 程序入口目录（可执行文件所在目录）
+	exePath, err := os.Executable()
+	if err == nil {
+		searchPaths = append(searchPaths, filepath.Dir(exePath))
+	}
+
+	// 3. 脚本所在目录（调用此函数的源码目录）
+	_, callerFile, _, _ := runtime.Caller(0)
+	callerDir := filepath.Dir(callerFile)
+	searchPaths = append(searchPaths, callerDir)
+
+	// 4. 用户主目录
+	homeDir, err := os.UserHomeDir()
+	if err == nil {
+		searchPaths = append(searchPaths, homeDir)
+	}
+
+	// 去重并规范化路径
+	seen := make(map[string]bool)
+	finalPaths := make([]string, 0)
+	for _, path := range searchPaths {
+		normalPath := filepath.Clean(path)
+		if !seen[normalPath] {
+			seen[normalPath] = true
+			finalPaths = append(finalPaths, normalPath)
+		}
+	}
+
+	// 如果是绝对路径，直接检查是否存在
+	if filepath.IsAbs(filename) {
+		if _, err := os.Stat(filename); err == nil {
+			return []string{filename}
+		}
+		return nil
+	}
+
+	// 查找文件
+	var foundPaths []string
+	for _, dir := range finalPaths {
+		fullPath := filepath.Join(dir, filename)
+		if _, err := os.Stat(fullPath); err == nil {
+			foundPaths = append(foundPaths, fullPath)
+		}
+	}
+
+	return foundPaths
+}

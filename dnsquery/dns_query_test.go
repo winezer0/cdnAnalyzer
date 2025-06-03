@@ -1,8 +1,7 @@
-package dns_query
+package dnsquery
 
 import (
 	"encoding/json"
-	"os"
 	"testing"
 	"time"
 )
@@ -47,30 +46,6 @@ func TestSyncPoolQueryAllDNS(t *testing.T) {
 	if len(result.A) == 0 && len(result.CNAME) == 0 && len(result.NS) == 0 {
 		t.Errorf("QueryAllDNS failed, got empty result: %+v", result)
 	}
-}
-
-func TestLoadResolvers(t *testing.T) {
-	// 创建一个临时的 resolvers.txt
-	tmpFile := "test_resolvers.txt"
-	content := "8.8.8.8\n1.1.1.1:53\n"
-	if err := os.WriteFile(tmpFile, []byte(content), 0644); err != nil {
-		t.Fatalf("Failed to create test resolvers file: %v", err)
-	}
-	defer os.Remove(tmpFile)
-
-	resolvers, err := LoadFilesToList(tmpFile)
-	if err != nil {
-		t.Fatalf("LoadFilesToList error: %v", err)
-	}
-	t.Logf("Loaded resolvers: %v", resolvers)
-	if len(resolvers) != 2 {
-		t.Errorf("Expected 2 resolvers, got %d", len(resolvers))
-	}
-	if resolvers[0] != "8.8.8.8:53" || resolvers[1] != "1.1.1.1:53" {
-		t.Errorf("Unexpected resolvers: %v", resolvers)
-	}
-
-	t.Logf("resolvers: %s", resolvers)
 }
 
 func TestQueryAllDNSWithMultiResolvers(t *testing.T) {

@@ -1,41 +1,15 @@
-package dns_query
+package dnsquery
 
 import (
 	"bufio"
 	"context"
-	"crypto/rand"
 	"fmt"
-	"math/big"
-	rand2 "math/rand"
+	"math/rand"
 	"net"
 	"os"
 	"strings"
 	"time"
 )
-
-// 获取随机城市
-func getRandomCities(cityMap map[string]string, count int) map[string]string {
-	if len(cityMap) <= count {
-		return cityMap
-	}
-
-	//获取键切片
-	keys := make([]string, 0, len(cityMap))
-	for key := range cityMap {
-		keys = append(keys, key)
-	}
-
-	//存储随机城市数据
-	selectedCities := make(map[string]string, count)
-	for i := 0; i < count; i++ {
-		index, _ := rand.Int(rand.Reader, big.NewInt(int64(len(keys))))
-		randIndex := index.Int64()
-		selectedCities[keys[randIndex]] = cityMap[keys[randIndex]]
-		// 通过切片发移除指定索引位置元素,防止被多次选择
-		keys = append(keys[:randIndex], keys[randIndex+1:]...)
-	}
-	return selectedCities
-}
 
 // GetSystemDefaultAddress 获取系统默认的本地dns服务器
 func GetSystemDefaultAddress() (addr string) {
@@ -75,13 +49,33 @@ func PickRandomElements(resolvers []string, n int) []string {
 	if len(resolvers) <= n {
 		return resolvers
 	}
-	rand2.Seed(time.Now().UnixNano())
-	perm := rand2.Perm(len(resolvers))
+	rand.Seed(time.Now().UnixNano())
+	perm := rand.Perm(len(resolvers))
 	var picked []string
 	for i := 0; i < n; i++ {
 		picked = append(picked, resolvers[perm[i]])
 	}
 	return picked
+}
+
+// 获取随机城市
+func getRandomCities(cityList []map[string]string, count int) []map[string]string {
+	if len(cityList) <= count {
+		return cityList
+	}
+
+	// 设置随机种子
+	rand.Seed(time.Now().UnixNano())
+
+	// 存储随机城市数据
+	selectedCities := make([]map[string]string, 0, count)
+	for i := 0; i < count; i++ {
+		randIndex := rand.Intn(len(cityList))
+		selectedCities = append(selectedCities, cityList[randIndex])
+		// 通过切片操作移除指定索引位置元素,防止被多次选择
+		cityList = append(cityList[:randIndex], cityList[randIndex+1:]...)
+	}
+	return selectedCities
 }
 
 // 合并去重字符串切片
