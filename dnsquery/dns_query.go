@@ -1,6 +1,7 @@
-package dns_query
+package dnsquery
 
 import (
+	"cdnCheck/filetools"
 	"errors"
 	"fmt"
 	"github.com/miekg/dns"
@@ -185,6 +186,33 @@ func SyncPoolQueryAllDNS(domain, dnsServer string, timeout time.Duration, maxCon
 	return result
 }
 
+// lookupNSSOA 查询该域名的权威名称服务器（Name Server, NS）记录
+func lookupNSSOA(domain string, dnsServer string, timeout time.Duration) (adders []string, err error) {
+	client := new(dns.Client)
+	client.Timeout = timeout
+	msg := new(dns.Msg)
+	msg.SetQuestion(dns.Fqdn(domain), dns.TypeNS)
+	resp, _, err := client.Exchange(msg, dnsServer)
+	if err != nil {
+		return nil, err
+	}
+	// 检查 Authority Section 是否有 SOA
+	for _, rr := range resp.Ns {
+		if soa, ok := rr.(*dns.SOA); ok {
+			adders = append(adders, soa.Ns)
+		}
+	}
+	for _, ans := range resp.Answer {
+		if ns, ok := ans.(*dns.NS); ok {
+			adders = append(adders, ns.Ns)
+		}
+	}
+	if len(adders) == 0 {
+		return nil, errors.New("no ns record")
+	}
+	return adders, nil
+}
+
 // LookupNSServers 递归查找最上级可用NS服务器
 func LookupNSServers(domain, dnsServer string, timeout time.Duration) ([]string, error) {
 	// 规范化域名，去除前后点
@@ -192,7 +220,8 @@ func LookupNSServers(domain, dnsServer string, timeout time.Duration) ([]string,
 	labels := strings.Split(domain, ".")
 	for i := 0; i < len(labels); i++ {
 		parent := strings.Join(labels[i:], ".")
-		ns, err := queryDNS(parent, dnsServer, "NS", timeout)
+		//ns, err := queryDNS(parent, dnsServer, "NS", timeout)
+		ns, err := lookupNSSOA(parent, dnsServer, timeout)
 		if err != nil || len(ns) == 0 {
 			continue // 没查到就往上一级查
 		}
@@ -228,7 +257,7 @@ func LookupCNAMEChain(domain, dnsServer string, timeout time.Duration) ([]string
 
 // QueryAllDNSWithMultiResolvers 随机选5个DNS服务器进行并发查询
 func QueryAllDNSWithMultiResolvers(domain string, resolvers []string, timeout time.Duration, pick int) DNSResult {
-	picked := PickRandomElements(resolvers, pick)
+	picked := filetools.PickRandList(resolvers, pick)
 	var wg sync.WaitGroup
 	results := make([]DNSResult, pick)
 	wg.Add(pick)
