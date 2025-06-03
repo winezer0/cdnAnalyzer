@@ -53,46 +53,35 @@ func queryDNS(domain, dnsServer, queryType string, timeout time.Duration) ([]str
 // QueryAllDNS 查询所有常用DNS记录，支持超时
 func QueryAllDNS(domain, dnsServer string, timeout time.Duration) DNSResult {
 	result := DNSResult{Error: make(map[string]string)}
-	// A
-	a, err := queryDNS(domain, dnsServer, "A", timeout)
-	if err != nil {
-		result.Error["A"] = err.Error()
-	}
-	result.A = a
-	// AAAA
-	aaaa, err := queryDNS(domain, dnsServer, "AAAA", timeout)
-	if err != nil {
-		result.Error["AAAA"] = err.Error()
-	}
-	result.AAAA = aaaa
-	// CNAME
-	cname, err := queryDNS(domain, dnsServer, "CNAME", timeout)
-	if err != nil {
-		result.Error["CNAME"] = err.Error()
-	}
-	result.CNAME = cname // 列表
-	// NS
-	ns, err := queryDNS(domain, dnsServer, "NS", timeout)
-	if err != nil {
-		result.Error["NS"] = err.Error()
-	}
-	result.NS = ns // 列表
-	// MX
-	mx, err := queryDNS(domain, dnsServer, "MX", timeout)
-	if err != nil {
-		result.Error["MX"] = err.Error()
-	}
-	result.MX = mx
-	// TXT
-	txt, err := queryDNS(domain, dnsServer, "TXT", timeout)
-	if err != nil {
-		result.Error["TXT"] = err.Error()
-	}
-	result.TXT = txt
 
+	// 定义要查询的记录类型和对应的结果字段
+	records := []struct {
+		qType  string
+		record *[]string
+	}{
+		{"A", &result.A},
+		{"AAAA", &result.AAAA},
+		{"CNAME", &result.CNAME},
+		{"NS", &result.NS},
+		{"MX", &result.MX},
+		{"TXT", &result.TXT},
+	}
+
+	// 依次查询
+	for _, r := range records {
+		res, err := queryDNS(domain, dnsServer, r.qType, timeout)
+		if err != nil {
+			result.Error[r.qType] = err.Error()
+		} else {
+			*r.record = res
+		}
+	}
+
+	// 如果没有错误，则返回 nil 更语义化
 	if len(result.Error) == 0 {
 		result.Error = nil
 	}
+
 	return result
 }
 

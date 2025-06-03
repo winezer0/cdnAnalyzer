@@ -139,4 +139,11 @@ PRT记录是A记录的逆向记录，作用是把IP地址解析为域名
 4.3.2.1.in-addr.arpa. IN PRT www.sangfor.com
 ```
 
+#### 7.不需要对任意域名都查询 PTR / SOA，尤其是子域名
+```
+PTR 应当是对 IP 地址的反向查询（如 115.46.235.103.in-addr.arpa）。
+SOA 应当是对 主域名（如 baidu.com、shifen.com）进行查询，而不是 www.baidu.com 这样的子域名。
+```
+	
+
 
