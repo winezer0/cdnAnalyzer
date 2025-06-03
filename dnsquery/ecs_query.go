@@ -11,6 +11,7 @@ import (
 var defaultServerAddress = GetSystemDefaultAddress()
 
 type EDNSResult struct {
+	// TODO 修改格式为 A AAAA CNAME 便于和DNS查询结果进行合并
 	A      []string
 	CNAME  []string
 	Errors []string // 支持多个错误
