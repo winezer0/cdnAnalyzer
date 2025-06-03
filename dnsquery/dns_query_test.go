@@ -53,12 +53,13 @@ func TestQueryAllDNSWithMultiResolvers(t *testing.T) {
 	timeout := 3 * time.Second
 	resolvers := []string{"8.8.8.8:53", "1.1.1.1:53", "8.8.4.4:53", "9.9.9.9:53", "114.114.114.114:53", "223.5.5.5:53"}
 
-	result := QueryAllDNSWithMultiResolvers(domain, resolvers, 5, timeout)
-	b, _ := json.MarshalIndent(result, "", "  ")
-	t.Logf("QueryAllDNSWithMultiResolvers result for %s:\n%s", domain, string(b))
+	dnsResults := QueryAllDNSWithMultiResolvers(domain, resolvers, 5, timeout)
+	dnsResult := MergeDNSResults(dnsResults)
+	b, _ := json.MarshalIndent(dnsResult, "", "  ")
+	t.Logf("QueryAllDNSWithMultiResolvers dnsResult for %s:\n%s", domain, string(b))
 
-	if len(result.A) == 0 && len(result.CNAME) == 0 && len(result.NS) == 0 {
-		t.Errorf("QueryAllDNSWithMultiResolvers failed, got empty result: %+v", result)
+	if len(dnsResult.A) == 0 && len(dnsResult.CNAME) == 0 && len(dnsResult.NS) == 0 {
+		t.Errorf("QueryAllDNSWithMultiResolvers failed, got empty dnsResult: %+v", dnsResult)
 	}
 }
 

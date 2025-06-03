@@ -11,8 +11,8 @@ import (
 var defaultServerAddress = GetSystemDefaultAddress()
 
 type EDNSResult struct {
-	IPs    []string
-	CNAMEs []string
+	A      []string
+	CNAME  []string
 	Errors []string // 支持多个错误
 }
 
@@ -43,8 +43,8 @@ func EDNSQuery(domain string, EDNSAddr string, dnsServer string, timeout time.Du
 	}
 
 	return EDNSResult{
-		IPs:    ips,
-		CNAMEs: cnames,
+		A:     ips,
+		CNAME: cnames,
 	}
 }
 
@@ -81,7 +81,7 @@ func EDNSQueryWithMultiCities(domain string, timeout time.Duration, Cities []map
 	for _, dnsServer := range dnsServers {
 		for _, entry := range Cities {
 			city := entry["City"]
-			cityIP := entry["IP"]
+			cityIP := entry["A"]
 			wg.Add(1)
 			go func(city string, cityIP string, dnsServer string) {
 				defer wg.Done()
@@ -116,7 +116,7 @@ func EDNSQueryWithMultiCities(domain string, timeout time.Duration, Cities []map
 }
 
 // newEDNSMessage 创建并返回一个包含 EDNS（扩展 DNS）选项的 DNS 查询消息
-// 参数： domain：要查询的域名。 EDNSAddr：用于设置 EDNS0_SUBNET 选项的 IP 地址。
+// 参数： domain：要查询的域名。 EDNSAddr：用于设置 EDNS0_SUBNET 选项的 A 地址。
 // 返回值： 返回一个指向 dnsquery.Msg 结构体的指针，表示生成的 DNS 查询消息。
 func newEDNSMessage(domain, EDNSAddr string) *dns.Msg {
 	e := new(dns.EDNS0_SUBNET) //EDNS

@@ -55,15 +55,48 @@ func MergeDNSResults(results []DNSResult) DNSResult {
 	return merged
 }
 
-// mergeEDNSResults 合并去重多个 ECS结果
-func mergeEDNSResults(results map[string]EDNSResult) EDNSResult {
+// MergeEDNSResults 合并去重多个 ECS结果
+func MergeEDNSResults(results map[string]EDNSResult) EDNSResult {
 	merged := EDNSResult{}
 
 	for _, res := range results {
-		merged.IPs = append(merged.IPs, res.IPs...)
-		merged.CNAMEs = append(merged.CNAMEs, res.CNAMEs...)
-		merged.Errors = append(merged.Errors, res.Errors...)
+		merged.A = filetools.UniqueMergeSlices(merged.A, res.A)
+		merged.CNAME = filetools.UniqueMergeSlices(merged.CNAME, res.CNAME)
+		merged.Errors = filetools.UniqueMergeSlices(merged.Errors, res.Errors)
 	}
 
 	return merged
+}
+
+func MergeEDNSToDNS(edns EDNSResult, dns DNSResult) DNSResult {
+	// 将 A 分类合并到 A 或 AAAA
+	for _, ip := range edns.A {
+		if isIPv4(ip) {
+			dns.A = filetools.UniqueMergeSlices(dns.A, []string{ip})
+		} else {
+			dns.AAAA = filetools.UniqueMergeSlices(dns.AAAA, []string{ip})
+		}
+	}
+
+	// 合并 CNAME
+	dns.CNAME = filetools.UniqueMergeSlices(dns.CNAME, edns.CNAME)
+
+	// 如果 Error 为 nil，先初始化为空 map
+	if dns.Error == nil {
+		dns.Error = make(map[string]string)
+	}
+
+	// 合并 Errors 到 Error map
+	for i, err := range edns.Errors {
+		key := fmt.Sprintf("edns_error_%d", i)
+		dns.Error[key] = err
+	}
+
+	return dns
+}
+
+// 辅助函数：判断是否是 IPv4
+func isIPv4(ip string) bool {
+	parts := strings.Split(ip, ".")
+	return len(parts) == 4
 }

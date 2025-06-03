@@ -22,9 +22,10 @@ func main() {
 	}
 
 	//进行常规 DNS 信息解析查询
-	result := dnsquery.QueryAllDNSWithMultiResolvers(domain, resolvers, 5, timeout)
-	fmt.Printf("DNS result: %v\n", result)
-	b, _ := json.MarshalIndent(result, "", "  ")
+	dnsResults := dnsquery.QueryAllDNSWithMultiResolvers(domain, resolvers, 5, timeout)
+	fmt.Printf("DNS dnsResults: %v\n", dnsResults)
+	dnsQueryResult := dnsquery.MergeDNSResults(dnsResults)
+	b, _ := json.MarshalIndent(dnsQueryResult, "", "  ")
 	fmt.Println(string(b))
 
 	//进行 EDNS 信息查询
@@ -54,9 +55,17 @@ func main() {
 
 	for location, result := range eDNSQueryResults {
 		fmt.Printf("[%s]:\n", location)
-		fmt.Printf("  IPs:    %v\n", result.IPs)
-		fmt.Printf("  CNAMEs: %v\n", result.CNAMEs)
+		fmt.Printf("  A:    %v\n", result.A)
+		fmt.Printf("  CNAME: %v\n", result.CNAME)
 		fmt.Printf("  Errors: %v\n", result.Errors)
 	}
 
+	eDNSQueryResult := dnsquery.MergeEDNSResults(eDNSQueryResults)
+	fmt.Printf("  A:    %v\n", eDNSQueryResult.A)
+	fmt.Printf("  CNAME: %v\n", eDNSQueryResult.CNAME)
+	fmt.Printf("  Errors: %v\n", eDNSQueryResult.Errors)
+
+	dnsQueryResult = dnsquery.MergeEDNSToDNS(eDNSQueryResult, dnsQueryResult)
+	finalInfo, _ := json.MarshalIndent(dnsQueryResult, "", "  ")
+	fmt.Println(string(finalInfo))
 }

@@ -10,7 +10,7 @@ import (
 func TestReadCSVToMap(t *testing.T) {
 	filename := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\city_ip.csv"
 
-	expectedData := map[string]string{"City": "北京市 移动", "IP": "39.156.128.0"}
+	expectedData := map[string]string{"City": "北京市 移动", "A": "39.156.128.0"}
 
 	actualData, err := ReadCSVToMap(filename)
 	if err != nil {

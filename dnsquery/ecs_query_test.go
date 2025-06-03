@@ -12,8 +12,8 @@ func TestEDNSQuery(t *testing.T) {
 	eDNSQueryResults := EDNSQuery(domain, "175.1.238.1", "8.8.8.8:53", 5*time.Second)
 
 	t.Logf("Query results for %s:", domain)
-	t.Logf("  IPs:    %v", eDNSQueryResults.IPs)
-	t.Logf("  CNAMEs: %v", eDNSQueryResults.CNAMEs)
+	t.Logf("  A:    %v", eDNSQueryResults.A)
+	t.Logf("  CNAME: %v", eDNSQueryResults.CNAME)
 	t.Logf("  Errors: %v", eDNSQueryResults.Errors)
 }
 
@@ -49,8 +49,14 @@ func TestEDNSQueryWithMultiCities(t *testing.T) {
 	t.Logf("Query results for %s:", domain)
 	for location, result := range eDNSQueryResults {
 		t.Logf("[%s]:", location)
-		t.Logf("  IPs:    %v", result.IPs)
-		t.Logf("  CNAMEs: %v", result.CNAMEs)
+		t.Logf("  A:    %v", result.A)
+		t.Logf("  CNAME: %v", result.CNAME)
 		t.Logf("  Errors: %v", result.Errors)
 	}
+
+	//合并 eDNSQueryResults
+	eDNSQueryResult := MergeEDNSResults(eDNSQueryResults)
+	fmt.Printf("  A:    %v\n", eDNSQueryResult.A)
+	fmt.Printf("  CNAME: %v\n", eDNSQueryResult.CNAME)
+	fmt.Printf("  Errors: %v\n", eDNSQueryResult.Errors)
 }

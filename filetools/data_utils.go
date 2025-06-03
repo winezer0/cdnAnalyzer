@@ -20,7 +20,7 @@ func PickRandList(resolvers []string, n int) []string {
 	return picked
 }
 
-// 获取随机城市
+// PickRandMaps 获取随机城市
 func PickRandMaps(cityList []map[string]string, count int) []map[string]string {
 	if len(cityList) <= count {
 		return cityList

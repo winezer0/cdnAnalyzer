@@ -258,19 +258,19 @@ func LookupCNAMEChain(domain, dnsServer string, timeout time.Duration) ([]string
 }
 
 // QueryAllDNSWithMultiResolvers 随机选5个DNS服务器进行并发查询
-func QueryAllDNSWithMultiResolvers(domain string, resolvers []string, pickNum int, timeout time.Duration) DNSResult {
+func QueryAllDNSWithMultiResolvers(domain string, resolvers []string, pickNum int, timeout time.Duration) []DNSResult {
 	picked := filetools.PickRandList(resolvers, pickNum)
 	fmt.Printf("picked resolvers: %v\n", picked)
 
 	var wg sync.WaitGroup
-	results := make([]DNSResult, pickNum)
+	dnsResults := make([]DNSResult, pickNum)
 	wg.Add(pickNum)
 	for i, resolver := range picked {
 		go func(i int, resolver string) {
 			defer wg.Done()
-			results[i] = SyncQueryAllDNS(domain, resolver, timeout)
+			dnsResults[i] = SyncQueryAllDNS(domain, resolver, timeout)
 		}(i, resolver)
 	}
 	wg.Wait()
-	return MergeDNSResults(results)
+	return dnsResults
 }
