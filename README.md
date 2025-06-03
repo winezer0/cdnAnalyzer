@@ -1,19 +1,53 @@
 # CDNCheck
 CDN Check On Golang
 
-1、进行DNS解析
-1.1 使用常规方案进行A记录、CNAME 记录查询
-1.2 使用ECS方案进行A记录、CNAME 记录查询
+### 1、进行DNS解析（A记录、CNAME 记录查询）
 
-2、进行IP信息查询
+- 【已完成】1. 使用常规方案
 
-IP 归属地信息 纯真IP库、IP2region、ipv6
-IP 属性信息  
-IP ASN信息
+- 【已完成】2. 使用ECS方案
+
+- 3.优化实现并发线程池控制
 
 
-3、进行域名信息查询
-基于本地数据库进行域名CDN查询 cdn.yml 
+
+### 2、进行IP信息查询
+
+- IP 归属地查询
+  	纯真IP库	【可参考[zu1k/nali](https://github.com/zu1k/nali) [xiaoqidun/qqwry](https://github.com/xiaoqidun/qqwry)】
+  	IP2region  【可参考[zu1k/nali](https://github.com/zu1k/nali)  [lionsoul2014/ip2region](https://github.com/lionsoul2014/ip2region)】
+  	ipv6   【可参考[zu1k/nali](https://github.com/zu1k/nali)】
+  	ipdbfree 【可参考 [YouChenJun/CheckCdn](https://github.com/YouChenJun/CheckCdn)】
+
+  
+
+| 数据库    | 查询 | 转存 | 打包 | 官方网站                                          | 说明      |
+| --------- | ---- | ---- | ---- | ------------------------------------------------- | --------- |
+| ipdb      | ✅    | ✅    | ✅    | [Link](https://ipip.net/)                         |           |
+| mmdb      | ✅    | ✅    | ✅    | [Link](https://maxmind.com/)                      |           |
+| awdb      | ✅    | ✅    | -    | [Link](https://ipplus360.com/)                    |           |
+| qqwry     | ✅    | ✅    | -    | [Link](https://cz88.net/)                         | IPv4 only |
+| czdb      | ✅    | ✅    | -    | [Link](https://cz88.net/)                         |           |
+| zxinc     | ✅    | ✅    | -    | [Link](https://ip.zxinc.org/)                     | IPv6 only |
+| ip2region | ✅    | ✅    | -    | [Link](https://github.com/lionsoul2014/ip2region) | IPv4 only |
+
+
+
+- IP 属性信息  
+
+- IP ASN信息
+
+
+
+### 3、进行域名信息查询
+
+基于本地数据库进行域名CDN查询 cdn.yml 可参考选项【nali】
+
+
+
+
+
+
 
 
 
