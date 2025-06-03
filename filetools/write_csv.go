@@ -131,7 +131,7 @@ func WriteCSV(filename string, data []map[string]string, forceQuote bool, writeM
 	defer writer.Flush()
 
 	// If the file is being overwritten (not appending), write the headers
-	if IsFileEmpty(filename) || writeMode == "w" || writeMode == "w+" {
+	if IsEmptyFile(filename) || writeMode == "w" || writeMode == "w+" {
 		if err := writer.Write(headers); err != nil {
 			return err
 		}

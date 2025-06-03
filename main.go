@@ -2,6 +2,7 @@ package main
 
 import (
 	"cdnCheck/dnsquery"
+	"cdnCheck/filetools"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -12,7 +13,7 @@ func main() {
 	domain := "example.com"
 	timeout := 3 * time.Second
 
-	resolvers, err := dnsquery.LoadFilesToList("resolvers.txt")
+	resolvers, err := filetools.ReadFileToList("resolvers.txt")
 	if err != nil {
 		fmt.Println("加载DNS服务器失败:", err)
 		os.Exit(1)
