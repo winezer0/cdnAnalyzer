@@ -9,12 +9,12 @@ import (
 
 func TestEDNSQuery(t *testing.T) {
 	domain := "www.baidu.com" // 替换为你要测试的域名
-	ecsQueryResults := EDNSQuery(domain, "175.1.238.1", "8.8.8.8:53", 5*time.Second)
+	eDNSQueryResults := EDNSQuery(domain, "175.1.238.1", "8.8.8.8:53", 5*time.Second)
 
 	t.Logf("Query results for %s:", domain)
-	t.Logf("  IPs:    %v", ecsQueryResults.IPs)
-	t.Logf("  CNAMEs: %v", ecsQueryResults.CNAMEs)
-	t.Logf("  Errors: %v", ecsQueryResults.Errors)
+	t.Logf("  IPs:    %v", eDNSQueryResults.IPs)
+	t.Logf("  CNAMEs: %v", eDNSQueryResults.CNAMEs)
+	t.Logf("  Errors: %v", eDNSQueryResults.Errors)
 }
 
 func TestEDNSQueryWithMultiCities(t *testing.T) {
@@ -35,35 +35,22 @@ func TestEDNSQueryWithMultiCities(t *testing.T) {
 		t.Logf("randCities: %v", randCities)
 	}
 
-	ecsQueryResults := EDNSQueryWithMultiCities(domain, 5*time.Second, randCities, true)
+	eDNSQueryResults := EDNSQueryWithMultiCities(domain, 5*time.Second, randCities, true)
 
-	if len(ecsQueryResults) == 0 {
-		t.Fatal("Expected non-empty ecsQueryResults")
+	if len(eDNSQueryResults) == 0 {
+		t.Fatal("Expected non-empty ENS QueryResults")
 	}
 
-	t.Logf("Query ecsQueryResults for %s:", domain)
-	for location, records := range ecsQueryResults {
+	t.Logf("Query EDNS QueryResults for %s:", domain)
+	for location, records := range eDNSQueryResults {
 		t.Logf("[%s] => %v", location, records)
 	}
 
-	if len(ecsQueryResults) == 0 {
-		t.Fatal("Expected non-empty ecsQueryResults")
-	}
-
 	t.Logf("Query results for %s:", domain)
-	for location, result := range ecsQueryResults {
+	for location, result := range eDNSQueryResults {
 		t.Logf("[%s]:", location)
 		t.Logf("  IPs:    %v", result.IPs)
 		t.Logf("  CNAMEs: %v", result.CNAMEs)
 		t.Logf("  Errors: %v", result.Errors)
 	}
-
-	//uniqueAddrs := DedupEcsResults(ecsQueryResults)
-	//fmt.Println("Unique addresses:")
-	//for _, addr := range uniqueAddrs {
-	//	fmt.Println(addr)
-	//}
-	//if len(uniqueAddrs) == 0 {
-	//	t.Fatal("Expected non-empty uniqueAddrs")
-	//}
 }

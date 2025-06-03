@@ -54,3 +54,16 @@ func MergeDNSResults(results []DNSResult) DNSResult {
 	}
 	return merged
 }
+
+// mergeEDNSResults 合并去重多个 ECS结果
+func mergeEDNSResults(results map[string]EDNSResult) EDNSResult {
+	merged := EDNSResult{}
+
+	for _, res := range results {
+		merged.IPs = append(merged.IPs, res.IPs...)
+		merged.CNAMEs = append(merged.CNAMEs, res.CNAMEs...)
+		merged.Errors = append(merged.Errors, res.Errors...)
+	}
+
+	return merged
+}

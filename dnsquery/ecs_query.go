@@ -10,13 +10,13 @@ import (
 
 var defaultServerAddress = GetSystemDefaultAddress()
 
-type ECSResult struct {
+type EDNSResult struct {
 	IPs    []string
 	CNAMEs []string
 	Errors []string // 支持多个错误
 }
 
-func EDNSQuery(domain string, EDNSAddr string, dnsServer string, timeout time.Duration) ECSResult {
+func EDNSQuery(domain string, EDNSAddr string, dnsServer string, timeout time.Duration) EDNSResult {
 	domain = dns.Fqdn(domain)
 
 	Client := new(dns.Client)
@@ -25,7 +25,7 @@ func EDNSQuery(domain string, EDNSAddr string, dnsServer string, timeout time.Du
 
 	in, _, err := Client.Exchange(dnsMsg, dnsServer)
 	if err != nil {
-		return ECSResult{
+		return EDNSResult{
 			Errors: []string{err.Error()},
 		}
 	}
@@ -42,13 +42,13 @@ func EDNSQuery(domain string, EDNSAddr string, dnsServer string, timeout time.Du
 		}
 	}
 
-	return ECSResult{
+	return EDNSResult{
 		IPs:    ips,
 		CNAMEs: cnames,
 	}
 }
 
-func EDNSQueryWithMultiCities(domain string, timeout time.Duration, Cities []map[string]string, queryCNAME bool) map[string]ECSResult {
+func EDNSQueryWithMultiCities(domain string, timeout time.Duration, Cities []map[string]string, queryCNAME bool) map[string]EDNSResult {
 
 	finalDomain := domain
 	dnsServers := []string{"8.8.8.8:53"}
@@ -74,19 +74,19 @@ func EDNSQueryWithMultiCities(domain string, timeout time.Duration, Cities []map
 
 	// 并发执行查询
 	var wg sync.WaitGroup
-	resultsChan := make(chan map[string]ECSResult, len(Cities)*len(dnsServers))
-	resultMap := make(map[string]ECSResult)
+	resultsChan := make(chan map[string]EDNSResult, len(Cities)*len(dnsServers))
+	resultMap := make(map[string]EDNSResult)
 	var mu sync.Mutex // 用于并发安全写入 resultMap
 
 	for _, dnsServer := range dnsServers {
 		for _, entry := range Cities {
 			city := entry["City"]
-			ecsIP := entry["IP"]
+			cityIP := entry["IP"]
 			wg.Add(1)
-			go func(city string, ecsIP string, dnsServer string) {
+			go func(city string, cityIP string, dnsServer string) {
 				defer wg.Done()
 
-				result := EDNSQuery(finalDomain, ecsIP, dnsServer, timeout)
+				result := EDNSQuery(finalDomain, cityIP, dnsServer, timeout)
 
 				key := fmt.Sprintf("%s@%s", city, dnsServer)
 
@@ -94,10 +94,10 @@ func EDNSQueryWithMultiCities(domain string, timeout time.Duration, Cities []map
 				resultMap[key] = result
 				mu.Unlock()
 
-				resultsChan <- map[string]ECSResult{
+				resultsChan <- map[string]EDNSResult{
 					key: result,
 				}
-			}(city, ecsIP, dnsServer)
+			}(city, cityIP, dnsServer)
 		}
 	}
 
