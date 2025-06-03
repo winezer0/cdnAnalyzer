@@ -27,6 +27,7 @@ func queryDNS(domain, dnsServer, queryType string, timeout time.Duration) ([]str
 	client.Timeout = timeout
 	m := new(dns.Msg)
 	m.SetQuestion(dns.Fqdn(domain), dns.StringToType[queryType])
+	dnsServer = DnsServerAddPort(dnsServer)
 	resp, _, err := client.Exchange(m, dnsServer)
 	if err != nil {
 		return nil, err
@@ -73,6 +74,7 @@ func QueryAllDNS(domain, dnsServer string, timeout time.Duration) DNSResult {
 		res, err := queryDNS(domain, dnsServer, r.qType, timeout)
 		if err != nil {
 			result.Error[r.qType] = err.Error()
+			fmt.Errorf("dns server %s query dns error: %v", dnsServer, err)
 		} else {
 			*r.record = res
 		}
@@ -256,15 +258,17 @@ func LookupCNAMEChain(domain, dnsServer string, timeout time.Duration) ([]string
 }
 
 // QueryAllDNSWithMultiResolvers 随机选5个DNS服务器进行并发查询
-func QueryAllDNSWithMultiResolvers(domain string, resolvers []string, timeout time.Duration, pick int) DNSResult {
-	picked := filetools.PickRandList(resolvers, pick)
+func QueryAllDNSWithMultiResolvers(domain string, resolvers []string, pickNum int, timeout time.Duration) DNSResult {
+	picked := filetools.PickRandList(resolvers, pickNum)
+	fmt.Printf("picked resolvers: %v\n", picked)
+
 	var wg sync.WaitGroup
-	results := make([]DNSResult, pick)
-	wg.Add(pick)
+	results := make([]DNSResult, pickNum)
+	wg.Add(pickNum)
 	for i, resolver := range picked {
 		go func(i int, resolver string) {
 			defer wg.Done()
-			results[i] = QueryAllDNS(domain, resolver, timeout)
+			results[i] = SyncQueryAllDNS(domain, resolver, timeout)
 		}(i, resolver)
 	}
 	wg.Wait()

@@ -20,8 +20,8 @@ func GetSystemDefaultAddress() (addr string) {
 	return addr
 }
 
-// NSServerAddPort 为dns服务器IP补充53端口
-func NSServerAddPort(s string) string {
+// DnsServerAddPort 为dns服务器IP补充53端口
+func DnsServerAddPort(s string) string {
 	s = strings.TrimSuffix(strings.ToLower(s), ".")
 	if strings.Contains(s, ":") {
 		return s

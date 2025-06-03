@@ -53,7 +53,7 @@ func TestQueryAllDNSWithMultiResolvers(t *testing.T) {
 	timeout := 3 * time.Second
 	resolvers := []string{"8.8.8.8:53", "1.1.1.1:53", "8.8.4.4:53", "9.9.9.9:53", "114.114.114.114:53", "223.5.5.5:53"}
 
-	result := QueryAllDNSWithMultiResolvers(domain, resolvers, timeout, 5)
+	result := QueryAllDNSWithMultiResolvers(domain, resolvers, 5, timeout)
 	b, _ := json.MarshalIndent(result, "", "  ")
 	t.Logf("QueryAllDNSWithMultiResolvers result for %s:\n%s", domain, string(b))
 
