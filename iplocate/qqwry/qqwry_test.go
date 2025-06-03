@@ -1,10 +1,11 @@
-package qqwryipdb
+package qqwry
 
 import (
 	"testing"
 )
 
 func init() {
+	//支持直接加载 qqwry.dat 或 qqwry.ipdb 文件
 	if err := LoadFile("C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\qqwry.dat"); err != nil {
 		panic(err)
 	}
