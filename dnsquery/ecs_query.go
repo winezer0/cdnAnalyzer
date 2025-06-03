@@ -67,7 +67,8 @@ func EDNSQueryWithMultiCities(domain string, timeout time.Duration, Cities []map
 		if err != nil || len(nsServers) == 0 {
 			fmt.Printf("Failed to lookup NS servers for %s, using fallback: 8.8.8.8:53\n", finalDomain)
 		} else {
-			dnsServers = append([]string{"8.8.8.8:53"}, NSServerAddPort(nsServers[0]))
+			dnsServers = append(dnsServers, NSServerAddPort(nsServers[0]))
+			fmt.Printf("Success lookup NS servers: %v, using fallback: %v\n", nsServers, nsServers[0])
 		}
 	}
 
