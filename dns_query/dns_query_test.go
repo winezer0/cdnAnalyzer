@@ -21,6 +21,34 @@ func TestQueryAllDNS(t *testing.T) {
 	}
 }
 
+func TestSyncQueryAllDNS(t *testing.T) {
+	domain := "www.baidu.com"
+	dnsServer := "8.8.8.8:53"
+	timeout := 3 * time.Second
+
+	result := SyncQueryAllDNS(domain, dnsServer, timeout)
+	b, _ := json.MarshalIndent(result, "", "  ")
+	t.Logf("QueryAllDNS result for %s @ %s:\n%s", domain, dnsServer, string(b))
+
+	if len(result.A) == 0 && len(result.CNAME) == 0 && len(result.NS) == 0 {
+		t.Errorf("QueryAllDNS failed, got empty result: %+v", result)
+	}
+}
+
+func TestSyncPoolQueryAllDNS(t *testing.T) {
+	domain := "www.baidu.com"
+	dnsServer := "8.8.8.8:53"
+	timeout := 3 * time.Second
+
+	result := SyncPoolQueryAllDNS(domain, dnsServer, timeout, 3)
+	b, _ := json.MarshalIndent(result, "", "  ")
+	t.Logf("QueryAllDNS result for %s @ %s:\n%s", domain, dnsServer, string(b))
+
+	if len(result.A) == 0 && len(result.CNAME) == 0 && len(result.NS) == 0 {
+		t.Errorf("QueryAllDNS failed, got empty result: %+v", result)
+	}
+}
+
 func TestLoadResolvers(t *testing.T) {
 	// 创建一个临时的 resolvers.txt
 	tmpFile := "test_resolvers.txt"
