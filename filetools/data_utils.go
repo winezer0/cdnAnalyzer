@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// GetRandList 随机选取n个不重复的DNS服务器
-func GetRandList(resolvers []string, n int) []string {
+// PickRandList 随机选取n个不重复的DNS服务器
+func PickRandList(resolvers []string, n int) []string {
 	if len(resolvers) <= n {
 		return resolvers
 	}
@@ -21,7 +21,7 @@ func GetRandList(resolvers []string, n int) []string {
 }
 
 // 获取随机城市
-func GetRandMaps(cityList []map[string]string, count int) []map[string]string {
+func PickRandMaps(cityList []map[string]string, count int) []map[string]string {
 	if len(cityList) <= count {
 		return cityList
 	}
@@ -40,7 +40,7 @@ func GetRandMaps(cityList []map[string]string, count int) []map[string]string {
 	return selectedCities
 }
 
-// 合并去重字符串切片
+// UniqueMergeSlices 合并去重字符串切片
 func UniqueMergeSlices(slices ...[]string) []string {
 	unique := make(map[string]struct{})
 	for _, slice := range slices {
