@@ -21,8 +21,8 @@ func ASNInCdn(asn uint64, asns []string) bool {
 	return false
 }
 
-// CnameInCdn 检查传入的 CNAME 字符串是否包含任一 CDN 厂商的 CNAME
-func CnameInCdn(cname string, cdnCNAMEs []string) (isCDN bool, CDNName string) {
+// CNAMEInCdn 检查传入的 CNAME 字符串是否包含任一 CDN 厂商的 CNAME
+func CNAMEInCdn(cname string, cdnCNAMEs []string) (isCDN bool, CDNName string) {
 	// CDN厂商的CNAME Inspired by https://github.com/timwhitez/Frog-checkCDN
 	cname = strings.Trim(cname, ".")
 	for _, cn := range cdnCNAMEs {
