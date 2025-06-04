@@ -49,3 +49,14 @@ func TestMMDB_ASN_Lookup(t *testing.T) {
 	results, err := ASNToIPRanges(13335)
 	t.Logf("ASNToIPRanges results: %v Error:%v", len(results), err)
 }
+
+func TestMMDB_To_CSV(t *testing.T) {
+	// 打开数据库连接
+	ipv4Filepath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-ipv4.mmdb"
+	ipv6Filepath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-ipv6.mmdb"
+	initMMDBConn(ipv4Filepath, ipv6Filepath)
+	defer closeMMDBConn()
+
+	outputPath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-all.csv"
+	ExportASNToCSV(outputPath)
+}
