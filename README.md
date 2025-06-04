@@ -14,64 +14,73 @@ CDN Check On Golang
   - IP_database: https://github.com/adysec/IP_database
   - ip-location-db：https://github.com/sapics/ip-location-db
 
+- 综合IP查询工具参考
+  - zu1k/nali https://github.com/zu1k/nali
+  - sjzar/ips https://github.com/sjzar/ips
+
+#### IPv4 数据库比较
 ```
-IPv4 数据库比较
-  纯真IP数据库官方版 2024年10月停止更新
-      https://github.com/FW27623/qqwry
-  
-  纯真IP数据库2025新版
-      https://github.com/metowolf/qqwry.dat
-      提示: 部分老版本qqwry库可能不兼容新版本的qqwry.dat
-      
-      https://github.com/xiaoqidun/qqwry
-      提示: xiaoqidun/qqwry dat格式仅支持ipv4查询。
-      提示: xiaoqidun/qqwry ipdb格式支持ipv4和ipv6查询。 但IPv6查询结果不够详细.
-  
-  
-  lionsoul2014/ip2region 数据库更新频率较低
-      https://github.com/lionsoul2014/ip2region
-  
-  IPIP.NET city.free.ipdb数据库精确度较低   
-      https://ipip.net/
+纯真IP数据库官方版 2024年10月停止更新
+    https://github.com/FW27623/qqwry
 
-IPv6数据库使用 
-  - [zxinc IPv6 only](https://ip.zxinc.org/) 目前已经不再提供离线下载包
-
-- 其他IP数据库数据类型 
-  - [awdb](https://ipplus360.com/)
-  - [mmdb](https://maxmind.com/)
+纯真IP数据库2025新版
+    https://github.com/metowolf/qqwry.dat
+    提示: 部分老版本qqwry库可能不兼容新版本的qqwry.dat
+    
+    https://github.com/xiaoqidun/qqwry
+    提示: xiaoqidun/qqwry dat格式仅支持ipv4查询。
+    提示: xiaoqidun/qqwry ipdb格式支持ipv4和ipv6查询。 但IPv6查询结果不够详细.
 
 
-ASN数据库
-	IPV4+IPV6 
-	https://cdn.jsdelivr.net/npm/@ip-location-db/geolite2-asn-mmdb/geolite2-asn.mmdb
-	提示: GeoLite2数据库以高精度著称
+lionsoul2014/ip2region 数据库更新频率较低
+    https://github.com/lionsoul2014/ip2region
 
+IPIP.NET city.free.ipdb数据库精确度较低   
+    https://ipip.net/
 
 ```
 
+#### IPv6数据库比较
+```
+[zxinc IPv6 only](https://ip.zxinc.org/) 目前已经不再进行更新
+下载地址： https://raw.githubusercontent.com/ZX-Inc/zxipdb-python/main/data/ipv6wry.db
+提示: 其他IPv6数据库内容更不够详细
 
+开发参考：[zu1k/nali](https://github.com/zu1k/nali)
+```
+
+
+#### ASN数据库
+```
+geolite2
+  https://cdn.jsdelivr.net/npm/@ip-location-db/geolite2-asn-mmdb/geolite2-asn.mmdb
+  提示: GeoLite2数据库以高精度著称 支持 IPV4+IPV6
+
+ip2asn
+  https://github.com/libp2p/go-libp2p-asn-util
+```
+
+其他IP数据库
+```
+[awdb](https://ipplus360.com/)
+[mmdb](https://maxmind.com/)
+```
 
 - IP 归属地查询
 
-- 【已完成】纯真IP库	【参考[xiaoqidun/qqwry](https://github.com/xiaoqidun/qqwry)】
+- 【已完成】ipv4 纯真IP库
   
-- ipv6   【可参考[zu1k/nali](https://github.com/zu1k/nali)】
+- 【已完成】ipv6 ipv6wry.db
 
-- IP ASN信息 【可参考 https://github.com/libp2p/go-libp2p-asn-util】
-
-
+- IP ASN信息
 
 - IP 属性信息  
-- CDN API查询【可参考 [YouChenJun/CheckCdn](https://github.com/YouChenJun/CheckCdn)】
-
-
 
 ### 3、进行域名信息查询
 
 基于本地数据库进行域名CDN查询 cdn.yml 可参考选项【nali】
 
-
+CDN API查询【可参考 [YouChenJun/CheckCdn](https://github.com/YouChenJun/CheckCdn)】
 
 
 ## DNS记录的常见类型
