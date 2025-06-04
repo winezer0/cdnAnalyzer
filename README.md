@@ -2,46 +2,74 @@
 CDN Check On Golang
 
 ### 1、进行DNS解析（A记录、CNAME 记录查询）
-
 - 【已完成】1. 使用常规方案
-
 - 【已完成】2. 使用EDNS方案
-
 - 3.修改EDNS数据查询结果格式
 - 4.优化实现并发线程池控制
 
 
 ### 2、进行IP信息查询
 
+- IP地址库收集整理 
+  - IP_database: https://github.com/adysec/IP_database
+  - ip-location-db：https://github.com/sapics/ip-location-db
+
+```
+IPv4 数据库比较
+纯真IP数据库官方版 2024年10月停止更新
+	https://github.com/FW27623/qqwry
+
+纯真IP数据库2025新版
+	https://github.com/metowolf/qqwry.dat
+	提示: 部分老版本qqwry库可能不兼容新版本的qqwry.dat
+	
+	https://github.com/xiaoqidun/qqwry
+	提示: xiaoqidun/qqwry dat格式仅支持ipv4查询。
+	提示: xiaoqidun/qqwry ipdb格式支持ipv4和ipv6查询。 但IPv6查询结果不构详细.
+
+
+lionsoul2014/ip2region 数据库更新频率较低
+	https://github.com/lionsoul2014/ip2region
+
+IPIP.NET city.free.ipdb数据库精确度较低   
+	https://ipip.net/
+
+
+- 其他IP数据库数据类型 
+  - [zxinc IPv6 only](https://ip.zxinc.org/)
+  - [awdb](https://ipplus360.com/)
+  - [mmdb](https://maxmind.com/)
+
+
+ASN数据库
+	IPV4+IPV6 
+	https://cdn.jsdelivr.net/npm/@ip-location-db/geolite2-asn-mmdb/geolite2-asn.mmdb
+	提示: GeoLite2数据库以高精度著称
+
+
+```
+
+
+
 - IP 归属地查询
-  	纯真IP库	【可参考[zu1k/nali](https://github.com/zu1k/nali) [xiaoqidun/qqwry](https://github.com/xiaoqidun/qqwry)】
-  	IP2region  【可参考[zu1k/nali](https://github.com/zu1k/nali)  [lionsoul2014/ip2region](https://github.com/lionsoul2014/ip2region)】
-  	ipv6   【可参考[zu1k/nali](https://github.com/zu1k/nali)】
-  	ipdbfree 【可参考 [YouChenJun/CheckCdn](https://github.com/YouChenJun/CheckCdn)】
 
+- 【已完成】纯真IP库	【参考[xiaoqidun/qqwry](https://github.com/xiaoqidun/qqwry)】
   
+- ipv6   【可参考[zu1k/nali](https://github.com/zu1k/nali)】
 
-| 数据库    | 查询 | 转存 | 打包 | 官方网站                                          | 说明      |
-| --------- | ---- | ---- | ---- | ------------------------------------------------- | --------- |
-| ipdb      | ✅    | ✅    | ✅    | [Link](https://ipip.net/)                         |           |
-| mmdb      | ✅    | ✅    | ✅    | [Link](https://maxmind.com/)                      |           |
-| awdb      | ✅    | ✅    | -    | [Link](https://ipplus360.com/)                    |           |
-| qqwry     | ✅    | ✅    | -    | [Link](https://cz88.net/)                         | IPv4 only |
-| czdb      | ✅    | ✅    | -    | [Link](https://cz88.net/)                         |           |
-| zxinc     | ✅    | ✅    | -    | [Link](https://ip.zxinc.org/)                     | IPv6 only |
-| ip2region | ✅    | ✅    | -    | [Link](https://github.com/lionsoul2014/ip2region) | IPv4 only |
+- IP ASN信息 【可参考 https://github.com/libp2p/go-libp2p-asn-util】
 
 
 
 - IP 属性信息  
-
-- IP ASN信息
+- CDN API查询【可参考 [YouChenJun/CheckCdn](https://github.com/YouChenJun/CheckCdn)】
 
 
 
 ### 3、进行域名信息查询
 
 基于本地数据库进行域名CDN查询 cdn.yml 可参考选项【nali】
+
 
 
 

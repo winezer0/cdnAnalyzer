@@ -6,13 +6,14 @@ import (
 
 func init() {
 	//支持直接加载 qqwry.dat 或 qqwry.ipdb 文件
-	if err := LoadFile("C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\qqwry.ipdb"); err != nil {
+	dbpath := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\qqwry.ipdb"
+	if err := LoadFile(dbpath); err != nil {
 		panic(err)
 	}
 }
 
 func TestQueryIP(t *testing.T) {
-	queryIp := "119.29.29.29"
+	queryIp := "2409:8929:52b:36d9:8f6e:2e8b:a35:1148"
 	location, err := QueryIP(queryIp)
 	if err != nil {
 		t.Fatal(err)
