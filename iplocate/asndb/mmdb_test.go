@@ -60,3 +60,31 @@ func TestMMDB_To_CSV(t *testing.T) {
 	outputPath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-all.csv"
 	ExportASNToCSV(outputPath)
 }
+
+func TestFirstASNToIPRanges(t *testing.T) {
+	// 打开数据库连接
+	ipv4Filepath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-ipv4.mmdb"
+	ipv6Filepath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-ipv6.mmdb"
+	initMMDBConn(ipv4Filepath, ipv6Filepath)
+	defer closeMMDBConn()
+
+	// 初始化缓存（只需调用一次）
+	err := PreloadASNCache()
+	if err != nil {
+		fmt.Println("预加载缓存失败:", err)
+		return
+	}
+
+	// 查询某个 ASN（例如 Google 的 ASN 15169）
+	asn := uint64(13335)
+	ipNets, found := FirstASNToIPRanges(asn)
+	if !found {
+		fmt.Printf("未找到 ASN %d 对应的 IP 段\n", asn)
+		return
+	}
+
+	fmt.Printf("找到 ASN %d 的 %d 个 IP 段:\n", asn, len(ipNets))
+	for _, ipNet := range ipNets {
+		fmt.Println("  ", ipNet.String())
+	}
+}
