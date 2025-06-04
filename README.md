@@ -76,17 +76,11 @@ geolite2 ASN 数据库整合
 
 ```
 
-- IP 归属地查询
-
-- 【已完成】ipv4 纯真IP库
-  
-- 【已完成】ipv6 ipv6wry.db
-
-- 【已完成】IP ASN信息  geolite2-asn.mmdb
-
-
-- IP 属性信息  
-
+- IP 属性信息
+- 【已完成】IP 归属地查询 ipv4 纯真IP库
+- 【已完成】IP 归属地查询 ipv6 ipv6wry.db
+- 【已完成】IP查询ASN和组织信息  geolite2-asn.mmdb
+- 【已完成】ASN反向查询IP段落  geolite2-asn.mmdb
 
 
 
@@ -94,11 +88,12 @@ geolite2 ASN 数据库整合
 
 1、域名|CNAME信息查询
 基于本地数据库进行域名CDN查询 cdn.yml 可参考选项【nali】
-  CDN API查询【可参考 [YouChenJun/CheckCdn](https://github.com/YouChenJun/CheckCdn)】
 
 2、IP信息判断CDN
   通过ASN号|IP所处范围判断是否为CDN IP https://github.com/hanc00l/nemo_go/blob/825775faba46e73809e87743a6c9a646914b7bd0/v2/pkg/task/custom/cdncheck.go#L198
 
+其他思路：
+    CDN API查询【可参考 [YouChenJun/CheckCdn](https://github.com/YouChenJun/CheckCdn)】
 
 
 ## DNS记录的常见类型
