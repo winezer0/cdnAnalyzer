@@ -2,45 +2,16 @@ package asndb
 
 import (
 	"fmt"
-	"github.com/oschwald/maxminddb-golang"
 	"net"
-	"os"
 	"testing"
 )
 
 func TestMMDB_ASN_Lookup(t *testing.T) {
 	// 打开数据库连接
-	ipv4_filePath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-ipv4.mmdb"
-	ipv6_filePath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-ipv6.mmdb"
-
-	if _, err := os.Stat(ipv4_filePath); err == nil {
-		connectionId := "ipv" + "4"
-		_, ok := mmDb[connectionId]
-		if !ok {
-			fmt.Println("Opening MMDB file: " + ipv4_filePath)
-			conn, err := maxminddb.Open(ipv4_filePath)
-			if err != nil {
-				panic(err)
-			}
-
-			mmDb[connectionId] = conn
-		}
-	}
-
-	if _, err := os.Stat(ipv6_filePath); err == nil {
-		connectionId := "ipv" + "6"
-		_, ok := mmDb[connectionId]
-		if !ok {
-			fmt.Println("Opening MMDB file: " + ipv6_filePath)
-			conn, err := maxminddb.Open(ipv6_filePath)
-			if err != nil {
-				panic(err)
-			}
-
-			mmDb[connectionId] = conn
-		}
-	}
-	defer mmdbClose()
+	ipv4Filepath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-ipv4.mmdb"
+	ipv6Filepath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-ipv6.mmdb"
+	initMMDBConn(ipv4Filepath, ipv6Filepath)
+	defer closeMMDBConn()
 
 	// 定义要测试的 IPs
 	testIPs := []string{
@@ -57,12 +28,12 @@ func TestMMDB_ASN_Lookup(t *testing.T) {
 			continue
 		}
 
-		ipInfo := mmdbIp(ip)
+		ipInfo := findASN(ip)
 		if ipInfo == nil {
 			t.Errorf("无法解析IP信息: %s", ipStr)
 			continue
 		}
-
+		fmt.Printf("ipInfo: %v\n", ipInfo)
 		fmt.Printf("IP: %15s | ASN: %6d | 组织: %s\n",
 			ipStr,
 			ipInfo.OrganisationNumber,

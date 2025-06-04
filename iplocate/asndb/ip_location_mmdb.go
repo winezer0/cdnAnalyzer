@@ -2,7 +2,6 @@ package asndb
 
 import (
 	"fmt"
-	"github.com/maxmind/mmdbwriter"
 	"github.com/oschwald/maxminddb-golang"
 	"net"
 	"os"
@@ -10,84 +9,71 @@ import (
 )
 
 var mmDb = map[string]*maxminddb.Reader{}
-var mmDbWriter *mmdbwriter.Tree
 
-func mmdbConnect() {
-	mmdbOpenFile("COUNTRY")
-	mmdbOpenFile("ASN")
-	mmdbOpenFile("CITY")
+// initMMDBConn 初始化 MaxMind ASN 数据库连接，接受 IPv4 和 IPv6 数据库的完整路径
+func initMMDBConn(ipv4Path, ipv6Path string) error {
+	type dbInfo struct {
+		filePath     string
+		connectionId string
+	}
+
+	dbFiles := []dbInfo{
+		{ipv4Path, "ipv4"},
+		{ipv6Path, "ipv6"},
+	}
+
+	for _, db := range dbFiles {
+		if _, err := os.Stat(db.filePath); os.IsNotExist(err) {
+			fmt.Printf("文件不存在: %s\n", db.filePath)
+			continue
+		}
+
+		if _, ok := mmDb[db.connectionId]; ok {
+			fmt.Printf("数据库已加载: %s\n", db.connectionId)
+			continue
+		}
+
+		conn, err := maxminddb.Open(db.filePath)
+		if err != nil {
+			return fmt.Errorf("打开数据库失败 [%s]: %v", db.filePath, err)
+		}
+
+		mmDb[db.connectionId] = conn
+		fmt.Printf("数据库已加载: %s -> %s\n", db.connectionId, db.filePath)
+	}
+
+	return nil
 }
 
-func mmdbClose() {
+func closeMMDBConn() {
 	for connectionId, conn := range mmDb {
+		fmt.Printf("正在关闭数据库连接: %s\n", connectionId)
 		err := conn.Close()
 		if err != nil {
-			panic(err)
+			fmt.Printf("关闭数据库失败 [%s]: %v\n", connectionId, err)
+			continue
 		}
+		fmt.Printf("数据库已成功关闭: %s\n", connectionId)
 		delete(mmDb, connectionId)
 	}
 }
 
-func mmdbInitialised(key string) bool {
-	connectionId := key + "ipv4"
-	_, ok := mmDb[connectionId]
-
-	return ok
-}
-
-func mmdbOpenFile(key string) {
-	if len(os.Getenv(key)) > 0 {
-		ipVersions := []int{4, 6}
-		for _, ipVersion := range ipVersions {
-			connectionId := key + "ipv" + strconv.Itoa(ipVersion)
-			filePath := "downloads/" + os.Getenv(key) + "-ipv" + strconv.Itoa(ipVersion) + ".mmdb"
-
-			if _, err := os.Stat(filePath); err == nil {
-				_, ok := mmDb[connectionId]
-				if !ok {
-					fmt.Println("Opening MMDB file: " + filePath)
-					conn, err := maxminddb.Open(filePath)
-					if err != nil {
-						panic(err)
-					}
-
-					mmDb[connectionId] = conn
-				}
-			}
-		}
-	}
-}
-
-func mmdbCloseFile(connectionId string, filePath string) {
-	conn, ok := mmDb[connectionId]
-	if ok {
-		fmt.Println("Closing MMDB file: " + filePath)
-		err := conn.Close()
-		if err != nil {
-			panic(err)
-		}
-		delete(mmDb, connectionId)
-	}
-}
-
-func mmdbIp(ip net.IP) *Ip {
+func findASN(ip net.IP) *Ip {
 	ipString := ip.String()
 	ipVersion := getIpVersion(ipString)
-
 	ipStruct := NewIp(ipString, ipVersion)
-
 	connectionId := "ipv" + strconv.Itoa(ipVersion)
 	_, ok := mmDb[connectionId]
 	if ok {
-		var mmdbASN MmdbASN
-		err := mmDb[connectionId].Lookup(ip, &mmdbASN)
+		var asnRecord ASNRecord
+		err := mmDb[connectionId].Lookup(ip, &asnRecord)
 		if err != nil {
 			panic(err)
 		}
 
-		if mmdbASN.AsNumber > 0 {
-			ipStruct.OrganisationNumber = mmdbASN.AsNumber
-			ipStruct.OrganisationName = mmdbASN.AsOrganisation
+		if asnRecord.AsNumber > 0 {
+			ipStruct.OrganisationNumber = asnRecord.AsNumber
+			ipStruct.OrganisationName = asnRecord.AsOrganisation
 			ipStruct.FoundASN = true
 		}
 	}
