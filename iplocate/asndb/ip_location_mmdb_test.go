@@ -13,6 +13,11 @@ func TestMMDB_ASN_Lookup(t *testing.T) {
 	initMMDBConn(ipv4Filepath, ipv6Filepath)
 	defer closeMMDBConn()
 
+	ipv4dbsize, _ := CountMMDBSize(mmDb["ipv4"])
+	t.Logf("CountMMDBSize ipv4: %d\n", ipv4dbsize)
+	ipv6dbsize, _ := CountMMDBSize(mmDb["ipv6"])
+	t.Logf("CountMMDBSize ipv6: %d\n", ipv6dbsize)
+
 	// 定义要测试的 IPs
 	testIPs := []string{
 		"8.8.8.8",         // Google DNS (IPv4)

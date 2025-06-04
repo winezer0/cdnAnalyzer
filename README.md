@@ -20,9 +20,6 @@ CDN Check On Golang
 
 #### IPv4 数据库比较
 ```
-纯真IP数据库官方版 2024年10月停止更新
-    https://github.com/FW27623/qqwry
-
 纯真IP数据库2025新版
     https://github.com/metowolf/qqwry.dat
     提示: 部分老版本qqwry库可能不兼容新版本的qqwry.dat
@@ -31,15 +28,22 @@ CDN Check On Golang
     提示: xiaoqidun/qqwry dat格式仅支持ipv4查询。
     提示: xiaoqidun/qqwry ipdb格式支持ipv4和ipv6查询。 但IPv6查询结果不够详细.
 
+    开发参考：https://github.com/xiaoqidun/qqwry
+    
+其他:
+  纯真IP数据库官方版 2024年10月停止更新
+    https://github.com/FW27623/qqwry
 
-lionsoul2014/ip2region 数据库更新频率较低
-    https://github.com/lionsoul2014/ip2region
-
-IPIP.NET city.free.ipdb数据库精确度较低   
-    https://ipip.net/
-
-
-开发参考：https://github.com/xiaoqidun/qqwry
+  lionsoul2014/ip2region 数据库更新频率较低
+      https://github.com/lionsoul2014/ip2region
+  
+  IPIP.NET city.free.ipdb数据库精确度较低   
+      https://ipip.net/
+  
+  [mmdb](https://maxmind.com/) CITY数据库
+    CN增强版 更新ing https://github.com/alecthw/mmdb_china_ip_list
+    开发库 https://github.com/oschwald/maxminddb-golang
+    开发库 https://github.com/oschwald/geoip2-golang
 ```
 
 #### IPv6数据库比较
@@ -58,20 +62,18 @@ GeoLite2数据库以高精度著称 支持 IPV4+IPV6
 geolite2 ASN 数据库整合
   https://github.com/sapics/ip-location-db/tree/main/geolite2-asn-mmdb
   开发库 https://github.com/oschwald/maxminddb-golang
-  开发库 https://github.com/oschwald/geoip2-golang
   提示: ASN整合后的数据库已经和原版本存在差异无法使用geoip2-gloang打开
-  
-ip2asn
-  https://github.com/libp2p/go-libp2p-asn-util
+  提示: 默认不支持通过ASN反查IP查询 需要自己实现
+ 
+其他:
+  ip2asn
+    https://github.com/libp2p/go-libp2p-asn-util
 ```
 
 其他IP数据库
 ```
 [awdb](https://ipplus360.com/)
-[mmdb](https://maxmind.com/)
-  CN增强版 更新ing https://github.com/alecthw/mmdb_china_ip_list
-  开发参考 https://github.com/oschwald/maxminddb-golang
-  
+
 ```
 
 - IP 归属地查询

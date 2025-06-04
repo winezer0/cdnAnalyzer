@@ -108,16 +108,15 @@ func getIpVersion(ipString string) int {
 	return ipVersion
 }
 
+// ASNToIPRanges 通过ASN号反查所有IP段
 func ASNToIPRanges(targetASN uint64) ([]*net.IPNet, error) {
-	var results []*net.IPNet
-
+	var findIPs []*net.IPNet
 	connectionIds := []string{"ipv4", "ipv6"}
 	for _, connectionId := range connectionIds {
 		reader, ok := mmDb[connectionId]
 		if !ok {
 			continue // 跳过未加载的数据库
 		}
-
 		networks := reader.Networks()
 		for networks.Next() {
 			var record ASNRecord
@@ -125,17 +124,25 @@ func ASNToIPRanges(targetASN uint64) ([]*net.IPNet, error) {
 			if err != nil {
 				return nil, err
 			}
-
 			if record.AutonomousSystemNumber == targetASN {
-				fmt.Printf("found ASN %d: %s\n", record.AutonomousSystemNumber, ipNet.String())
-				results = append(results, ipNet)
+				findIPs = append(findIPs, ipNet)
 			}
 		}
-
 		if err := networks.Err(); err != nil {
 			return nil, err
 		}
 	}
+	return findIPs, nil
+}
 
-	return results, nil
+func CountMMDBSize(reader *maxminddb.Reader) (int, error) {
+	count := 0
+	networks := reader.Networks()
+	for networks.Next() {
+		count++
+	}
+	if err := networks.Err(); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
