@@ -40,4 +40,7 @@ func TestMMDB_ASN_Lookup(t *testing.T) {
 			ipInfo.OrganisationName,
 		)
 	}
+
+	results, err := ASNToIPRanges(13335)
+	t.Logf("ASNToIPRanges results: %v Error:%v", len(results), err)
 }

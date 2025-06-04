@@ -3,8 +3,6 @@ package asndb
 import (
 	"fmt"
 	"github.com/oschwald/maxminddb-golang"
-	"github.com/praserx/ipconv"
-	"github.com/seancfoley/ipaddress-go/ipaddr"
 	"net"
 	"os"
 	"strconv"
@@ -22,8 +20,8 @@ type Ip struct {
 }
 
 type ASNRecord struct {
-	AsNumber       uint64 `maxminddb:"autonomous_system_number"`
-	AsOrganisation string `maxminddb:"autonomous_system_organization"`
+	AutonomousSystemNumber uint64 `maxminddb:"autonomous_system_number"`
+	AutonomousSystemOrg    string `maxminddb:"autonomous_system_organization"`
 }
 
 func NewIp(ipString string, ipVersion int) *Ip {
@@ -91,9 +89,9 @@ func findASN(ip net.IP) *Ip {
 			panic(err)
 		}
 
-		if asnRecord.AsNumber > 0 {
-			ipStruct.OrganisationNumber = asnRecord.AsNumber
-			ipStruct.OrganisationName = asnRecord.AsOrganisation
+		if asnRecord.AutonomousSystemNumber > 0 {
+			ipStruct.OrganisationNumber = asnRecord.AutonomousSystemNumber
+			ipStruct.OrganisationName = asnRecord.AutonomousSystemOrg
 			ipStruct.FoundASN = true
 		}
 	}
@@ -110,38 +108,34 @@ func getIpVersion(ipString string) int {
 	return ipVersion
 }
 
-func ipv4ToNumber(ipString string) int64 {
-	ip, ipVersion, err := ipconv.ParseIP(ipString)
-	if err == nil && ipVersion == 4 {
-		number, err := ipconv.IPv4ToInt(ip)
-		if err == nil {
-			return int64(number)
-		}
-		panic(err)
-	}
+func ASNToIPRanges(targetASN uint64) ([]*net.IPNet, error) {
+	var results []*net.IPNet
 
-	return 0
-}
-
-func findIPRanges(ipRangeStart string, ipRangeEnd string) []*net.IPNet {
-	ipStart := ipaddr.NewIPAddressString(ipRangeStart)
-	ipEnd := ipaddr.NewIPAddressString(ipRangeEnd)
-
-	addressStart := ipStart.GetAddress()
-	addressEnd := ipEnd.GetAddress()
-
-	ipRange := addressStart.SpanWithRange(addressEnd)
-	rangeSlice := ipRange.SpanWithPrefixBlocks()
-
-	var ipNets []*net.IPNet
-	for _, val := range rangeSlice {
-		_, network, err := net.ParseCIDR(val.String())
-		if err != nil {
-			panic(err)
+	connectionIds := []string{"ipv4", "ipv6"}
+	for _, connectionId := range connectionIds {
+		reader, ok := mmDb[connectionId]
+		if !ok {
+			continue // 跳过未加载的数据库
 		}
 
-		ipNets = append(ipNets, network)
+		networks := reader.Networks()
+		for networks.Next() {
+			var record ASNRecord
+			ipNet, err := networks.Network(&record)
+			if err != nil {
+				return nil, err
+			}
+
+			if record.AutonomousSystemNumber == targetASN {
+				fmt.Printf("found ASN %d: %s\n", record.AutonomousSystemNumber, ipNet.String())
+				results = append(results, ipNet)
+			}
+		}
+
+		if err := networks.Err(); err != nil {
+			return nil, err
+		}
 	}
 
-	return ipNets
+	return results, nil
 }
