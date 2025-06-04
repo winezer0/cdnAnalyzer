@@ -2,14 +2,44 @@ package asndb
 
 import (
 	"fmt"
+	"github.com/oschwald/maxminddb-golang"
 	"net"
+	"os"
 	"testing"
 )
 
 func TestMMDB_ASN_Lookup(t *testing.T) {
 	// 打开数据库连接
-	filePath := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\geolite2-asn-ipvall.mmdb"
-	mmdbConnect(filePath)
+	ipv4_filePath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-ipv4.mmdb"
+	ipv6_filePath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-ipv6.mmdb"
+
+	if _, err := os.Stat(ipv4_filePath); err == nil {
+		connectionId := "ipv" + "4"
+		_, ok := mmDb[connectionId]
+		if !ok {
+			fmt.Println("Opening MMDB file: " + ipv4_filePath)
+			conn, err := maxminddb.Open(ipv4_filePath)
+			if err != nil {
+				panic(err)
+			}
+
+			mmDb[connectionId] = conn
+		}
+	}
+
+	if _, err := os.Stat(ipv6_filePath); err == nil {
+		connectionId := "ipv" + "6"
+		_, ok := mmDb[connectionId]
+		if !ok {
+			fmt.Println("Opening MMDB file: " + ipv6_filePath)
+			conn, err := maxminddb.Open(ipv6_filePath)
+			if err != nil {
+				panic(err)
+			}
+
+			mmDb[connectionId] = conn
+		}
+	}
 	defer mmdbClose()
 
 	// 定义要测试的 IPs
