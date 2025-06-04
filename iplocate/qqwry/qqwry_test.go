@@ -36,7 +36,7 @@ func TestQueryIP(t *testing.T) {
 				if val != "" {
 					return val
 				}
-				return "未知"
+				return "UNKNOWN"
 			}
 
 			t.Logf("IP: %s -> 国家：%s，省份：%s，城市：%s，区县：%s，运营商：%s",

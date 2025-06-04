@@ -38,6 +38,8 @@ lionsoul2014/ip2region 数据库更新频率较低
 IPIP.NET city.free.ipdb数据库精确度较低   
     https://ipip.net/
 
+
+开发参考：https://github.com/xiaoqidun/qqwry
 ```
 
 #### IPv6数据库比较
