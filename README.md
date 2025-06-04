@@ -16,27 +16,28 @@ CDN Check On Golang
 
 ```
 IPv4 数据库比较
-纯真IP数据库官方版 2024年10月停止更新
-	https://github.com/FW27623/qqwry
+  纯真IP数据库官方版 2024年10月停止更新
+      https://github.com/FW27623/qqwry
+  
+  纯真IP数据库2025新版
+      https://github.com/metowolf/qqwry.dat
+      提示: 部分老版本qqwry库可能不兼容新版本的qqwry.dat
+      
+      https://github.com/xiaoqidun/qqwry
+      提示: xiaoqidun/qqwry dat格式仅支持ipv4查询。
+      提示: xiaoqidun/qqwry ipdb格式支持ipv4和ipv6查询。 但IPv6查询结果不够详细.
+  
+  
+  lionsoul2014/ip2region 数据库更新频率较低
+      https://github.com/lionsoul2014/ip2region
+  
+  IPIP.NET city.free.ipdb数据库精确度较低   
+      https://ipip.net/
 
-纯真IP数据库2025新版
-	https://github.com/metowolf/qqwry.dat
-	提示: 部分老版本qqwry库可能不兼容新版本的qqwry.dat
-	
-	https://github.com/xiaoqidun/qqwry
-	提示: xiaoqidun/qqwry dat格式仅支持ipv4查询。
-	提示: xiaoqidun/qqwry ipdb格式支持ipv4和ipv6查询。 但IPv6查询结果不构详细.
-
-
-lionsoul2014/ip2region 数据库更新频率较低
-	https://github.com/lionsoul2014/ip2region
-
-IPIP.NET city.free.ipdb数据库精确度较低   
-	https://ipip.net/
-
+IPv6数据库使用 
+  - [zxinc IPv6 only](https://ip.zxinc.org/) 目前已经不再提供离线下载包
 
 - 其他IP数据库数据类型 
-  - [zxinc IPv6 only](https://ip.zxinc.org/)
   - [awdb](https://ipplus360.com/)
   - [mmdb](https://maxmind.com/)
 
