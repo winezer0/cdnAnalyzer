@@ -54,10 +54,13 @@ IPIP.NET city.free.ipdb数据库精确度较低
 
 #### ASN数据库
 ```
-geolite2
-  https://cdn.jsdelivr.net/npm/@ip-location-db/geolite2-asn-mmdb/geolite2-asn.mmdb
-  提示: GeoLite2数据库以高精度著称 支持 IPV4+IPV6
-
+GeoLite2数据库以高精度著称 支持 IPV4+IPV6
+geolite2 ASN 数据库整合
+  https://github.com/sapics/ip-location-db/tree/main/geolite2-asn-mmdb
+  开发库 https://github.com/oschwald/maxminddb-golang
+  开发库 https://github.com/oschwald/geoip2-golang
+  提示: ASN整合后的数据库已经和原版本存在差异无法使用geoip2-gloang打开
+  
 ip2asn
   https://github.com/libp2p/go-libp2p-asn-util
 ```
@@ -66,6 +69,9 @@ ip2asn
 ```
 [awdb](https://ipplus360.com/)
 [mmdb](https://maxmind.com/)
+  CN增强版 更新ing https://github.com/alecthw/mmdb_china_ip_list
+  开发参考 https://github.com/oschwald/maxminddb-golang
+  
 ```
 
 - IP 归属地查询
@@ -76,7 +82,13 @@ ip2asn
 
 - IP ASN信息
 
+  通过ASN号判断是否为CDN IP
+  https://github.com/hanc00l/nemo_go/blob/825775faba46e73809e87743a6c9a646914b7bd0/v2/pkg/task/custom/cdncheck.go#L198
+
 - IP 属性信息  
+
+
+
 
 ### 3、进行域名信息查询
 
