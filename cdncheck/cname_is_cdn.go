@@ -1,7 +1,6 @@
 package cdncheck
 
 import (
-	"net"
 	"strings"
 )
 
@@ -37,20 +36,13 @@ var cnames = []string{
 	"chinanetcenter.com", "cloudcdn.net", "xgslb.net", "gccdn.cn", "globalcdn.cn", "lxcdn.com", "rncdn1.com",
 	"youtube.", "txcdn.cn", "edgesuite.net", "okcdn.com", "akamaiedge.net"}
 
-// CheckCName 检查域名的CNAME，判断是否是CDN
-func (c *CDNCheck) CheckCName(domain string) (isCDN bool, CDNName string, CName string) {
-	cname, err := net.LookupCNAME(domain)
-	if err != nil || len(cname) == 0 {
-		return
-	}
+// CheckCNameString 检查传入的 CNAME 字符串是否包含任一 CDN 厂商的 CNAME
+func CheckCNameString(cname string) (isCDN bool, CDNName string) {
 	cname = strings.Trim(cname, ".")
-	if cname == domain {
-		return
-	}
 	for _, cn := range cnames {
 		if strings.Index(cname, cn) >= 0 {
-			return true, cn, cname
+			return true, cn
 		}
 	}
-	return false, "", cname
+	return false, ""
 }

@@ -1,12 +1,10 @@
 package cdncheck
 
 import (
-	"fmt"
 	"github.com/yl2chen/cidranger"
 	"net"
 )
 
-// CDN厂商IP段
 // CDN厂商IP段
 var cdns = []string{
 	"223.99.255.0/24", "71.152.0.0/17", "219.153.73.0/24", "125.39.46.0/24", "190.93.240.0/20", "14.0.113.0/24",
@@ -102,19 +100,21 @@ var cdns = []string{
 	"192.230.64.0/18", "107.154.0.0/16", "45.223.0.0/16", "45.60.0.0/16",
 }
 
-// CheckIP 检查IP是否为CDN
-func (c *CDNCheck) CheckIP(ip string) (isCDN bool) {
-	if c.ranger == nil {
-		c.ranger = cidranger.NewPCTrieRanger()
-		for _, cdn := range cdns {
-			_, network1, _ := net.ParseCIDR(cdn)
-			err := c.ranger.Insert(cidranger.NewBasicRangerEntry(*network1))
-			if err != nil {
-				fmt.Errorf("insert cdn error: %s", err)
-			}
+// CheckIPInCDNRange 在 CDN 厂商的 IP 段列表中
+func CheckIPInCDNRange(ip string) bool {
+	ranger := cidranger.NewPCTrieRanger()
+	for _, cdn := range cdns {
+		_, network, err := net.ParseCIDR(cdn)
+		if err != nil {
+			continue
+		}
+		err = ranger.Insert(cidranger.NewBasicRangerEntry(*network))
+		if err != nil {
+			continue
 		}
 	}
-	contains, err := c.ranger.Contains(net.ParseIP(ip))
+
+	contains, err := ranger.Contains(net.ParseIP(ip))
 	if err == nil {
 		return contains
 	}

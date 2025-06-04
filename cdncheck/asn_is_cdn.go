@@ -1,7 +1,6 @@
 package cdncheck
 
 import (
-	"net"
 	"strconv"
 )
 
@@ -19,21 +18,16 @@ var asns = []string{
 	"17334", "16702", "16625", "12222", "209101", "201585", "135429", "395747", "394536", "209242", "203898", "202623",
 	"14789", "133877", "13335", "132892", "21859", "6185", "47823", "30148"}
 
-// CheckASN 检查IP的ASN判断是否是CDN
-func (c *CDNCheck) CheckASN(ip string) (isCDN bool) {
-	if c.geoip2Db == nil {
-		return false
-	}
-	record, err := c.geoip2Db.ASN(net.ParseIP(ip))
-	if err != nil {
-		return false
-	}
-	for _, asn := range asns {
-		_asnInt, _ := strconv.Atoi(asn)
-		if uint(_asnInt) == record.AutonomousSystemNumber {
+// CheckASNByUint64 检查传入的 uint64 格式的 ASN 号是否在 CDN 厂商的 ASN 列表中
+func CheckASNByUint64(asn uint64) bool {
+	for _, asnStr := range asns {
+		_asnInt, err := strconv.Atoi(asnStr)
+		if err != nil {
+			continue
+		}
+		if uint64(_asnInt) == asn {
 			return true
 		}
 	}
-
 	return false
 }
