@@ -1,6 +1,7 @@
 package qqwry
 
 import (
+	"errors"
 	"github.com/ipipdotnet/ipdb-go"
 	"os"
 	"strings"
@@ -56,10 +57,22 @@ func LoadData(database []byte) {
 
 // LoadFile 从文件加载IP数据库
 func LoadFile(filepath string) (err error) {
+	// 判断文件是否存在
+	info, err := os.Stat(filepath)
+	if os.IsNotExist(err) {
+		return errors.New("file not exist")
+	}
+
+	// 判断是否是空文件
+	if info.Size() == 0 {
+		return errors.New("file is empty") // 或者返回一个自定义错误，例如：errors.New("file is empty")
+	}
+
 	body, err := os.ReadFile(filepath)
 	if err != nil {
-		return
+		return err
 	}
+
 	LoadData(body)
 	return
 }
