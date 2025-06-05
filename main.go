@@ -74,6 +74,7 @@ func main() {
 	fmt.Printf("  Errors: %v\n", eDNSQueryResult.Errors)
 
 	dnsQueryResult = dnsquery.MergeEDNSToDNS(eDNSQueryResult, dnsQueryResult)
+	dnsquery.OptimizeDNSResult(&dnsQueryResult)
 	finalInfo, _ := json.MarshalIndent(dnsQueryResult, "", "  ")
 	fmt.Println(string(finalInfo))
 }
