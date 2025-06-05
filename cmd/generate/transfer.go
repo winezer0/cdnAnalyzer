@@ -12,7 +12,7 @@ import (
 func TransferNaliCdnYaml(path string) *models.CDNData {
 	// 数据来源 https://github.com/4ft35t/cdn/blob/master/src/cdn.yml
 	// 初始化 CDNData 结构
-	cdnData := models.NewEmptyCDNDataAddress()
+	cdnData := models.NewEmptyCDNDataPointer()
 
 	// 1. 读取 YAML 到 NaliCdnData
 	var yamlData NaliCdnData
@@ -39,7 +39,7 @@ func TransferCdnCheckJson(path string) *models.CDNData {
 	}
 
 	//2、转换数据
-	cdnData := models.NewEmptyCDNDataAddress()
+	cdnData := models.NewEmptyCDNDataPointer()
 	// 将 cdn/waf/cloud 的值作为 IP 数据填充到对应字段
 	cdnData.CDN.IP = maputils.CopyMap(cdnCheckData.CDN)
 	cdnData.WAF.IP = maputils.CopyMap(cdnCheckData.WAF)
@@ -71,8 +71,8 @@ func normalizeASN(asn string) string {
 	return asn
 }
 
-// AddDataToCdnCategory 将 dataList 中的数据添加到 CDNData 的对应字段中（直接修改传入的指针）
-func AddDataToCdnCategory(
+// AddDataToCdnDataCategory 将 dataList 中的数据添加到 CDNData 的对应字段中（直接修改传入的指针）
+func AddDataToCdnDataCategory(
 	cdnData *models.CDNData,
 	dataList []string,
 	providerKey string,
@@ -132,8 +132,8 @@ func AddDataToCdnCategory(
 	return nil
 }
 
-//// AddDataToCdnCategory 将文本文件中的数据添加到 CDNData 的对应字段中
-//func AddDataToCdnCategory(
+//// AddDataToCdnDataCategory 将文本文件中的数据添加到 CDNData 的对应字段中
+//func AddDataToCdnDataCategory(
 //	cdnData models.CDNData,
 //	dataList []string,
 //	providerKey string,

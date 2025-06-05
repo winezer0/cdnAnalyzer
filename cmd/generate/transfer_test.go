@@ -26,21 +26,38 @@ func TestTransferCdnCheckJson(t *testing.T) {
 
 func TestAddDataToCdnCategory(t *testing.T) {
 	inFile := "C:\\Users\\WINDOWS\\Downloads\\sources_data.json.new.json"
-	dataFile := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\cdn_asn.txt"
 
 	// 创建空结构体指针，由 ReadJsonToStruct 自动填充
-	cdnData := models.NewEmptyCDNDataAddress()
+	cdnData := models.NewEmptyCDNDataPointer()
 	if err := fileutils.ReadJsonToStruct(inFile, cdnData); err != nil {
 		panic(err)
 	}
 
-	// 2. 读取文本文件内容
-	dataList, err := fileutils.ReadTextToList(dataFile)
+	// 2. 读取 ASN 文本文件内容
+	asnFile := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\cdn_asn.txt"
+	asnList, err := fileutils.ReadTextToList(asnFile)
 	if err != nil {
 		panic(err)
 	}
+	AddDataToCdnDataCategory(cdnData, asnList, "UNKNOWN", DataTypeASN)
 
-	AddDataToCdnCategory(cdnData, dataList, "UNKNOWN", DataTypeASN)
-	outFile := inFile + ".cdn_asn.json"
+	// 3. 读取 IP 文本文件内容
+	ipsFile := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\cdn_ips.txt"
+	ipsList, err := fileutils.ReadTextToList(ipsFile)
+	if err != nil {
+		panic(err)
+	}
+	AddDataToCdnDataCategory(cdnData, ipsList, "UNKNOWN", DataTypeIP)
+
+	// 4. 读取 CNAMEs 文本文件内容
+	cnameFile := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\cdn_ips.txt"
+	cnameList, err := fileutils.ReadTextToList(cnameFile)
+	if err != nil {
+		panic(err)
+	}
+	AddDataToCdnDataCategory(cdnData, cnameList, "UNKNOWN", DataTypeCNAME)
+
+	// 5. 写入文件
+	outFile := inFile + ".add.nemo.json"
 	fileutils.WriteJsonFromStruct(outFile, *cdnData)
 }

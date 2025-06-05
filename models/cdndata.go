@@ -12,7 +12,7 @@ type Category struct {
 	CNAME map[string][]string `json:"cname"`
 }
 
-func NewEmptyCDNDataAddress() *CDNData {
+func NewEmptyCDNDataPointer() *CDNData {
 	return &CDNData{
 		CDN: Category{
 			IP:    make(map[string][]string),
