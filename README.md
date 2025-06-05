@@ -11,23 +11,15 @@ CDN Check On Golang
 │   │   │   ├── 获取 IP 信息
 │   │   │   └── 获取 CNAMES 信息
 │   │   ├── IP 归属地信息查询
-│   │   │   └── 查询 IP 的地理位置信息
-│   │   ├── CDN 判断 (基于 IP, ASN, CNAMES)
+│   │   │   ├── 查询 IP 的地理位置信息
+│   │   │   └── 查询 IP 的 ASN 信息
+│   │   ├── CDN 判断 (基于 WAF|CDN|Could 的 IP|ASN|CNAME)
 │   │   │   ├── 分析 IP 地址
 │   │   │   ├── 分析 ASN 信息
-│   │   │   └── 分析 CNAMES 信息
+│   │   │   └── 分析 CNAME 信息
 │   │   └── IP 归属地信息综合判断
 │   │       └── 根据 IP 归属地进行特定逻辑处理
-│   └── IP
-│       ├── 直接进行 IP 归属地信息查询
-│       │   └── 查询 IP 的地理位置信息
-│       ├── CDN 判断 (仅基于 IP 和可能的附加ASN信息)
-│       │   ├── 分析 IP 地址
-│       │   └── 分析 ASN 信息（如果可用）
-│       └── IP 归属地信息综合判断
-│           └── 根据 IP 归属地进行特定逻辑处理
-|
-|
+
 ```
 
 
@@ -35,9 +27,6 @@ CDN Check On Golang
 ### 1、进行DNS解析（A记录、CNAME 记录查询）
 - 【已完成】1. 使用常规方案
 - 【已完成】2. 使用EDNS方案
-- 3.修改EDNS数据查询结果格式
-- 4.优化实现并发线程池控制
-
 
 ### 2、进行IP信息查询
 
@@ -110,21 +99,18 @@ geolite2 ASN 数据库整合
 - IP 属性信息
 - 【已完成】IP 归属地查询 ipv4 纯真IP库
 - 【已完成】IP 归属地查询 ipv6 ipv6wry.db
-- 【已完成】IP查询ASN和组织信息  geolite2-asn.mmdb
-- 【已完成】ASN反向查询IP段落  geolite2-asn.mmdb
+- 【已完成】IP查询ASN和组织信息  geolite2-asn-ipv4/ipv6.mmdb
+- 【已完成】ASN反向查询IP段落  geolite2-asn-ipv4/ipv6.mmdb
 
 
 
 ### 3、CDN信息判断
 
-1、域名|CNAME信息查询
-基于本地数据库进行域名CDN查询 cdn.yml 参考选项【nali】
+【已完成】基于本地数据进行域名CDN查询 nali cdn.yml 
+【已完成】基于本地数据进行域名CDN查询 cdncheck source_data.json/source_china.json
 
-2、IP信息判断CDN
-  通过ASN号|IP所处范围判断是否为CDN IP https://github.com/hanc00l/nemo_go/blob/825775faba46e73809e87743a6c9a646914b7bd0/v2/pkg/task/custom/cdncheck.go#L198
-
-其他思路：
-    CDN API查询【可参考 [YouChenJun/CheckCdn](https://github.com/YouChenJun/CheckCdn)】
+### 4.其他思路：
+CDN API查询【参考 [YouChenJun/CheckCdn](https://github.com/YouChenJun/CheckCdn)】
 
 
 ## DNS记录的常见类型
