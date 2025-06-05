@@ -21,7 +21,7 @@ func TestEDNSQuery(t *testing.T) {
 func TestEDNSQueryWithMultiCities(t *testing.T) {
 	domain := "www.example.com" // 替换为你要测试的域名
 
-	var filename = "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\city_ip.csv"
+	var filename = "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\city_ip.csv"
 	cityMap, err := fileutils.ReadCSVToMap(filename)
 	if err != nil {
 		t.Errorf("Failed to read CSV: %v", err)
