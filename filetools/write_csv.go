@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func WriteCSVFromMapSlice(filename string, data []map[string]string, forceQuote bool) error {
+func WriteCsvFromMaps(filename string, data []map[string]string, forceQuote bool) error {
 	if len(data) == 0 {
 		return fmt.Errorf("data is empty")
 	}
@@ -82,8 +82,8 @@ func quoteIfNeeded(s string, forceQuote bool) string {
 	return s
 }
 
-// WriteCSV writes a slice of maps to a CSV file with optional forced quoting and write mode.
-func WriteCSV(filename string, data []map[string]string, forceQuote bool, writeMode string, headers []string) error {
+// WriteCsvFromMapsWithQuote writes a slice of maps to a CSV file with optional forced quoting and write mode.
+func WriteCsvFromMapsWithQuote(filename string, data []map[string]string, forceQuote bool, writeMode string, headers []string) error {
 	if len(data) == 0 {
 		return fmt.Errorf("data is empty")
 	}

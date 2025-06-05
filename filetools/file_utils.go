@@ -6,8 +6,7 @@ import (
 	"runtime"
 )
 
-// IsFileEmpty checks if a file is empty or does not exist.
-// Returns true if the file does not exist or is empty, otherwise returns false.
+// IsEmptyFile 检查文件是否为空或不存在
 func IsEmptyFile(filename string) bool {
 	// Get file info
 	fileInfo, err := os.Stat(filename)

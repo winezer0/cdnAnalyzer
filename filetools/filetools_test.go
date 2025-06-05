@@ -30,7 +30,7 @@ func TestReadCSVToMap(t *testing.T) {
 
 func TestLoadYAMLAsJSON(t *testing.T) {
 	// 示例调用
-	jsonStr, err := LoadYAMLAsJSON("C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\cdn_cname.yml")
+	jsonStr, err := ReadYamlAsJson("C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\cdn_cname.yml")
 	if err != nil {
 		log.Fatalf("Error loading YAML: %v", err)
 	}
