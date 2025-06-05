@@ -6,8 +6,8 @@ import (
 	"os"
 )
 
-// WriteTxtFromList writes a slice of strings to a file, with each element written as a separate line.
-func WriteTxtFromList(filename string, data []string) error {
+// WriteTextFromList writes a slice of strings to a file, with each element written as a separate line.
+func WriteTextFromList(filename string, data []string) error {
 	// Create or truncate the file
 	file, err := os.Create(filename)
 	if err != nil {
@@ -31,8 +31,8 @@ func WriteTxtFromList(filename string, data []string) error {
 	return nil
 }
 
-// WriteTxtFromStruct 将任意数据写入文本文件
-func WriteTxtFromStruct(filePath string, data interface{}) error {
+// WriteTextFromStruct 将任意数据写入文本文件
+func WriteTextFromStruct(filePath string, data interface{}) error {
 	// 将任意数据转换为字符串形式
 	content := fmt.Sprintf("%v", data)
 

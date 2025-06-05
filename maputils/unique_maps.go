@@ -1,4 +1,4 @@
-package structutils
+package maputils
 
 // UniqueMergeSlices 合并去重字符串切片
 func UniqueMergeSlices(slices ...[]string) []string {

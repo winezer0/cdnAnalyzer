@@ -5,8 +5,8 @@ import (
 	"os"
 )
 
-// ReadFileToList reads a text file and returns its contents as a slice of strings, where each element is a line from the file.
-func ReadFileToList(filename string) ([]string, error) {
+// ReadTextToList reads a text file and returns its contents as a slice of strings, where each element is a line from the file.
+func ReadTextToList(filename string) ([]string, error) {
 	// Open the file
 	file, err := os.Open(filename)
 	if err != nil {

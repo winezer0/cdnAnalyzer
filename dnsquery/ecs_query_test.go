@@ -2,7 +2,7 @@ package dnsquery
 
 import (
 	"cdnCheck/fileutils"
-	"cdnCheck/structtools"
+	"cdnCheck/maputils"
 	"fmt"
 	"testing"
 	"time"
@@ -28,7 +28,7 @@ func TestEDNSQueryWithMultiCities(t *testing.T) {
 	}
 
 	// 随机选择 5 个城市
-	randCities := structutils.PickRandMaps(cityMap, 5)
+	randCities := maputils.PickRandMaps(cityMap, 5)
 	// 随机选择 几个 城市
 	if len(randCities) == 0 {
 		fmt.Println("No cities selected, check cityMap or getRandMaps")

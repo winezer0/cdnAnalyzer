@@ -1,4 +1,4 @@
-package structutils
+package maputils
 
 import (
 	"cdnCheck/fileutils"

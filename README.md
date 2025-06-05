@@ -87,7 +87,7 @@ geolite2 ASN 数据库整合
 ### 3、CDN信息判断
 
 1、域名|CNAME信息查询
-基于本地数据库进行域名CDN查询 cdn.yml 可参考选项【nali】
+基于本地数据库进行域名CDN查询 cdn.yml 参考选项【nali】
 
 2、IP信息判断CDN
   通过ASN号|IP所处范围判断是否为CDN IP https://github.com/hanc00l/nemo_go/blob/825775faba46e73809e87743a6c9a646914b7bd0/v2/pkg/task/custom/cdncheck.go#L198

@@ -27,7 +27,9 @@ func ReadJsonToMap(filePath string) (map[string]interface{}, error) {
 func ReadJsonToStruct(filePath string, v interface{}) error {
 	file, err := os.ReadFile(filePath)
 	if err != nil {
+
 		return fmt.Errorf("无法读取文件: %w", err)
 	}
-	return json.Unmarshal(file, v)
+	err = json.Unmarshal(file, v)
+	return err
 }
