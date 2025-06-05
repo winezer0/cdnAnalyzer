@@ -72,14 +72,8 @@ func normalizeASN(asn string) string {
 }
 
 // AddDataToCdnDataCategory 将 dataList 中的数据添加到 CDNData 的对应字段中（直接修改传入的指针）
-func AddDataToCdnDataCategory(
-	cdnData *models.CDNData,
-	dataList []string,
-	providerKey string,
-	dataType DataType,
-) error {
-
-	// 3. 根据 dataType 选择对应的 map 和比较方式
+func AddDataToCdnDataCategory(cdnData *models.CDNData, dataList []string, providerKey string, dataType DataType) error {
+	// 根据 dataType 选择对应的 map 和比较方式
 	var targetMap map[string][]string
 	var shouldNormalize bool
 
@@ -95,7 +89,7 @@ func AddDataToCdnDataCategory(
 		return fmt.Errorf("unsupported data type")
 	}
 
-	// 4. 遍历 dataList 添加数据
+	// 遍历 dataList 添加数据
 	for _, item := range dataList {
 		modifiedItem := item
 		if shouldNormalize {
@@ -131,64 +125,3 @@ func AddDataToCdnDataCategory(
 
 	return nil
 }
-
-//// AddDataToCdnDataCategory 将文本文件中的数据添加到 CDNData 的对应字段中
-//func AddDataToCdnDataCategory(
-//	cdnData models.CDNData,
-//	dataList []string,
-//	providerKey string,
-//	dataType DataType,
-//) (models.CDNData, error) {
-//
-//	// 3. 根据 dataType 选择对应的 map 和比较方式
-//	var targetMap map[string][]string
-//	var shouldNormalize bool
-//
-//	switch dataType {
-//	case DataTypeIP:
-//		targetMap = cdnData.CDN.IP
-//	case DataTypeASN:
-//		targetMap = cdnData.CDN.ASN
-//		shouldNormalize = true
-//	case DataTypeCNAME:
-//		targetMap = cdnData.CDN.CNAME
-//	default:
-//		return cdnData, fmt.Errorf("unsupported data type")
-//	}
-//
-//	// 4. 遍历 dataList 添加数据
-//	for _, item := range dataList {
-//		modifiedItem := item
-//		if shouldNormalize {
-//			modifiedItem = normalizeASN(item)
-//		}
-//
-//		found := false
-//		for _, existingList := range targetMap {
-//			for _, existing := range existingList {
-//				comparison := existing
-//				if shouldNormalize {
-//					comparison = normalizeASN(existing)
-//				}
-//
-//				if comparison == modifiedItem {
-//					found = true
-//					break
-//				}
-//			}
-//			if found {
-//				break
-//			}
-//		}
-//
-//		if !found {
-//			// 全写法：先检查 providerKey 对应的 slice 是否为 nil
-//			if targetMap[providerKey] == nil {
-//				targetMap[providerKey] = make([]string, 0)
-//			}
-//			targetMap[providerKey] = append(targetMap[providerKey], item)
-//		}
-//	}
-//
-//	return cdnData, nil
-//}
