@@ -61,3 +61,21 @@ func TestAddDataToCdnCategory(t *testing.T) {
 	outFile := inFile + ".add.nemo.json"
 	fileutils.WriteJsonFromStruct(outFile, *cdnData)
 }
+
+func TestCdnDataMergeCdnData(t *testing.T) {
+	inFile1 := "C:\\Users\\WINDOWS\\Downloads\\sources_data.json.new.json.add.nemo.json"
+	cdnData1 := models.NewEmptyCDNDataPointer()
+	if err := fileutils.ReadJsonToStruct(inFile1, cdnData1); err != nil {
+		panic(err)
+	}
+
+	inFile2 := "C:\\Users\\WINDOWS\\Downloads\\sources_china.json.new.json"
+	cdnData2 := models.NewEmptyCDNDataPointer()
+	if err := fileutils.ReadJsonToStruct(inFile2, cdnData2); err != nil {
+		panic(err)
+	}
+
+	cdnData := CdnDataMergeCdnData(*cdnData1, *cdnData2)
+	outFile := inFile1 + ".add.json"
+	fileutils.WriteJsonFromStruct(outFile, cdnData)
+}

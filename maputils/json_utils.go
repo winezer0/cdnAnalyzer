@@ -1,4 +1,4 @@
-package fileutils
+package maputils
 
 import (
 	"encoding/json"

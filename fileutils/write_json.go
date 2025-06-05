@@ -3,7 +3,6 @@ package fileutils
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 )
 
@@ -30,7 +29,7 @@ func WriteJsonFromStruct(filePath string, v interface{}) error {
 		return fmt.Errorf("JSON 序列化失败: %w", err)
 	}
 
-	err = ioutil.WriteFile(filePath, jsonData, 0644)
+	err = os.WriteFile(filePath, jsonData, 0644)
 	if err != nil {
 		return fmt.Errorf("文件写入失败: %w", err)
 	}

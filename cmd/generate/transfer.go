@@ -125,3 +125,20 @@ func AddDataToCdnDataCategory(cdnData *models.CDNData, dataList []string, provid
 
 	return nil
 }
+
+// CdnDataMergeCdnData 实现两个cdnData数据的合并
+func CdnDataMergeCdnData(cdnData1 models.CDNData, cdnData2 models.CDNData) map[string]interface{} {
+	cdnData1String := maputils.MapToJSON(cdnData1)
+	cdnData1Map, err := maputils.ParseJSON(cdnData1String)
+	if err != nil {
+		panic(err)
+	}
+	cdnData2String := maputils.MapToJSON(cdnData2)
+	cdnData2Map, err := maputils.ParseJSON(cdnData2String)
+	if err != nil {
+		panic(err)
+	}
+
+	cdnDataMap := maputils.DeepMerge(cdnData1Map, cdnData2Map)
+	return cdnDataMap
+}
