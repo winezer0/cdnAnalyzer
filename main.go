@@ -11,6 +11,13 @@ import (
 )
 
 func main() {
+	//TODO 实现命令行调用
+	//TODO 实现功能整合
+	//1. 域名DNS解析
+	//2. 域名EDNS解析
+	//3. 对解析结果进行IP locate调用 查询IPv4 、IPv6 、ASN号
+	//4. 加载新的cdn检查文件 对 域名、Cnames、IPv4、IPv6、ASN进行 判断
+
 	domain := "www.example.com"
 	timeout := time.Second * 5
 

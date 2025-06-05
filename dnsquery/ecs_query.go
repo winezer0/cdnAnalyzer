@@ -11,10 +11,10 @@ import (
 var defaultServerAddress = GetSystemDefaultAddress()
 
 type EDNSResult struct {
-	// TODO 修改格式为 A AAAA CNAME 便于和DNS查询结果进行合并
 	A      []string
+	AAAA   []string
 	CNAME  []string
-	Errors []string // 支持多个错误
+	Errors []string
 }
 
 func EDNSQuery(domain string, EDNSAddr string, dnsServer string, timeout time.Duration) EDNSResult {
@@ -31,20 +31,24 @@ func EDNSQuery(domain string, EDNSAddr string, dnsServer string, timeout time.Du
 		}
 	}
 
-	var ips []string
+	var ipv4s []string
+	var ipv6s []string
 	var cnames []string
 
 	for _, answer := range in.Answer {
 		switch answer.Header().Rrtype {
+		case dns.TypeA:
+			ipv4s = append(ipv4s, answer.(*dns.A).A.String())
+		case dns.TypeAAAA:
+			ipv6s = append(ipv6s, answer.(*dns.AAAA).AAAA.String())
 		case dns.TypeCNAME:
 			cnames = append(cnames, answer.(*dns.CNAME).Target)
-		case dns.TypeA:
-			ips = append(ips, answer.(*dns.A).A.String())
 		}
 	}
 
 	return EDNSResult{
-		A:     ips,
+		A:     ipv4s,
+		AAAA:  ipv6s,
 		CNAME: cnames,
 	}
 }

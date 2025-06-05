@@ -29,18 +29,6 @@ func DnsServerAddPort(s string) string {
 	return s + ":53"
 }
 
-func HasPort(addr string) bool {
-	for i := len(addr) - 1; i >= 0; i-- {
-		if addr[i] == ':' {
-			return true
-		}
-		if addr[i] < '0' || addr[i] > '9' {
-			break
-		}
-	}
-	return false
-}
-
 // MergeDNSResults 合并去重多个 DNSResult
 func MergeDNSResults(results []DNSResult) DNSResult {
 	merged := DNSResult{}
@@ -61,6 +49,7 @@ func MergeEDNSResults(results map[string]EDNSResult) EDNSResult {
 
 	for _, res := range results {
 		merged.A = maputils.UniqueMergeSlices(merged.A, res.A)
+		merged.AAAA = maputils.UniqueMergeSlices(merged.AAAA, res.AAAA)
 		merged.CNAME = maputils.UniqueMergeSlices(merged.CNAME, res.CNAME)
 		merged.Errors = maputils.UniqueMergeSlices(merged.Errors, res.Errors)
 	}
@@ -69,16 +58,9 @@ func MergeEDNSResults(results map[string]EDNSResult) EDNSResult {
 }
 
 func MergeEDNSToDNS(edns EDNSResult, dns DNSResult) DNSResult {
-	// 将 A 分类合并到 A 或 AAAA
-	for _, ip := range edns.A {
-		if isIPv4(ip) {
-			dns.A = maputils.UniqueMergeSlices(dns.A, []string{ip})
-		} else {
-			dns.AAAA = maputils.UniqueMergeSlices(dns.AAAA, []string{ip})
-		}
-	}
-
 	// 合并 CNAME
+	dns.A = maputils.UniqueMergeSlices(dns.A, edns.A)
+	dns.AAAA = maputils.UniqueMergeSlices(dns.AAAA, edns.AAAA)
 	dns.CNAME = maputils.UniqueMergeSlices(dns.CNAME, edns.CNAME)
 
 	// 如果 Error 为 nil，先初始化为空 map
@@ -93,10 +75,4 @@ func MergeEDNSToDNS(edns EDNSResult, dns DNSResult) DNSResult {
 	}
 
 	return dns
-}
-
-// 辅助函数：判断是否是 IPv4
-func isIPv4(ip string) bool {
-	parts := strings.Split(ip, ".")
-	return len(parts) == 4
 }
