@@ -29,8 +29,8 @@ func TestDeepMerge(t *testing.T) {
 	//mapA, _ := ParseJSON(jsonA)
 	//mapB, _ := ParseJSON(jsonB)
 
-	mapA, _ := fileutils.ReadJson("C:\\Users\\WINDOWS\\Downloads\\sources_china.json")
-	mapB, _ := fileutils.ReadJson("C:\\Users\\WINDOWS\\Downloads\\sources_data.json")
+	mapA, _ := fileutils.ReadJsonToMap("C:\\Users\\WINDOWS\\Downloads\\sources_china.json")
+	mapB, _ := fileutils.ReadJsonToMap("C:\\Users\\WINDOWS\\Downloads\\sources_data.json")
 	merged := DeepMerge(mapA, mapB)
 
 	// 指定输出文件路径

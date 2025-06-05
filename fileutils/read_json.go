@@ -6,8 +6,8 @@ import (
 	"os"
 )
 
-// ReadJson 读取并解析一个 JSON 文件，返回 map[string]interface{}
-func ReadJson(filePath string) (map[string]interface{}, error) {
+// ReadJsonToMap 读取并解析一个 JSON 文件，返回 map[string]interface{}
+func ReadJsonToMap(filePath string) (map[string]interface{}, error) {
 	// 打开文件
 	file, err := os.ReadFile(filePath)
 	if err != nil {
