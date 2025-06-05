@@ -6,76 +6,70 @@ import (
 	"testing"
 )
 
-func TestTransferCdnCnameYamlToJson(t *testing.T) {
-	// https://github.com/4ft35t/cdn/blob/master/src/cdn.yml
-	inFile := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\cdn_cname.yml"
-	outFile := inFile + ".new.json"
-	cdnData := TransferNaliCdnYaml(inFile)
-	fileutils.WriteJsonFromStruct(outFile, cdnData)
-}
-
-func TestTransferCdnCheckJson(t *testing.T) {
-	//国外源：https://github.com/projectdiscovery/cdncheck/blob/main/sources_data.json
-	//国内源：https://github.com/hanbufei/isCdn/blob/main/client/data/sources_china.json
-
-	inFile := "C:\\Users\\WINDOWS\\Downloads\\sources_china.json"
-	outFile := inFile + ".new.json"
-	cdnData := TransferCdnCheckJson(inFile)
-	fileutils.WriteJsonFromStruct(outFile, cdnData)
-}
-
 func TestAddDataToCdnCategory(t *testing.T) {
-	inFile := "C:\\Users\\WINDOWS\\Downloads\\sources_data.json.new.json"
-
-	// 创建空结构体指针，由 ReadJsonToStruct 自动填充
-	cdnData := models.NewEmptyCDNDataPointer()
-	if err := fileutils.ReadJsonToStruct(inFile, cdnData); err != nil {
+	// 1.加载数据源
+	sourceJson := "C:\\Users\\WINDOWS\\Downloads\\sources.json"
+	sourceData := models.NewEmptyCDNDataPointer()
+	if err := fileutils.ReadJsonToStruct(sourceJson, sourceData); err != nil {
 		panic(err)
 	}
 
-	// 2. 读取 ASN 文本文件内容
-	asnFile := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\cdn_asn.txt"
+	// 2.读取 ASN 文本文件内容
+	asnFile := "cdn_asn.txt"
 	asnList, err := fileutils.ReadTextToList(asnFile)
 	if err != nil {
 		panic(err)
 	}
-	AddDataToCdnDataCategory(cdnData, asnList, "UNKNOWN", DataTypeASN)
+	err = models.AddDataToCdnDataCategory(sourceData, models.CategoryCDN, models.FieldASN, "UNKNOWN", asnList)
+	if err != nil {
+		panic(err)
+	}
 
-	// 3. 读取 IP 文本文件内容
-	ipsFile := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\cdn_ips.txt"
+	// 3.读取 IP 文本文件内容
+	ipsFile := "cdn_ips.txt"
 	ipsList, err := fileutils.ReadTextToList(ipsFile)
 	if err != nil {
 		panic(err)
 	}
-	AddDataToCdnDataCategory(cdnData, ipsList, "UNKNOWN", DataTypeIP)
-
-	// 4. 读取 CNAMEs 文本文件内容
-	cnameFile := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\cdn_ips.txt"
+	err = models.AddDataToCdnDataCategory(sourceData, models.CategoryCDN, models.FieldIP, "UNKNOWN", ipsList)
+	if err != nil {
+		panic(err)
+	}
+	// 4.读取 CNAME 文本文件内容
+	cnameFile := "cdn_ips.txt"
 	cnameList, err := fileutils.ReadTextToList(cnameFile)
 	if err != nil {
 		panic(err)
 	}
-	AddDataToCdnDataCategory(cdnData, cnameList, "UNKNOWN", DataTypeCNAME)
-
+	err = models.AddDataToCdnDataCategory(sourceData, models.CategoryCDN, models.FieldCNAME, "UNKNOWN", cnameList)
+	if err != nil {
+		panic(err)
+	}
 	// 5. 写入文件
-	outFile := inFile + ".add.nemo.json"
-	fileutils.WriteJsonFromStruct(outFile, *cdnData)
+	outFile := sourceJson + ".update.json"
+	fileutils.WriteJsonFromStruct(outFile, *sourceData)
 }
 
-func TestCdnDataMergeCdnData(t *testing.T) {
-	inFile1 := "C:\\Users\\WINDOWS\\Downloads\\sources_data.json.new.json.add.nemo.json"
-	cdnData1 := models.NewEmptyCDNDataPointer()
-	if err := fileutils.ReadJsonToStruct(inFile1, cdnData1); err != nil {
-		panic(err)
-	}
+func TestMergeSameData(t *testing.T) {
+	// 加载并转换 cdn.yml
+	// https://github.com/4ft35t/cdn/blob/master/src/cdn.yml
+	cdnYamlFile := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\cdn.yml"
+	cdnYamlTransData := TransferNaliCdnYaml(cdnYamlFile)
+	//fileutils.WriteJsonFromStruct("cdnYamlTransData.json", cdnYamlTransData)
 
-	inFile2 := "C:\\Users\\WINDOWS\\Downloads\\sources_china.json.new.json"
-	cdnData2 := models.NewEmptyCDNDataPointer()
-	if err := fileutils.ReadJsonToStruct(inFile2, cdnData2); err != nil {
-		panic(err)
-	}
+	// 国外源：https://github.com/projectdiscovery/cdncheck/blob/main/sources_data.json
+	// 加载sources_data.json 数据的合并
+	sourceDataJson := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\sources_data.json"
+	sourceData := TransferCdnCheckJson(sourceDataJson)
+	//fileutils.WriteJsonFromStruct("sourceData.json", sourceData)
 
-	cdnData := CdnDataMergeCdnData(*cdnData1, *cdnData2)
-	outFile := inFile1 + ".add.json"
-	fileutils.WriteJsonFromStruct(outFile, cdnData)
+	// 国内源：https://github.com/hanbufei/isCdn/blob/main/client/data/sources_china.json
+	// 加载 sources_china.json
+	sourceChinaJson := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\sources_china.json"
+	sourceChina := TransferCdnCheckJson(sourceChinaJson)
+	//fileutils.WriteJsonFromStruct("sourceChina.json", sourceChina)
+
+	// 合并写入文件
+	sourceMerge, _ := models.CdnDataMergeSafe(*sourceData, *sourceChina, *cdnYamlTransData)
+	fileutils.WriteJsonFromStruct("source.json", sourceMerge)
 }

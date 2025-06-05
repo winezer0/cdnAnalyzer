@@ -4,9 +4,21 @@ import (
 	"cdnCheck/fileutils"
 	"cdnCheck/maputils"
 	"cdnCheck/models"
-	"fmt"
-	"strings"
 )
+
+// NaliCdnData 是整个 YAML 文件的结构
+type NaliCdnData map[string]struct {
+	Name string `yaml:"name"`
+	Link string `yaml:"link"`
+}
+
+// CdnCheckData 表示整个配置结构
+type CdnCheckData struct {
+	CDN    map[string][]string `json:"cdn"`
+	WAF    map[string][]string `json:"waf"`
+	Cloud  map[string][]string `json:"cloud"`
+	Common map[string][]string `json:"common"`
+}
 
 // TransferNaliCdnYaml  实现nali cdn.yml到json的转换
 func TransferNaliCdnYaml(path string) *models.CDNData {
@@ -29,18 +41,17 @@ func TransferNaliCdnYaml(path string) *models.CDNData {
 	return cdnData
 }
 
-// TransferCdnCheckJson  实现cdncheck数据源到json的转换
+// TransferCdnCheckJson 实现cdn check json 数据源的转换
 func TransferCdnCheckJson(path string) *models.CDNData {
-	//1、加载cdncheck数据源
+	// 加载cdn check json数据源
 	var cdnCheckData CdnCheckData
 	err := fileutils.ReadJsonToStruct(path, &cdnCheckData)
 	if err != nil {
 		panic(err)
 	}
 
-	//2、转换数据
-	cdnData := models.NewEmptyCDNDataPointer()
 	// 将 cdn/waf/cloud 的值作为 IP 数据填充到对应字段
+	cdnData := models.NewEmptyCDNDataPointer()
 	cdnData.CDN.IP = maputils.CopyMap(cdnCheckData.CDN)
 	cdnData.WAF.IP = maputils.CopyMap(cdnCheckData.WAF)
 	cdnData.Cloud.IP = maputils.CopyMap(cdnCheckData.Cloud)
@@ -50,95 +61,4 @@ func TransferCdnCheckJson(path string) *models.CDNData {
 		cdnData.CDN.CNAME[provider] = append([]string{}, cnames...)
 	}
 	return cdnData
-}
-
-// DataType 表示要操作的数据类型
-type DataType int
-
-const (
-	DataTypeIP DataType = iota
-	DataTypeASN
-	DataTypeCNAME
-)
-
-// normalizeASN 清洗 ASN 字符串
-func normalizeASN(asn string) string {
-	asn = strings.TrimSpace(asn)
-	asn = strings.ToUpper(asn)
-	if strings.HasPrefix(asn, "AS") {
-		asn = strings.TrimPrefix(asn, "AS")
-	}
-	return asn
-}
-
-// AddDataToCdnDataCategory 将 dataList 中的数据添加到 CDNData 的对应字段中（直接修改传入的指针）
-func AddDataToCdnDataCategory(cdnData *models.CDNData, dataList []string, providerKey string, dataType DataType) error {
-	// 根据 dataType 选择对应的 map 和比较方式
-	var targetMap map[string][]string
-	var shouldNormalize bool
-
-	switch dataType {
-	case DataTypeIP:
-		targetMap = cdnData.CDN.IP
-	case DataTypeASN:
-		targetMap = cdnData.CDN.ASN
-		shouldNormalize = true
-	case DataTypeCNAME:
-		targetMap = cdnData.CDN.CNAME
-	default:
-		return fmt.Errorf("unsupported data type")
-	}
-
-	// 遍历 dataList 添加数据
-	for _, item := range dataList {
-		modifiedItem := item
-		if shouldNormalize {
-			modifiedItem = normalizeASN(item)
-		}
-
-		found := false
-		for _, existingList := range targetMap {
-			for _, existing := range existingList {
-				comparison := existing
-				if shouldNormalize {
-					comparison = normalizeASN(existing)
-				}
-
-				if comparison == modifiedItem {
-					found = true
-					break
-				}
-			}
-			if found {
-				break
-			}
-		}
-
-		if !found {
-			// 如果 providerKey 对应的 slice 不存在，先初始化
-			if targetMap[providerKey] == nil {
-				targetMap[providerKey] = make([]string, 0)
-			}
-			targetMap[providerKey] = append(targetMap[providerKey], item)
-		}
-	}
-
-	return nil
-}
-
-// CdnDataMergeCdnData 实现两个cdnData数据的合并
-func CdnDataMergeCdnData(cdnData1 models.CDNData, cdnData2 models.CDNData) map[string]interface{} {
-	cdnData1String := maputils.MapToJSON(cdnData1)
-	cdnData1Map, err := maputils.ParseJSON(cdnData1String)
-	if err != nil {
-		panic(err)
-	}
-	cdnData2String := maputils.MapToJSON(cdnData2)
-	cdnData2Map, err := maputils.ParseJSON(cdnData2String)
-	if err != nil {
-		panic(err)
-	}
-
-	cdnDataMap := maputils.DeepMerge(cdnData1Map, cdnData2Map)
-	return cdnDataMap
 }
