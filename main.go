@@ -2,7 +2,8 @@ package main
 
 import (
 	"cdnCheck/dnsquery"
-	"cdnCheck/filetools"
+	"cdnCheck/fileutils"
+	"cdnCheck/structtools"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -14,7 +15,7 @@ func main() {
 	timeout := time.Second * 5
 
 	resolversFile := "resolvers.txt"
-	resolvers, err := filetools.ReadFileToList(resolversFile)
+	resolvers, err := fileutils.ReadFileToList(resolversFile)
 	fmt.Printf("load resolvers: %v\n", len(resolvers))
 	if err != nil {
 		fmt.Println("加载DNS服务器失败:", err)
@@ -30,13 +31,13 @@ func main() {
 
 	//进行 EDNS 信息查询
 	cityMapFile := "city_ip.csv"
-	cityMap, err := filetools.ReadCSVToMap(cityMapFile)
+	cityMap, err := fileutils.ReadCSVToMap(cityMapFile)
 	if err != nil {
 
 		fmt.Errorf("Failed to read cityMap CSV: %v\n", err)
 	}
 	// 随机选择 5 个城市
-	randCities := filetools.PickRandMaps(cityMap, 5)
+	randCities := structutils.PickRandMaps(cityMap, 5)
 	// 随机选择 几个 城市
 	if len(randCities) == 0 {
 		fmt.Println("No cities selected, check cityMap or getRandMaps")

@@ -1,7 +1,8 @@
 package dnsquery
 
 import (
-	"cdnCheck/filetools"
+	"cdnCheck/fileutils"
+	"cdnCheck/structtools"
 	"fmt"
 	"testing"
 	"time"
@@ -21,13 +22,13 @@ func TestEDNSQueryWithMultiCities(t *testing.T) {
 	domain := "www.example.com" // 替换为你要测试的域名
 
 	var filename = "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\city_ip.csv"
-	cityMap, err := filetools.ReadCSVToMap(filename)
+	cityMap, err := fileutils.ReadCSVToMap(filename)
 	if err != nil {
 		t.Errorf("Failed to read CSV: %v", err)
 	}
 
 	// 随机选择 5 个城市
-	randCities := filetools.PickRandMaps(cityMap, 5)
+	randCities := structutils.PickRandMaps(cityMap, 5)
 	// 随机选择 几个 城市
 	if len(randCities) == 0 {
 		fmt.Println("No cities selected, check cityMap or getRandMaps")

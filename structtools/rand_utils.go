@@ -1,4 +1,4 @@
-package filetools
+package structutils
 
 import (
 	"math/rand"
@@ -38,19 +38,4 @@ func PickRandMaps(cityList []map[string]string, count int) []map[string]string {
 		cityList = append(cityList[:randIndex], cityList[randIndex+1:]...)
 	}
 	return selectedCities
-}
-
-// UniqueMergeSlices 合并去重字符串切片
-func UniqueMergeSlices(slices ...[]string) []string {
-	unique := make(map[string]struct{})
-	for _, slice := range slices {
-		for _, v := range slice {
-			unique[v] = struct{}{}
-		}
-	}
-	var result []string
-	for v := range unique {
-		result = append(result, v)
-	}
-	return result
 }

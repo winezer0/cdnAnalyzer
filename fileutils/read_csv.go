@@ -1,4 +1,4 @@
-package filetools
+package fileutils
 
 import (
 	"encoding/csv"

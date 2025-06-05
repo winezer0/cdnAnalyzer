@@ -1,6 +1,7 @@
-package filetools
+package structutils
 
 import (
+	"cdnCheck/fileutils"
 	"fmt"
 	"testing"
 )
@@ -28,15 +29,15 @@ func TestDeepMerge(t *testing.T) {
 	//mapA, _ := ParseJSON(jsonA)
 	//mapB, _ := ParseJSON(jsonB)
 
-	mapA, _ := ReadJson("C:\\Users\\WINDOWS\\Downloads\\sources_china.json")
-	mapB, _ := ReadJson("C:\\Users\\WINDOWS\\Downloads\\sources_data.json")
+	mapA, _ := fileutils.ReadJson("C:\\Users\\WINDOWS\\Downloads\\sources_china.json")
+	mapB, _ := fileutils.ReadJson("C:\\Users\\WINDOWS\\Downloads\\sources_data.json")
 	merged := DeepMerge(mapA, mapB)
 
 	// 指定输出文件路径
 	filePath := "C:\\Users\\WINDOWS\\Downloads\\output.json"
 
 	// 写入 JSON 文件
-	err := WriteJsonFromStruct(filePath, merged)
+	err := fileutils.WriteJsonFromStruct(filePath, merged)
 	if err != nil {
 		fmt.Println("写入失败:", err)
 		return

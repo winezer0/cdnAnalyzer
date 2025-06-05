@@ -1,7 +1,7 @@
 package dnsquery
 
 import (
-	"cdnCheck/filetools"
+	"cdnCheck/structtools"
 	"errors"
 	"fmt"
 	"github.com/miekg/dns"
@@ -259,7 +259,7 @@ func LookupCNAMEChain(domain, dnsServer string, timeout time.Duration) ([]string
 
 // QueryAllDNSWithMultiResolvers 随机选5个DNS服务器进行并发查询
 func QueryAllDNSWithMultiResolvers(domain string, resolvers []string, pickNum int, timeout time.Duration) []DNSResult {
-	picked := filetools.PickRandList(resolvers, pickNum)
+	picked := structutils.PickRandList(resolvers, pickNum)
 	fmt.Printf("picked resolvers: %v\n", picked)
 
 	var wg sync.WaitGroup

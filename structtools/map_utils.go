@@ -1,4 +1,4 @@
-package filetools
+package structutils
 
 import (
 	"reflect"
