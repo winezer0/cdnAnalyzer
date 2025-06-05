@@ -12,7 +12,7 @@ import (
 func TransferNaliCdnYaml(path string) *models.CDNData {
 	// 数据来源 https://github.com/4ft35t/cdn/blob/master/src/cdn.yml
 	// 初始化 CDNData 结构
-	cdnData := models.NewCDNData()
+	cdnData := models.NewEmptyCDNDataAddress()
 
 	// 1. 读取 YAML 到 NaliCdnData
 	var yamlData NaliCdnData
@@ -39,7 +39,7 @@ func TransferCdnCheckJson(path string) *models.CDNData {
 	}
 
 	//2、转换数据
-	cdnData := models.NewCDNData()
+	cdnData := models.NewEmptyCDNDataAddress()
 	// 将 cdn/waf/cloud 的值作为 IP 数据填充到对应字段
 	cdnData.CDN.IP = maputils.CopyMap(cdnCheckData.CDN)
 	cdnData.WAF.IP = maputils.CopyMap(cdnCheckData.WAF)
@@ -71,25 +71,13 @@ func normalizeASN(asn string) string {
 	return asn
 }
 
-// AddDataToCdnCategory 将文本文件中的数据添加到 CDNData 的对应字段中
+// AddDataToCdnCategory 将 dataList 中的数据添加到 CDNData 的对应字段中（直接修改传入的指针）
 func AddDataToCdnCategory(
-	sourceConfig string,
-	dataFile string,
+	cdnData *models.CDNData,
+	dataList []string,
 	providerKey string,
 	dataType DataType,
-) (*models.CDNData, error) {
-
-	// 1. 加载原始配置
-	cdnData := models.NewCDNData()
-	if err := fileutils.ReadJsonToStruct(sourceConfig, cdnData); err != nil {
-		return nil, err
-	}
-
-	// 2. 读取文本文件内容
-	dataList, err := fileutils.ReadTextToList(dataFile)
-	if err != nil {
-		return nil, err
-	}
+) error {
 
 	// 3. 根据 dataType 选择对应的 map 和比较方式
 	var targetMap map[string][]string
@@ -98,31 +86,31 @@ func AddDataToCdnCategory(
 	switch dataType {
 	case DataTypeIP:
 		targetMap = cdnData.CDN.IP
-		shouldNormalize = false
 	case DataTypeASN:
 		targetMap = cdnData.CDN.ASN
 		shouldNormalize = true
 	case DataTypeCNAME:
 		targetMap = cdnData.CDN.CNAME
-		shouldNormalize = false
 	default:
-		return nil, fmt.Errorf("unsupported data type")
+		return fmt.Errorf("unsupported data type")
 	}
 
 	// 4. 遍历 dataList 添加数据
 	for _, item := range dataList {
+		modifiedItem := item
 		if shouldNormalize {
-			item = normalizeASN(item)
+			modifiedItem = normalizeASN(item)
 		}
 
 		found := false
 		for _, existingList := range targetMap {
 			for _, existing := range existingList {
+				comparison := existing
 				if shouldNormalize {
-					existing = normalizeASN(existing)
+					comparison = normalizeASN(existing)
 				}
 
-				if existing == item {
+				if comparison == modifiedItem {
 					found = true
 					break
 				}
@@ -133,9 +121,74 @@ func AddDataToCdnCategory(
 		}
 
 		if !found {
+			// 如果 providerKey 对应的 slice 不存在，先初始化
+			if targetMap[providerKey] == nil {
+				targetMap[providerKey] = make([]string, 0)
+			}
 			targetMap[providerKey] = append(targetMap[providerKey], item)
 		}
 	}
 
-	return cdnData, nil
+	return nil
 }
+
+//// AddDataToCdnCategory 将文本文件中的数据添加到 CDNData 的对应字段中
+//func AddDataToCdnCategory(
+//	cdnData models.CDNData,
+//	dataList []string,
+//	providerKey string,
+//	dataType DataType,
+//) (models.CDNData, error) {
+//
+//	// 3. 根据 dataType 选择对应的 map 和比较方式
+//	var targetMap map[string][]string
+//	var shouldNormalize bool
+//
+//	switch dataType {
+//	case DataTypeIP:
+//		targetMap = cdnData.CDN.IP
+//	case DataTypeASN:
+//		targetMap = cdnData.CDN.ASN
+//		shouldNormalize = true
+//	case DataTypeCNAME:
+//		targetMap = cdnData.CDN.CNAME
+//	default:
+//		return cdnData, fmt.Errorf("unsupported data type")
+//	}
+//
+//	// 4. 遍历 dataList 添加数据
+//	for _, item := range dataList {
+//		modifiedItem := item
+//		if shouldNormalize {
+//			modifiedItem = normalizeASN(item)
+//		}
+//
+//		found := false
+//		for _, existingList := range targetMap {
+//			for _, existing := range existingList {
+//				comparison := existing
+//				if shouldNormalize {
+//					comparison = normalizeASN(existing)
+//				}
+//
+//				if comparison == modifiedItem {
+//					found = true
+//					break
+//				}
+//			}
+//			if found {
+//				break
+//			}
+//		}
+//
+//		if !found {
+//			// 全写法：先检查 providerKey 对应的 slice 是否为 nil
+//			if targetMap[providerKey] == nil {
+//				targetMap[providerKey] = make([]string, 0)
+//			}
+//			targetMap[providerKey] = append(targetMap[providerKey], item)
+//		}
+//	}
+//
+//	return cdnData, nil
+//}
