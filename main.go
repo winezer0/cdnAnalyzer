@@ -21,7 +21,7 @@ func main() {
 	domain := "www.example.com"
 	timeout := time.Second * 5
 
-	resolversFile := "resolvers.txt"
+	resolversFile := "asset/resolvers.txt"
 	resolvers, err := fileutils.ReadTextToList(resolversFile)
 	fmt.Printf("load resolvers: %v\n", len(resolvers))
 	if err != nil {
@@ -37,7 +37,7 @@ func main() {
 	fmt.Println(string(b))
 
 	//进行 EDNS 信息查询
-	cityMapFile := "city_ip.csv"
+	cityMapFile := "asset/city_ip.csv"
 	cityMap, err := fileutils.ReadCSVToMap(cityMapFile)
 	if err != nil {
 
@@ -74,6 +74,7 @@ func main() {
 	fmt.Printf("  Errors: %v\n", eDNSQueryResult.Errors)
 
 	dnsQueryResult = dnsquery.MergeEDNSToDNS(eDNSQueryResult, dnsQueryResult)
+	dnsquery.OptimizeDNSResult(&dnsQueryResult)
 	finalInfo, _ := json.MarshalIndent(dnsQueryResult, "", "  ")
 	fmt.Println(string(finalInfo))
 }
