@@ -10,8 +10,8 @@ func TestMMDB_ASN_Lookup(t *testing.T) {
 	// 打开数据库连接
 	ipv4Filepath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-ipv4.mmdb"
 	ipv6Filepath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-ipv6.mmdb"
-	initMMDBConn(ipv4Filepath, ipv6Filepath)
-	defer closeMMDBConn()
+	InitMMDBConn(ipv4Filepath, ipv6Filepath)
+	defer CloseMMDBConn()
 
 	ipv4dbsize, _ := CountMMDBSize(mmDb["ipv4"])
 	t.Logf("CountMMDBSize ipv4: %d\n", ipv4dbsize)
@@ -33,7 +33,7 @@ func TestMMDB_ASN_Lookup(t *testing.T) {
 			continue
 		}
 
-		ipInfo := findASN(ip)
+		ipInfo := FindASN(ip)
 		if ipInfo == nil {
 			t.Errorf("无法解析IP信息: %s", ipStr)
 			continue
@@ -54,30 +54,23 @@ func TestMMDB_To_CSV(t *testing.T) {
 	// 打开数据库连接
 	ipv4Filepath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-ipv4.mmdb"
 	ipv6Filepath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-ipv6.mmdb"
-	initMMDBConn(ipv4Filepath, ipv6Filepath)
-	defer closeMMDBConn()
+	InitMMDBConn(ipv4Filepath, ipv6Filepath)
+	defer CloseMMDBConn()
 
 	outputPath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-all.csv"
 	ExportASNToCSV(outputPath)
 }
 
-func TestFirstASNToIPRanges(t *testing.T) {
+func TestFastASNToIPRanges(t *testing.T) {
 	// 打开数据库连接
 	ipv4Filepath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-ipv4.mmdb"
 	ipv6Filepath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-ipv6.mmdb"
-	initMMDBConn(ipv4Filepath, ipv6Filepath)
-	defer closeMMDBConn()
-
-	// 初始化缓存（只需调用一次）
-	err := PreloadASNCache()
-	if err != nil {
-		fmt.Println("预加载缓存失败:", err)
-		return
-	}
+	InitMMDBConn(ipv4Filepath, ipv6Filepath)
+	defer CloseMMDBConn()
 
 	// 查询某个 ASN（例如 Google 的 ASN 15169）
 	asn := uint64(13335)
-	ipNets, found := FirstASNToIPRanges(asn)
+	ipNets, found := FastASNToIPRanges(asn)
 	if !found {
 		fmt.Printf("未找到 ASN %d 对应的 IP 段\n", asn)
 		return

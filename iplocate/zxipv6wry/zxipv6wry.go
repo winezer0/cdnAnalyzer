@@ -6,7 +6,6 @@ package zxipv6wry
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"github.com/zu1k/nali/pkg/wry"
 	"io"
 	"log"
@@ -17,12 +16,6 @@ import (
 
 type Ipv6Location struct {
 	IPDB[uint64]
-}
-
-var cloudNameList = []string{
-	"阿里云", "华为云", "腾讯云",
-	"天翼云", "金山云", "UCloud", "青云", "QingCloud", "百度云", "盛大云", "世纪互联蓝云",
-	"Azure", "Amazon", "Microsoft", "Google", "vultr", "CloudFlare", "Choopa",
 }
 
 func NewIPv6Location(dbFilePath string) (*Ipv6Location, error) {
@@ -96,13 +89,6 @@ func (db *Ipv6Location) Find(query string) string {
 		return ""
 	}
 	r := strings.ReplaceAll(result.Country, "\t", " ")
-	if len(result.Area) > 0 {
-		for _, v := range cloudNameList {
-			if strings.Index(result.Area, v) >= 0 {
-				return fmt.Sprintf("%s [%s]", r, result.Area)
-			}
-		}
-	}
 	return r
 }
 

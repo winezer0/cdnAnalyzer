@@ -1,6 +1,7 @@
 package asndb
 
 import (
+	"fmt"
 	"net"
 	"sync"
 )
@@ -38,8 +39,14 @@ func PreloadASNCache() error {
 	return nil
 }
 
-// FirstASNToIPRanges 快速查找：通过 ASN 查找对应的 IP 段
-func FirstASNToIPRanges(targetASN uint64) ([]*net.IPNet, bool) {
+// FastASNToIPRanges 快速查找：通过 ASN 查找对应的 IP 段
+func FastASNToIPRanges(targetASN uint64) ([]*net.IPNet, bool) {
+	// 初始化缓存（只需调用一次）
+	err := PreloadASNCache()
+	if err != nil {
+		fmt.Println("预加载缓存失败:", err)
+		return nil, false
+	}
 	ipNets, found := asnToIPNets[targetASN]
 	return ipNets, found
 }

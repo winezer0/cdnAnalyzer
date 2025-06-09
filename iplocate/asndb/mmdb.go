@@ -11,7 +11,7 @@ import (
 
 var mmDb = map[string]*maxminddb.Reader{}
 
-type Ip struct {
+type ASNInfo struct {
 	IP                 string `json:"ip"`
 	IPVersion          int    `json:"ip_version"`
 	FoundASN           bool   `json:"found_asn"`
@@ -24,12 +24,12 @@ type ASNRecord struct {
 	AutonomousSystemOrg    string `maxminddb:"autonomous_system_organization"`
 }
 
-func NewIp(ipString string, ipVersion int) *Ip {
-	return &Ip{ipString, ipVersion, false, 0, ""}
+func NewIp(ipString string, ipVersion int) *ASNInfo {
+	return &ASNInfo{ipString, ipVersion, false, 0, ""}
 }
 
-// initMMDBConn 初始化 MaxMind ASN 数据库连接，接受 IPv4 和 IPv6 数据库的完整路径
-func initMMDBConn(ipv4Path, ipv6Path string) error {
+// InitMMDBConn 初始化 MaxMind ASN 数据库连接，接受 IPv4 和 IPv6 数据库的完整路径
+func InitMMDBConn(ipv4Path, ipv6Path string) error {
 	type dbInfo struct {
 		filePath     string
 		connectionId string
@@ -63,7 +63,7 @@ func initMMDBConn(ipv4Path, ipv6Path string) error {
 	return nil
 }
 
-func closeMMDBConn() {
+func CloseMMDBConn() {
 	for connectionId, conn := range mmDb {
 		fmt.Printf("正在关闭数据库连接: %s\n", connectionId)
 		err := conn.Close()
@@ -76,7 +76,7 @@ func closeMMDBConn() {
 	}
 }
 
-func findASN(ip net.IP) *Ip {
+func FindASN(ip net.IP) *ASNInfo {
 	ipString := ip.String()
 	ipVersion := getIpVersion(ipString)
 	ipStruct := NewIp(ipString, ipVersion)

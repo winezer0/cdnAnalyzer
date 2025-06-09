@@ -1,7 +1,6 @@
 package dnsquery
 
 import (
-	"cdnCheck/maputils"
 	"errors"
 	"fmt"
 	"github.com/miekg/dns"
@@ -258,14 +257,12 @@ func LookupCNAMEChain(domain, dnsServer string, timeout time.Duration) ([]string
 }
 
 // QueryAllDNSWithMultiResolvers 随机选5个DNS服务器进行并发查询
-func QueryAllDNSWithMultiResolvers(domain string, resolvers []string, pickNum int, timeout time.Duration) []DNSResult {
-	picked := maputils.PickRandList(resolvers, pickNum)
-	fmt.Printf("picked resolvers: %v\n", picked)
-
+func QueryAllDNSWithMultiResolvers(domain string, resolvers []string, timeout time.Duration) []DNSResult {
+	resolverSize := len(resolvers)
 	var wg sync.WaitGroup
-	dnsResults := make([]DNSResult, pickNum)
-	wg.Add(pickNum)
-	for i, resolver := range picked {
+	dnsResults := make([]DNSResult, resolverSize)
+	wg.Add(resolverSize)
+	for i, resolver := range resolvers {
 		go func(i int, resolver string) {
 			defer wg.Done()
 			dnsResults[i] = SyncQueryAllDNS(domain, resolver, timeout)

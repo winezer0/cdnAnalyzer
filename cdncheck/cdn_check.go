@@ -7,6 +7,12 @@ import (
 	"strings"
 )
 
+var cloudNameList = []string{
+	"阿里云", "华为云", "腾讯云",
+	"天翼云", "金山云", "UCloud", "青云", "QingCloud", "百度云", "盛大云", "世纪互联蓝云",
+	"Azure", "Amazon", "Microsoft", "Google", "vultr", "CloudFlare", "Choopa",
+}
+
 // ASNInCdn 检查传入的 uint64 格式的 ASN 号是否在 CDN 厂商的 ASN 列表中
 func ASNInCdn(asn uint64, asns []string) bool {
 	for _, asnStr := range asns {
