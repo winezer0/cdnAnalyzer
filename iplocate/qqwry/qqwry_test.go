@@ -7,7 +7,7 @@ import (
 func init() {
 	//支持直接加载 qqwry.dat 或 qqwry.ipdb 文件
 	dbpath := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\qqwry.ipdb"
-	if err := LoadFile(dbpath); err != nil {
+	if err := LoadDBFile(dbpath); err != nil {
 		panic(err)
 	}
 }

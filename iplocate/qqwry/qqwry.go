@@ -1,13 +1,9 @@
 package qqwry
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"github.com/ipipdotnet/ipdb-go"
-	"golang.org/x/text/encoding/simplifiedchinese"
-	"golang.org/x/text/transform"
-	"io"
 	"net"
 	"os"
 	"strings"
@@ -42,37 +38,45 @@ type Location struct {
 	IP       string // IP地址
 }
 
-func byte3ToUInt32(data []byte) uint32 {
-	i := uint32(data[0]) & 0xff
-	i |= (uint32(data[1]) << 8) & 0xff00
-	i |= (uint32(data[2]) << 16) & 0xff0000
-	return i
-}
-
-func gb18030Decode(src []byte) string {
-	in := bytes.NewReader(src)
-	out := transform.NewReader(in, simplifiedchinese.GB18030.NewDecoder())
-	d, _ := io.ReadAll(out)
-	return string(d)
-}
-
-// QueryIP 从内存或缓存查询IP
-func QueryIP(ip string) (location *Location, err error) {
-	if v, ok := locationCache.Load(ip); ok {
-		return v.(*Location), nil
+// LoadDBFile 从文件加载IP数据库
+func LoadDBFile(filepath string) error {
+	info, err := os.Stat(filepath)
+	if os.IsNotExist(err) {
+		return errors.New("file does not exist: " + filepath)
 	}
-	switch dataType {
-	case dataTypeDat:
-		return QueryIPDat(ip)
-	case dataTypeIpdb:
-		return QueryIPIpdb(ip)
-	default:
-		return nil, errors.New("data type not support")
+	if !info.Mode().IsRegular() {
+		return errors.New("not a regular file: " + filepath)
 	}
+	if info.Size() == 0 {
+		return errors.New("file is empty: " + filepath)
+	}
+
+	body, err := os.ReadFile(filepath)
+	if err != nil {
+		return err
+	}
+
+	LoadDBData(body)
+	return nil
 }
 
-// QueryIPDat 从dat查询IP，仅加载dat格式数据库时使用
-func QueryIPDat(ipv4 string) (location *Location, err error) {
+// LoadDBData 从内存加载IP数据库
+func LoadDBData(database []byte) {
+	if string(database[6:11]) == "build" {
+		dataType = dataTypeIpdb
+		loadCity, err := ipdb.NewCityFromBytes(database)
+		if err != nil {
+			panic(err)
+		}
+		ipdbCity = loadCity
+		return
+	}
+	data = database
+	dataLen = uint32(len(data))
+}
+
+// QueryIPByDat 从dat查询IP，仅加载dat格式数据库时使用
+func QueryIPByDat(ipv4 string) (location *Location, err error) {
 	ip := net.ParseIP(ipv4).To4()
 	if ip == nil {
 		return nil, errors.New("ip is not ipv4")
@@ -171,77 +175,33 @@ func QueryIPDat(ipv4 string) (location *Location, err error) {
 			}
 		}
 	}
-	location = SplitResult(addr, isp, ipv4)
+	location = SplitCZResult(addr, isp, ipv4)
 	locationCache.Store(ipv4, location)
 	return location, nil
 }
 
-// QueryIPIpdb 从ipdb查询IP，仅加载ipdb格式数据库时使用
-func QueryIPIpdb(ip string) (location *Location, err error) {
+// QueryIPByIpdb 从ipdb查询IP，仅加载ipdb格式数据库时使用
+func QueryIPByIpdb(ip string) (location *Location, err error) {
 	ret, err := ipdbCity.Find(ip, "CN")
 	if err != nil {
 		return
 	}
-	location = SplitResult(ret[0], ret[1], ip)
+	location = SplitCZResult(ret[0], ret[1], ip)
 	locationCache.Store(ip, location)
 	return location, nil
 }
 
-// LoadData 从内存加载IP数据库
-func LoadData(database []byte) {
-	if string(database[6:11]) == "build" {
-		dataType = dataTypeIpdb
-		loadCity, err := ipdb.NewCityFromBytes(database)
-		if err != nil {
-			panic(err)
-		}
-		ipdbCity = loadCity
-		return
+// QueryIP 从内存或缓存查询IP
+func QueryIP(ip string) (location *Location, err error) {
+	if v, ok := locationCache.Load(ip); ok {
+		return v.(*Location), nil
 	}
-	data = database
-	dataLen = uint32(len(data))
-}
-
-// LoadFile 从文件加载IP数据库
-func LoadFile(filepath string) error {
-	info, err := os.Stat(filepath)
-	if os.IsNotExist(err) {
-		return errors.New("file does not exist: " + filepath)
+	switch dataType {
+	case dataTypeDat:
+		return QueryIPByDat(ip)
+	case dataTypeIpdb:
+		return QueryIPByIpdb(ip)
+	default:
+		return nil, errors.New("data type not support")
 	}
-	if !info.Mode().IsRegular() {
-		return errors.New("not a regular file: " + filepath)
-	}
-	if info.Size() == 0 {
-		return errors.New("file is empty: " + filepath)
-	}
-
-	body, err := os.ReadFile(filepath)
-	if err != nil {
-		return err
-	}
-
-	LoadData(body)
-	return nil
-}
-
-// SplitResult 按照调整后的纯真社区版IP库地理位置格式返回结果
-func SplitResult(addr string, isp string, ipv4 string) (location *Location) {
-	location = &Location{ISP: isp, IP: ipv4}
-	splitList := strings.Split(addr, "–")
-	for i := 0; i < len(splitList); i++ {
-		switch i {
-		case 0:
-			location.Country = splitList[i]
-		case 1:
-			location.Province = splitList[i]
-		case 2:
-			location.City = splitList[i]
-		case 3:
-			location.District = splitList[i]
-		}
-	}
-	if location.Country == "局域网" {
-		location.ISP = location.Country
-	}
-	return
 }

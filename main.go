@@ -62,7 +62,7 @@ func main() {
 
 	//加载IPv4数据库
 	ipv4LocateDb := "asset/qqwry.ipdb"
-	if err := qqwry.LoadFile(ipv4LocateDb); err != nil {
+	if err := qqwry.LoadDBFile(ipv4LocateDb); err != nil {
 		panic(err)
 	}
 
@@ -139,9 +139,7 @@ func main() {
 		//输出DNS记录
 		finalInfo, _ := json.MarshalIndent(findResult, "", "  ")
 		fmt.Println(string(finalInfo))
-
 		os.Exit(1)
-
 	}
 
 }

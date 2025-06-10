@@ -15,7 +15,7 @@ import (
 )
 
 type Ipv6Location struct {
-	IPDB[uint64]
+	wry.IPDB[uint64]
 }
 
 func NewIPv6Location(dbFilePath string) (*Ipv6Location, error) {
@@ -39,7 +39,7 @@ func NewIPv6Location(dbFilePath string) (*Ipv6Location, error) {
 		}
 	}
 
-	if !CheckFile(fileData) {
+	if !checkFile(fileData) {
 		log.Fatalln("ZX IPv6数据库存在错误，请重新下载")
 	}
 
@@ -52,7 +52,7 @@ func NewIPv6Location(dbFilePath string) (*Ipv6Location, error) {
 	end := start + counts*11
 
 	return &Ipv6Location{
-		IPDB: IPDB[uint64]{
+		IPDB: wry.IPDB[uint64]{
 			Data: fileData,
 
 			OffLen:   offLen,
@@ -92,7 +92,7 @@ func (db *Ipv6Location) Find(query string) string {
 	return r
 }
 
-func CheckFile(data []byte) bool {
+func checkFile(data []byte) bool {
 	if len(data) < 4 {
 		return false
 	}
