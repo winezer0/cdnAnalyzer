@@ -46,6 +46,6 @@ func TestDeepMerge(t *testing.T) {
 	}
 
 	//
-	//mergedJSON := MapToJSON(merged)
+	//mergedJSON := AnyToJsonStr(merged)
 	//fmt.Println(mergedJSON)
 }

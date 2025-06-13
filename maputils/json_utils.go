@@ -23,15 +23,21 @@ func TraverseJSON(data interface{}, indent string) {
 	}
 }
 
-// MapToJSON 将任意 map 转换为格式化的 JSON 字符串（用于输出）
-func MapToJSON(v interface{}) string {
-	data, _ := json.MarshalIndent(v, "", "  ")
-	return string(data)
-}
-
 // ParseJSON 解析 JSON 字符串为 map[string]interface{}
 func ParseJSON(data string) (map[string]interface{}, error) {
 	var v map[string]interface{}
 	err := json.Unmarshal([]byte(data), &v)
 	return v, err
+}
+
+// AnyToJsonStr 将任意 map 转换为格式化的 JSON 字符串（用于输出）
+func AnyToJsonStr(v interface{}) string {
+	data, _ := json.MarshalIndent(v, "", "  ")
+	return string(data)
+}
+
+// AnyToJsonBytes  将任意 map 转换为格式化的 JSON 字符串（用于输出）
+func AnyToJsonBytes(v interface{}) []byte {
+	data, _ := json.MarshalIndent(v, "", "  ")
+	return data
 }

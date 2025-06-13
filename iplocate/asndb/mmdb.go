@@ -24,8 +24,13 @@ type ASNRecord struct {
 	AutonomousSystemOrg    string `maxminddb:"autonomous_system_organization"`
 }
 
-func NewIp(ipString string, ipVersion int) *ASNInfo {
+func NewASNInfo(ipString string, ipVersion int) *ASNInfo {
 	return &ASNInfo{ipString, ipVersion, false, 0, ""}
+}
+
+// IsInitialized 检查是否已经有数据库连接被初始化
+func IsInitialized() bool {
+	return len(mmDb) > 0
 }
 
 // InitMMDBConn 初始化 MaxMind ASN 数据库连接，接受 IPv4 和 IPv6 数据库的完整路径
@@ -76,11 +81,16 @@ func CloseMMDBConn() {
 	}
 }
 
-func FindASN(ip net.IP) *ASNInfo {
-	ipString := ip.String()
-	ipVersion := getIpVersion(ipString)
-	ipStruct := NewIp(ipString, ipVersion)
+func FindASN(ipStr string) *ASNInfo {
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		fmt.Errorf("无效的IP地址: %s", ipStr)
+		return nil
+	}
+	ipVersion := getIpVersion(ipStr)
+	asnInfo := NewASNInfo(ipStr, ipVersion)
 	connectionId := "ipv" + strconv.Itoa(ipVersion)
+	fmt.Printf("connectionId: %v version %v\n", connectionId, ipVersion)
 	_, ok := mmDb[connectionId]
 	if ok {
 		var asnRecord ASNRecord
@@ -90,13 +100,13 @@ func FindASN(ip net.IP) *ASNInfo {
 		}
 
 		if asnRecord.AutonomousSystemNumber > 0 {
-			ipStruct.OrganisationNumber = asnRecord.AutonomousSystemNumber
-			ipStruct.OrganisationName = asnRecord.AutonomousSystemOrg
-			ipStruct.FoundASN = true
+			asnInfo.OrganisationNumber = asnRecord.AutonomousSystemNumber
+			asnInfo.OrganisationName = asnRecord.AutonomousSystemOrg
+			asnInfo.FoundASN = true
 		}
 	}
 
-	return ipStruct
+	return asnInfo
 }
 
 func getIpVersion(ipString string) int {
@@ -145,4 +155,14 @@ func CountMMDBSize(reader *maxminddb.Reader) (int, error) {
 		return 0, err
 	}
 	return count, nil
+}
+
+func PrintASNInfo(ipInfo *ASNInfo) {
+	fmt.Printf("IP: %15s | Ipversion:%v|FoundASN: %v| ASN: %6d | 组织: %s\n",
+		ipInfo.IP,
+		ipInfo.IPVersion,
+		ipInfo.FoundASN,
+		ipInfo.OrganisationNumber,
+		ipInfo.OrganisationName,
+	)
 }

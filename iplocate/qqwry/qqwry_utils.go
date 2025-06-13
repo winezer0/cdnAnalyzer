@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-// LocationToString Location 结构转字符串
-func LocationToString(loc Location) string {
+// LocationToStr Location 结构转字符串
+func LocationToStr(loc Location) string {
 	parts := make([]string, 0)
 
 	if loc.Country != "" {

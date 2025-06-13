@@ -33,7 +33,7 @@ func CdnDataMergeSafe(cdnDatas ...CDNData) (map[string]interface{}, error) {
 	var mergedMap map[string]interface{}
 	for _, cdnData := range cdnDatas {
 		//转换为Json对象后进行通用合并操作
-		cdnDataString := maputils.MapToJSON(cdnData)
+		cdnDataString := maputils.AnyToJsonStr(cdnData)
 		cdnDataMap, err := maputils.ParseJSON(cdnDataString)
 		if err != nil {
 			return nil, err

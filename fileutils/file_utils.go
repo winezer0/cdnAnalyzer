@@ -16,6 +16,24 @@ func IsEmptyFile(filename string) bool {
 	return false
 }
 
+// IsFileExists 判断是否是普通文件存在
+func IsFileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
+
+// IsDirExists 判断是否是目录存在
+func IsDirExists(dirname string) bool {
+	info, err := os.Stat(dirname)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return info.IsDir()
+}
+
 // FindFile 按照优先级查找文件是否存在，返回所有找到的完整路径
 func FindFile(filename string) []string {
 	var searchPaths []string

@@ -38,6 +38,18 @@ type Location struct {
 	IP       string // IP地址
 }
 
+// IsLoaded 检查数据库是否已加载
+func IsLoaded() bool {
+	switch dataType {
+	case dataTypeIpdb:
+		return ipdbCity != nil
+	case dataTypeDat:
+		return data != nil && dataLen > 0
+	default:
+		return false // 不支持的类型或未初始化
+	}
+}
+
 // LoadDBFile 从文件加载IP数据库
 func LoadDBFile(filepath string) error {
 	info, err := os.Stat(filepath)

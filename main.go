@@ -10,53 +10,159 @@ import (
 	"cdnCheck/models"
 	"encoding/json"
 	"fmt"
-	"net"
 	"os"
+	"sync"
 	"time"
 )
 
-func main() {
-	targetFile := "C:\\Users\\WINDOWS\\Desktop\\demo.txt" //需要进行查询的目标文件
-	timeout := time.Second * 5                            //dns查询的超时时间配置
-	resolversFile := "asset/resolvers.txt"                //dns解析服务器
-	resolversNum := 5                                     //选择用于解析的最大DNS服务器数量 每个服务器将触发至少5次DNS解析
-	cityMapFile := "asset/city_ip.csv"                    //用于 EDNS 查询时模拟城市的IP
-	randCityNum := 5                                      //用于 EDNS 查询时模拟城市的IP数量，每个IP将触发至少一次EDNS查询
-	asnIpv4Db := "asset/geolite2-asn-ipv4.mmdb"           //IPv4的IP ASN数据库地址
-	asnIpv6Db := "asset/geolite2-asn-ipv6.mmdb"           //IPv6的IP ASN数据库地址
-
-	//加载并分类 需要进行查询的目
+func loadTargets(targetFile string) ([]string, error) {
 	targets, err := fileutils.ReadTextToList(targetFile)
 	if err != nil {
-		fmt.Println("加载目标文件失败:", err)
-		os.Exit(1)
+		return nil, fmt.Errorf("加载目标文件失败: %w", err)
+	} else {
+		fmt.Printf("load target from file: %v\n", targets)
 	}
-	fmt.Printf("load target from file: %v\n", targets)
+	return targets, nil
+}
+
+func classifyTargets(targets []string) *maputils.TargetClassifier {
 	classifier := maputils.NewTargetClassifier()
 	classifier.Classify(targets)
 	classifier.Summary()
+	return classifier
+}
+
+func loadResolvers(resolversFile string, resolversNum int) ([]string, error) {
+	resolvers, err := fileutils.ReadTextToList(resolversFile)
+	if err != nil {
+		return nil, fmt.Errorf("加载DNS服务器失败: %w", err)
+	}
+	resolvers = maputils.PickRandList(resolvers, resolversNum)
+	fmt.Printf("choise resolvers: %v\n", resolvers)
+	return resolvers, nil
+}
+
+func loadCityMap(cityMapFile string, randCityNum int) ([]map[string]string, error) {
+	cityMap, err := fileutils.ReadCSVToMap(cityMapFile)
+	if err != nil {
+		return nil, fmt.Errorf("读取城市IP映射失败: %w", err)
+	}
+	randCities := maputils.PickRandMaps(cityMap, randCityNum)
+	fmt.Printf("randCities: %v\n", randCities)
+	return randCities, nil
+}
+
+// populateDNSResult 将 DNS 查询结果填充到 CheckResult 中
+func populateDNSResult(domainEntry maputils.TargetEntry, query *dnsquery.DNSResult) *models.CheckResult {
+	result := models.NewDomainCheckResult(domainEntry.Raw, domainEntry.Fmt, domainEntry.FromUrl)
+
+	// 逐个复制 DNS 记录
+	result.A = append(result.A, query.A...)
+	result.AAAA = append(result.AAAA, query.AAAA...)
+	result.CNAME = append(result.CNAME, query.CNAME...)
+	result.NS = append(result.NS, query.NS...)
+	result.MX = append(result.MX, query.MX...)
+	result.TXT = append(result.TXT, query.TXT...)
+
+	return result
+}
+
+// 处理单个 domain 查询任务
+func processDomain(
+	domainEntry maputils.TargetEntry,
+	resolvers []string,
+	randCities []map[string]string,
+	timeout time.Duration,
+	resultChan chan<- *models.CheckResult,
+	wg *sync.WaitGroup,
+) {
+	defer wg.Done()
+
+	domain := domainEntry.Fmt
+
+	// 常规 DNS 查询
+	dnsResults := dnsquery.QueryAllDNSWithMultiResolvers(domain, resolvers, timeout)
+	dnsQueryResult := dnsquery.MergeDNSResults(dnsResults)
+
+	// EDNS 查询
+	eDNSQueryResults := dnsquery.EDNSQueryWithMultiCities(domain, timeout, randCities, false)
+	if len(eDNSQueryResults) == 0 {
+		fmt.Fprintf(os.Stderr, "EDNS 查询结果为空: %s\n", domain)
+	} else {
+		eDNSQueryResult := dnsquery.MergeEDNSResults(eDNSQueryResults)
+		dnsQueryResult = dnsquery.MergeEDNSToDNS(eDNSQueryResult, dnsQueryResult)
+	}
+
+	dnsquery.OptimizeDNSResult(&dnsQueryResult)
+
+	// 填充结果
+	findResult := populateDNSResult(domainEntry, &dnsQueryResult)
+
+	// 发送结果到 channel
+	resultChan <- findResult
+}
+
+func main() {
+	targetFile := "C:\\Users\\WINDOWS\\Desktop\\demo.txt" //需要进行查询的目标文件
+	if !fileutils.IsFileExists(targetFile) {
+		fmt.Printf("file [%v] Is Not File Exists .", targetFile)
+		os.Exit(1)
+	}
+	//加载输入目标
+	targets, err := loadTargets(targetFile)
+	if err != nil {
+		os.Exit(1)
+	}
+	//分类输入数据为 IP Domain Invalid
+	classifier := classifyTargets(targets)
+	//存储所有结果
+	var allResults []*models.CheckResult
 
 	//加载dns解析服务器配置文件，用于dns解析调用
-	resolvers, err := fileutils.ReadTextToList(resolversFile)
-	fmt.Printf("load resolvers: %v\n", len(resolvers))
+	resolversFile := "asset/resolvers.txt" //dns解析服务器
+	resolversNum := 5                      //选择用于解析的最大DNS服务器数量 每个服务器将触发至少5次DNS解析
+	resolvers, err := loadResolvers(resolversFile, resolversNum)
 	if err != nil {
-		fmt.Println("加载DNS服务器失败:", err)
 		os.Exit(1)
 	}
 
-	resolvers = maputils.PickRandList(resolvers, resolversNum)
-	fmt.Printf("choise resolvers: %v\n", resolvers)
-
 	//加载本地EDNS城市IP信息
-	cityMap, err := fileutils.ReadCSVToMap(cityMapFile)
+	cityMapFile := "asset/city_ip.csv" //用于 EDNS 查询时模拟城市的IP
+	randCityNum := 5
+	randCities, err := loadCityMap(cityMapFile, randCityNum)
 	if err != nil {
-		fmt.Errorf("Failed to read cityMap CSV: %v\n", err)
+		os.Exit(1)
 	}
-	// 随机选择 5 个城市
-	randCities := maputils.PickRandMaps(cityMap, randCityNum)
-	fmt.Printf("randCities: %v\n", randCities)
 
-	//加载ASN db数据库 //TODO 在函数内实现自动初始化调用,避免多次加载
+	// Step 5: 并发查询并收集DNS解析结果
+	timeout := 5 * time.Second // DNS 查询超时时间
+	var wg sync.WaitGroup
+	resultChan := make(chan *models.CheckResult, len(classifier.Domains))
+
+	for _, domainEntry := range classifier.Domains {
+		wg.Add(1)
+		go processDomain(domainEntry, resolvers, randCities, timeout, resultChan, &wg)
+	}
+
+	// Step 6: 启动一个 goroutine 等待所有任务完成，并关闭 channel
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	// Step 7: 接收DNS查询结果，实时输出，并保存到列表中
+	for result := range resultChan {
+		allResults = append(allResults, result)
+
+		// 实时输出结果
+		finalInfo, _ := json.MarshalIndent(result, "", "  ")
+		fmt.Println(string(finalInfo))
+	}
+
+	//初始化IP数据库信息
+	asnIpv4Db := "asset/geolite2-asn-ipv4.mmdb" //IPv4的IP ASN数据库地址
+	asnIpv6Db := "asset/geolite2-asn-ipv6.mmdb" //IPv6的IP ASN数据库地址
+	//加载ASN db数据库
 	asndb.InitMMDBConn(asnIpv4Db, asnIpv6Db)
 	defer asndb.CloseMMDBConn()
 
@@ -66,80 +172,75 @@ func main() {
 		panic(err)
 	}
 
-	//加载IPv6数据库 //TODO 在函数内实现自动初始化调用,避免多次加载
+	//加载IPv6数据库
 	ipv6LocateDb := "asset/zxipv6wry.db"
 	ipv6Engine, _ := zxipv6wry.NewIPv6Location(ipv6LocateDb)
 
-	//循环进行查询操作
-	domains := classifier.Domains
-	for _, domain := range domains {
-		findResult := models.NewCheckResult(domain, domain)
-
-		//进行常规 DNS 信息解析查询
-		dnsResults := dnsquery.QueryAllDNSWithMultiResolvers(domain, resolvers, timeout)
-		//合并多次DNS查询结果
-		dnsQueryResult := dnsquery.MergeDNSResults(dnsResults)
-
-		//进行 EDNS 信息查询
-		eDNSQueryResults := dnsquery.EDNSQueryWithMultiCities(domain, timeout, randCities, false)
-		if len(eDNSQueryResults) == 0 {
-			fmt.Errorf("Expected non-empty EDNS QueryResults\n")
-		}
-		//合并多次EDNS查询结果
-		eDNSQueryResult := dnsquery.MergeEDNSResults(eDNSQueryResults)
-
-		//合并EDNS结果到DNS结果中去
-		dnsQueryResult = dnsquery.MergeEDNSToDNS(eDNSQueryResult, dnsQueryResult)
-		dnsquery.OptimizeDNSResult(&dnsQueryResult)
-
-		//合并DNS EDNS结果到最终结果数据中
-		findResult.A = append(findResult.A, dnsQueryResult.A...)
-		findResult.AAAA = append(findResult.AAAA, dnsQueryResult.AAAA...)
-		findResult.CNAME = append(findResult.CNAME, dnsQueryResult.CNAME...)
-		findResult.NS = append(findResult.NS, dnsQueryResult.NS...)
-		findResult.MX = append(findResult.MX, dnsQueryResult.MX...)
-		findResult.TXT = append(findResult.TXT, dnsQueryResult.TXT...)
-
-		//对DNS查询结果中的IPS数据进行IP定位信息查询
-		ipv4s := findResult.A
-
-		var ipv4AsnInfos []asndb.ASNInfo
-		var ipv4Locations []qqwry.Location
-
-		for _, ipv4 := range ipv4s {
-			//查询Ipv4的ASN信息
-			ipv4AsnInfo := asndb.FindASN(net.IP(ipv4))
-			ipv4AsnInfos = append(ipv4AsnInfos, *ipv4AsnInfo)
-			//查询Ipv4的Locate信息
-			ipv4Location, err := qqwry.QueryIP(ipv4)
-			if err != nil {
-				print("IPv4 %s 定位查询失败：%v", ipv4, err)
-			}
-			ipv4Locations = append(ipv4Locations, *ipv4Location)
-		}
-
-		fmt.Printf("ipv4AsnInfos: %v\n", ipv4AsnInfos)
-		fmt.Printf("ipv4Locations: %v\n", ipv4Locations)
-
-		//进行IPV6数据查询
-		ipv6s := findResult.AAAA
-		var ipv6AsnInfos []asndb.ASNInfo
-		var ipv6Locations []string //TODO 需要统一IPv6和IPv4的定位查询结果
-		for _, ipv6 := range ipv6s {
-			//查询Ipv6的ASN信息
-			ipv6AsnInfo := asndb.FindASN(net.IP(ipv6))
-			ipv6AsnInfos = append(ipv6AsnInfos, *ipv6AsnInfo)
-			//查询Ipv6的Locate信息
-			ipv6Location := ipv6Engine.Find(ipv6)
-			ipv6Locations = append(ipv6Locations, ipv6Location)
-		}
-		fmt.Printf("ipv6AsnInfos: %v\n", ipv6AsnInfos)
-		fmt.Printf("ipv6Location: %v\n", ipv6Locations)
-
-		//输出DNS记录
-		finalInfo, _ := json.MarshalIndent(findResult, "", "  ")
-		fmt.Println(string(finalInfo))
-		os.Exit(1)
+	//将 IP初始化到 allResults
+	//将所有IP转换到
+	for _, ipEntry := range classifier.IPs {
+		ipResult := models.NewIPCheckResult(ipEntry.Raw, ipEntry.Fmt, ipEntry.IsIPv4, ipEntry.FromUrl)
+		allResults = append(allResults, ipResult)
 	}
 
+	//循环 allResults
+	for _, findResult := range allResults {
+		//对 每个 findResult.AipResult.AAAA 进行IP定位查询
+		ipv4s := findResult.A
+		ipv6s := findResult.AAAA
+
+		//查询Ipv4的IP定位信息
+		var ipv4Locations []map[string]string
+		for _, ipv4 := range ipv4s {
+			ipv4Location, _ := qqwry.QueryIP(ipv4)
+			locationToStr := qqwry.LocationToStr(*ipv4Location)
+			fmt.Printf("ipv4Locations: %v\n", locationToStr)
+			ipv4Locations = append(ipv4Locations, map[string]string{ipv4: locationToStr})
+		}
+
+		//查询IPV6的IP定位信息
+		var ipv6Locations []map[string]string
+		for _, ipv6 := range ipv6s {
+			//查询Ipv6的Locate信息
+			ipv6Location := ipv6Engine.Find(ipv6)
+			fmt.Printf("ipv6Location: %v\n", ipv6Location)
+			ipv6Locations = append(ipv6Locations, map[string]string{ipv6: ipv6Location})
+		}
+
+		//查询Ipv4的ASN信息
+		var ipv4AsnInfos []asndb.ASNInfo
+		for _, ipv4 := range ipv4s {
+			fmt.Printf("ipv4: %v\n", ipv4)
+			ipv4AsnInfo := asndb.FindASN(ipv4)
+			asndb.PrintASNInfo(ipv4AsnInfo)
+			ipv4AsnInfos = append(ipv4AsnInfos, *ipv4AsnInfo)
+		}
+
+		//查询Ipv6的ASN信息
+		var ipv6AsnInfos []asndb.ASNInfo
+		for _, ipv6 := range ipv6s {
+			//查询Ipv6的ASN信息
+			fmt.Printf("ipv6: %v\n", ipv6)
+			ipv6AsnInfo := asndb.FindASN(ipv6)
+			asndb.PrintASNInfo(ipv6AsnInfo)
+			ipv6AsnInfos = append(ipv6AsnInfos, *ipv6AsnInfo)
+		}
+
+		findResult.Ipv6Asn = ipv6AsnInfos
+		findResult.Ipv4Asn = ipv4AsnInfos
+		findResult.Ipv4Locate = ipv4Locations
+		findResult.Ipv6Locate = ipv6Locations
+	}
+
+	// Step 8: 可选：将结果写入文件
+	err = os.WriteFile(targetFile+".results.json", maputils.AnyToJsonBytes(allResults), 0644)
+	//将结果写入到CSV
+	sliceToMaps, err := maputils.ConvertStructSliceToMaps(allResults)
+	if err == nil {
+		fmt.Printf("%v", maputils.AnyToJsonStr(allResults))
+		fileutils.WriteCSV(targetFile+".results.csv", sliceToMaps, true)
+		//fileutils.WriteCSV2(targetFile+".results.csv", sliceToMaps, true, "a+", nil)
+	} else {
+		fmt.Errorf("Convert Struct Slice To Maps error: %v\n", err)
+	}
 }
