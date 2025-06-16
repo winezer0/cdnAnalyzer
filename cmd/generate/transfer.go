@@ -81,7 +81,7 @@ func TransferCloudKeysYaml(path string) *models.CDNData {
 	// 初始化 CDNData 结构
 	cdnData := models.NewEmptyCDNDataPointer()
 	for cloudName, yamEntry := range cloudKeysYaml {
-		cdnData.CDN.CNAME[cloudName] = yamEntry.Keys
+		cdnData.Cloud.KEYS[cloudName] = yamEntry.Keys
 	}
 
 	return cdnData
