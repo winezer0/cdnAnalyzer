@@ -277,6 +277,9 @@ func main() {
 		// 判断asn是否在cdn内
 		asnIsCDN, asnCompany := cdncheck.ASNsInCdnMap(allAsns, sourceData.CDN.ASN)
 
+		//TODO 判断IP定位是否在CDN内
+		//TODO 判断IP解析结果数量是否在CDN内
+		
 		// 检查结果中的WAF情况
 		// 检查结果中的Cloud情况
 	}
