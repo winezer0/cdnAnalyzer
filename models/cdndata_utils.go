@@ -10,6 +10,7 @@ const (
 	FieldIP    = "ip"
 	FieldASN   = "asn"
 	FieldCNAME = "cname"
+	FieldKEYS  = "keys"
 )
 
 const (
@@ -116,6 +117,8 @@ func getCategoryField(cdnData *CDNData, categoryName, fieldName string) map[stri
 		return category.ASN
 	case "cname":
 		return category.CNAME
+	case "keys":
+		return category.KEYS
 	default:
 		return nil
 	}

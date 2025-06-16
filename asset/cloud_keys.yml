@@ -1,0 +1,59 @@
+阿里云:
+  keys:
+    - 阿里云
+    - aliyun
+华为云:
+  keys:
+    - 华为云
+    - huaweicloud
+腾讯云:
+  keys:
+    - 腾讯云
+    - tencentcloud
+天翼云:
+  keys:
+    - 天翼云
+    - tycloud
+金山云:
+  keys:
+    - 金山云
+    - kingsoftcloud
+UCloud:
+  keys:
+    - ucloud
+青云:
+  keys:
+    - 青云
+    - qingcloud
+百度云:
+  keys:
+    - 百度云
+    - baiducloud
+盛大云:
+  keys:
+    - 盛大云
+世纪互联蓝云:
+  keys:
+    - 世纪互联蓝云
+    - bluecloud
+Azure:
+  keys:
+    - azure
+Amazon:
+  keys:
+    - amazon
+Microsoft:
+  keys:
+    - microsoft
+Google:
+  keys:
+    - google
+vultr:
+  keys:
+    - vultr
+CloudFlare:
+  keys:
+    - cloudflare
+Choopa:
+  keys:
+    - choopa

@@ -269,7 +269,7 @@ func main() {
 		//合并 IP定位列表 需要处理后合并
 		ipLocates := maputils.UniqueMergeSlices(maputils.GetMapsUniqueValues(result.Ipv4Locate), maputils.GetMapsUniqueValues(result.Ipv6Locate))
 
-		// 检查结果中的CDN情况
+		//检查结果中的CDN情况
 		//判断cname是否在cdn内
 		cnameIsCDN, cnameCompany := cdncheck.CnamesInCdnMap(cnames, sourceData.CDN.CNAME)
 		// 判断IP是否在cdn内
@@ -278,8 +278,9 @@ func main() {
 		asnIsCDN, asnCompany := cdncheck.ASNsInCdnMap(allAsns, sourceData.CDN.ASN)
 
 		//TODO 判断IP定位是否在CDN内
+
 		//TODO 判断IP解析结果数量是否在CDN内
-		
+
 		// 检查结果中的WAF情况
 		// 检查结果中的Cloud情况
 	}

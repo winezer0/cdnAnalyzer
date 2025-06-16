@@ -51,6 +51,11 @@ func TestAddDataToCdnCategory(t *testing.T) {
 }
 
 func TestMergeSameData(t *testing.T) {
+	// 加载并转换 cloud yaml
+	cloudYamlFile := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\cloud_keys.yml"
+	cloudYamlTransData := TransferCloudKeysYaml(cloudYamlFile)
+	//fileutils.WriteJsonFromStruct("cloudYamlTransData.json", cloudYamlTransData)
+
 	// 加载并转换 cdn.yml
 	// https://github.com/4ft35t/cdn/blob/master/src/cdn.yml
 	cdnYamlFile := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\cdn.yml"
@@ -60,16 +65,16 @@ func TestMergeSameData(t *testing.T) {
 	// 国外源：https://github.com/projectdiscovery/cdncheck/blob/main/sources_data.json
 	// 加载sources_data.json 数据的合并
 	sourceDataJson := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\sources_data.json"
-	sourceData := TransferCdnCheckJson(sourceDataJson)
+	sourceData := TransferPDCdnCheckJson(sourceDataJson)
 	//fileutils.WriteJsonFromStruct("sourceData.json", sourceData)
 
 	// 国内源：https://github.com/hanbufei/isCdn/blob/main/client/data/sources_china.json
 	// 加载 sources_china.json
 	sourceChinaJson := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\sources_china.json"
-	sourceChina := TransferCdnCheckJson(sourceChinaJson)
+	sourceChina := TransferPDCdnCheckJson(sourceChinaJson)
 	//fileutils.WriteJsonFromStruct("sourceChina.json", sourceChina)
 
 	// 合并写入文件
-	sourceMerge, _ := models.CdnDataMergeSafe(*sourceData, *sourceChina, *cdnYamlTransData)
+	sourceMerge, _ := models.CdnDataMergeSafe(*sourceData, *sourceChina, *cdnYamlTransData, *cloudYamlTransData)
 	fileutils.WriteJsonFromStruct("source.json", sourceMerge)
 }
