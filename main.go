@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cdnCheck/cdncheck"
 	"cdnCheck/dnsquery"
 	"cdnCheck/fileutils"
 	"cdnCheck/iplocate/asndb"
@@ -103,6 +104,7 @@ func processDomain(
 }
 
 func main() {
+
 	targetFile := "C:\\Users\\WINDOWS\\Desktop\\demo.txt" //需要进行查询的目标文件
 	if !fileutils.IsFileExists(targetFile) {
 		fmt.Printf("file [%v] Is Not File Exists .", targetFile)
@@ -243,4 +245,38 @@ func main() {
 	} else {
 		fmt.Errorf("Convert Struct Slice To Maps error: %v\n", err)
 	}
+
+	//加载source.json配置文件 检查当前结果是否存在CDN
+	sourceJson := "asset/source.json"
+	sourceData := models.NewEmptyCDNDataPointer()
+	if err := fileutils.ReadJsonToStruct(sourceJson, sourceData); err != nil {
+		panic(err)
+	}
+	fmt.Printf("%v", maputils.AnyToJsonStr(sourceData))
+
+	//type CDNData struct {
+	//	CDN   Category `json:"cdn"`
+	//	WAF   Category `json:"waf"`
+	//	Cloud Category `json:"cloud"`
+	//}
+
+	for _, result := range allResults {
+		cnames := result.CNAME
+		cnameIsCDN, cnameCompany := cdncheck.CnamesInCdnMap(cnames, sourceData.CDN.CNAME)
+
+		// 合并 A 和 AAAA 记录 判断IP是否在cdn内
+		allIPs := maputils.UniqueMergeSlices(result.A, result.AAAA)
+		ipIsCDN, ipCompany := cdncheck.IpsInCdnMap(allIPs, sourceData.CDN.IP)
+
+		//合并 asn记录列表 需要处理后合并
+		allAsns := maputils.UniqueMergeAnySlices(asndb.GetUniqueOrgNumbers(result.Ipv4Asn), asndb.GetUniqueOrgNumbers(result.Ipv6Asn))
+		asnIsCDN, asnCompany := cdncheck.ASNsInCdnMap(allAsns, sourceData.CDN.ASN)
+
+		//合并 IP定位列表 需要处理后合并
+		ipLocates := maputils.UniqueMergeSlices(maputils.GetMapsUniqueValues(result.Ipv4Locate), maputils.GetMapsUniqueValues(result.Ipv6Locate))
+		// 检查结果中的CDN情况
+		// 检查结果中的WAF情况
+		// 检查结果中的Cloud情况
+	}
+
 }

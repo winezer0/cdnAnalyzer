@@ -60,3 +60,21 @@ func ExportASNToCSV(outputPath string) error {
 	fmt.Printf("成功导出 ASN 数据到: %s\n", outputPath)
 	return nil
 }
+
+// GetUniqueOrgNumbers 提取 FoundASN == true 的 OrganisationNumber，并去重
+func GetUniqueOrgNumbers(asnInfos []ASNInfo) []uint64 {
+	seen := make(map[uint64]bool)
+	var result []uint64
+
+	for _, info := range asnInfos {
+		if info.FoundASN {
+			orgNum := info.OrganisationNumber
+			if !seen[orgNum] {
+				seen[orgNum] = true
+				result = append(result, orgNum)
+			}
+		}
+	}
+
+	return result
+}

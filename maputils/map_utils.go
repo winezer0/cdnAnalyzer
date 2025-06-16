@@ -61,3 +61,19 @@ func ConvertStructSliceToMaps(slice interface{}) ([]map[string]string, error) {
 	}
 	return results, nil
 }
+
+// GetMapsUniqueValues 提取maps结构中所有键值对的值
+func GetMapsUniqueValues(maps []map[string]string) []string {
+	seen := make(map[string]bool)
+	var values []string
+
+	for _, m := range maps {
+		for _, v := range m {
+			if !seen[v] {
+				seen[v] = true
+				values = append(values, v)
+			}
+		}
+	}
+	return values
+}
