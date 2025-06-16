@@ -53,9 +53,9 @@ func loadCityMap(cityMapFile string, randCityNum int) ([]map[string]string, erro
 	return randCities, nil
 }
 
-// populateDNSResult 将 DNS 查询结果填充到 CheckResult 中
-func populateDNSResult(domainEntry maputils.TargetEntry, query *dnsquery.DNSResult) *models.CheckResult {
-	result := models.NewDomainCheckResult(domainEntry.Raw, domainEntry.Fmt, domainEntry.FromUrl)
+// populateDNSResult 将 DNS 查询结果填充到 CheckInfo 中
+func populateDNSResult(domainEntry maputils.TargetEntry, query *dnsquery.DNSResult) *models.CheckInfo {
+	result := models.NewDomainCheckInfo(domainEntry.Raw, domainEntry.Fmt, domainEntry.FromUrl)
 
 	// 逐个复制 DNS 记录
 	result.A = append(result.A, query.A...)
@@ -74,7 +74,7 @@ func processDomain(
 	resolvers []string,
 	randCities []map[string]string,
 	timeout time.Duration,
-	resultChan chan<- *models.CheckResult,
+	resultChan chan<- *models.CheckInfo,
 	wg *sync.WaitGroup,
 ) {
 	defer wg.Done()
@@ -118,7 +118,7 @@ func main() {
 	//分类输入数据为 IP Domain Invalid
 	classifier := classifyTargets(targets)
 	//存储所有结果
-	var allResults []*models.CheckResult
+	var allResults []*models.CheckInfo
 
 	//加载dns解析服务器配置文件，用于dns解析调用
 	resolversFile := "asset/resolvers.txt" //dns解析服务器
@@ -139,7 +139,7 @@ func main() {
 	// Step 5: 并发查询并收集DNS解析结果
 	timeout := 5 * time.Second // DNS 查询超时时间
 	var wg sync.WaitGroup
-	resultChan := make(chan *models.CheckResult, len(classifier.Domains))
+	resultChan := make(chan *models.CheckInfo, len(classifier.Domains))
 
 	for _, domainEntry := range classifier.Domains {
 		wg.Add(1)
@@ -181,7 +181,7 @@ func main() {
 	//将 IP初始化到 allResults
 	//将所有IP转换到
 	for _, ipEntry := range classifier.IPs {
-		ipResult := models.NewIPCheckResult(ipEntry.Raw, ipEntry.Fmt, ipEntry.IsIPv4, ipEntry.FromUrl)
+		ipResult := models.NewIPCheckInfo(ipEntry.Raw, ipEntry.Fmt, ipEntry.IsIPv4, ipEntry.FromUrl)
 		allResults = append(allResults, ipResult)
 	}
 
@@ -234,6 +234,68 @@ func main() {
 		findResult.Ipv6Locate = ipv6Locations
 	}
 
+	//加载source.json配置文件 检查当前结果是否存在CDN
+	sourceJson := "asset/source.json"
+	sourceData := models.NewEmptyCDNDataPointer()
+	if err := fileutils.ReadJsonToStruct(sourceJson, sourceData); err != nil {
+		panic(err)
+	}
+	fmt.Printf("%v", maputils.AnyToJsonStr(sourceData))
+
+	for _, result := range allResults {
+		cnames := result.CNAME
+		// 合并 A 和 AAAA 记录
+		allIPs := maputils.UniqueMergeSlices(result.A, result.AAAA)
+		//合并 asn记录列表 需要处理后合并
+		allAsns := maputils.UniqueMergeAnySlices(asndb.GetUniqueOrgNumbers(result.Ipv4Asn), asndb.GetUniqueOrgNumbers(result.Ipv6Asn))
+		//合并 IP定位列表 需要处理后合并
+		ipLocates := maputils.UniqueMergeSlices(maputils.GetMapsUniqueValues(result.Ipv4Locate), maputils.GetMapsUniqueValues(result.Ipv6Locate))
+		//判断IP解析结果数量是否在CDN内
+		ipSizeIsCdn, ipSize := cdncheck.IpsSizeIsCdn(allIPs, 3)
+		fmt.Printf("ipSizeIsCdn: %v ipSize:%v\n", ipSizeIsCdn, ipSize)
+		//检查结果中的CDN情况
+		//判断cname是否在cdn内
+		cnameIsCDN, cnameFindCdnCompany := cdncheck.KeysInMap(cnames, sourceData.CDN.CNAME)
+		fmt.Printf("cnameIsCDN: %v cnameFindCdnCompany:%v\n", cnameIsCDN, cnameFindCdnCompany)
+		// 判断IP是否在cdn内
+		ipIsCDN, ipFindCdnCompany := cdncheck.IpsInMap(allIPs, sourceData.CDN.IP)
+		fmt.Printf("ipIsCDN: %v ipFindCdnCompany:%v\n", ipIsCDN, ipFindCdnCompany)
+
+		// 判断asn是否在cdn内
+		asnIsCDN, asnFindCdnCompany := cdncheck.ASNsInMap(allAsns, sourceData.CDN.ASN)
+		fmt.Printf("asnIsCDN: %v asnFindCdnCompany:%v\n", asnIsCDN, asnFindCdnCompany)
+
+		//判断IP定位是否在CDN内
+		ipLocateIsCDN, ipLocateFindCdnCompany := cdncheck.KeysInMap(ipLocates, sourceData.CDN.KEYS)
+		fmt.Printf("ipLocateIsCDN: %v ipLocateFindCdnCompany:%v\n", ipLocateIsCDN, ipLocateFindCdnCompany)
+		result.IpLocateIsCDN = ipLocateIsCDN
+
+		result.IpSizeIsCdn = ipSizeIsCdn
+		result.AsnIsCDN = asnIsCDN
+		result.CnameIsCDN = cnameIsCDN
+		result.IpIsCDN = ipIsCDN
+
+		//判断cname是否在waf内
+		result.CnameIsWAF, result.CnameFindCdnCompany = cdncheck.KeysInMap(cnames, sourceData.WAF.CNAME)
+		// 判断IP是否在waf内
+		result.IpIsWAF, result.IpFindWafCompany = cdncheck.IpsInMap(allIPs, sourceData.WAF.IP)
+		// 判断asn是否在waf内
+		result.AsnIsWAF, result.AsnFindWafCompany = cdncheck.ASNsInMap(allAsns, sourceData.WAF.ASN)
+		//判断IP定位是否在WAF内
+		result.IpLocateIsWAF, result.IpLocateFindWafCompany = cdncheck.KeysInMap(ipLocates, sourceData.WAF.KEYS)
+
+		//判断cname是否在cloud内
+		result.CnameIsCLOUD, result.CnameFindCloudCompany = cdncheck.KeysInMap(cnames, sourceData.CLOUD.CNAME)
+		// 判断IP是否在cloud内
+		result.IpIsCLOUD, result.IpFindCloudCompany = cdncheck.IpsInMap(allIPs, sourceData.CLOUD.IP)
+		// 判断asn是否在cloud内
+		result.AsnIsCLOUD, result.AsnFindCloudCompany = cdncheck.ASNsInMap(allAsns, sourceData.CLOUD.ASN)
+		//判断IP定位是否在CLOUD内
+		result.IpLocateIsCLOUD, result.IpLocateFindCloudCompany = cdncheck.KeysInMap(ipLocates, sourceData.CLOUD.KEYS)
+
+		result.FinalIsCdn = ipSizeIsCdn || ipIsCDN || cnameIsCDN || asnIsCDN
+	}
+
 	// Step 8: 可选：将结果写入文件
 	err = os.WriteFile(targetFile+".results.json", maputils.AnyToJsonBytes(allResults), 0644)
 	//将结果写入到CSV
@@ -244,44 +306,6 @@ func main() {
 		//fileutils.WriteCSV2(targetFile+".results.csv", sliceToMaps, true, "a+", nil)
 	} else {
 		fmt.Errorf("Convert Struct Slice To Maps error: %v\n", err)
-	}
-
-	//加载source.json配置文件 检查当前结果是否存在CDN
-	sourceJson := "asset/source.json"
-	sourceData := models.NewEmptyCDNDataPointer()
-	if err := fileutils.ReadJsonToStruct(sourceJson, sourceData); err != nil {
-		panic(err)
-	}
-	fmt.Printf("%v", maputils.AnyToJsonStr(sourceData))
-
-	//type CDNData struct {
-	//	CDN   Category `json:"cdn"`
-	//	WAF   Category `json:"waf"`
-	//	Cloud Category `json:"cloud"`
-	//}
-
-	for _, result := range allResults {
-		cnames := result.CNAME
-		// 合并 A 和 AAAA 记录
-		allIPs := maputils.UniqueMergeSlices(result.A, result.AAAA)
-		//合并 asn记录列表 需要处理后合并
-		allAsns := maputils.UniqueMergeAnySlices(asndb.GetUniqueOrgNumbers(result.Ipv4Asn), asndb.GetUniqueOrgNumbers(result.Ipv6Asn))
-		//合并 IP定位列表 需要处理后合并
-		ipLocates := maputils.UniqueMergeSlices(maputils.GetMapsUniqueValues(result.Ipv4Locate), maputils.GetMapsUniqueValues(result.Ipv6Locate))
-
-		//检查结果中的CDN情况
-		//判断cname是否在cdn内
-		cnameIsCDN, cnameCompany := cdncheck.CnamesInCdnMap(cnames, sourceData.CDN.CNAME)
-		// 判断IP是否在cdn内
-		ipIsCDN, ipCompany := cdncheck.IpsInCdnMap(allIPs, sourceData.CDN.IP)
-		// 判断asn是否在cdn内
-		asnIsCDN, asnCompany := cdncheck.ASNsInCdnMap(allAsns, sourceData.CDN.ASN)
-		//判断IP定位是否在CDN内
-		ipLocateIsCDN, ipLocateCompany := cdncheck.IpLocatesInCdn(ipLocates, sourceData.CDN.KEYS)
-
-		//TODO 判断IP解析结果数量是否在CDN内
-		// 检查结果中的WAF情况
-		// 检查结果中的Cloud情况
 	}
 
 }

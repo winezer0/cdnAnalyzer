@@ -53,7 +53,7 @@ func TransferPDCdnCheckJson(path string) *models.CDNData {
 	cdnData := models.NewEmptyCDNDataPointer()
 	cdnData.CDN.IP = maputils.CopyMap(pdCdnCheckData.CDN)
 	cdnData.WAF.IP = maputils.CopyMap(pdCdnCheckData.WAF)
-	cdnData.Cloud.IP = maputils.CopyMap(pdCdnCheckData.Cloud)
+	cdnData.CLOUD.IP = maputils.CopyMap(pdCdnCheckData.Cloud)
 
 	// 合并 common 到 cdn.cname
 	for provider, cnames := range pdCdnCheckData.Common {
@@ -81,7 +81,7 @@ func TransferCloudKeysYaml(path string) *models.CDNData {
 	// 初始化 CDNData 结构
 	cdnData := models.NewEmptyCDNDataPointer()
 	for cloudName, yamEntry := range cloudKeysYaml {
-		cdnData.Cloud.KEYS[cloudName] = yamEntry.Keys
+		cdnData.CLOUD.KEYS[cloudName] = yamEntry.Keys
 	}
 
 	return cdnData

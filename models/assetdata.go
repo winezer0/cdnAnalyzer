@@ -4,8 +4,8 @@ import (
 	"cdnCheck/iplocate/asndb"
 )
 
-// 用于保存资产结果时间的类型
-type CheckResult struct {
+// CheckInfo 用于保存资产结果时间的类型
+type CheckInfo struct {
 	Raw     string `json:"raw"`               // 存储原始输入信息
 	Fmt     string `json:"fmt,omitempty"`     // 存储格式化后的输入信息（可选）
 	IsIpv4  bool   `json:"isIpv4,omitempty"`  // 存储格式化后的输入信息（可选）
@@ -23,20 +23,61 @@ type CheckResult struct {
 
 	Ipv4Asn []asndb.ASNInfo `json:"Ipv4Asn,omitempty"` // A记录的ASN查询信息
 	Ipv6Asn []asndb.ASNInfo `json:"Ipv6Asn,omitempty"` // AAAA记录的ASN查询信息
+
+	CnameIsCDN          bool   `json:"CnameIsCDN,omitempty"`
+	CnameFindCdnCompany string `json:"CnameFindCdnCompany,omitempty"`
+
+	IpIsCDN          bool   `json:"IpIsCDN,omitempty"`
+	IpFindCdnCompany string `json:"IpFindCdnCompany,omitempty"`
+
+	AsnIsCDN          bool   `json:"AsnIsCDN,omitempty"`
+	AsnFindCdnCompany string `json:"AsnFindCdnCompany,omitempty"`
+
+	IpLocateIsCDN          bool   `json:"IpLocateIsCDN,omitempty"`
+	IpLocateFindCdnCompany string `json:"IpLocateFindCdnCompany,omitempty"`
+
+	CnameIsWAF          bool   `json:"CnameIsWAF,omitempty"`
+	CnameFindWafCompany string `json:"CnameFindWafCompany,omitempty"`
+
+	IpIsWAF          bool   `json:"IpIsWAF,omitempty"`
+	IpFindWafCompany string `json:"IpFindWafCompany,omitempty"`
+
+	AsnIsWAF          bool   `json:"AsnIsWAF,omitempty"`
+	AsnFindWafCompany string `json:"AsnFindWafCompany,omitempty"`
+
+	IpLocateIsWAF          bool   `json:"IpLocateIsWAF,omitempty"`
+	IpLocateFindWafCompany string `json:"IpLocateFindWafCompany,omitempty"`
+
+	CnameIsCLOUD          bool   `json:"CnameIsCLOUD,omitempty"`
+	CnameFindCloudCompany string `json:"CnameFindCloudCompany,omitempty"`
+
+	IpIsCLOUD          bool   `json:"IpIsCLOUD,omitempty"`
+	IpFindCloudCompany string `json:"IpFindCloudCompany,omitempty"`
+
+	AsnIsCLOUD          bool   `json:"AsnIsCLOUD,omitempty"`
+	AsnFindCloudCompany string `json:"AsnFindCloudCompany,omitempty"`
+
+	IpLocateIsCLOUD          bool   `json:"IpLocateIsCLOUD,omitempty"`
+	IpLocateFindCloudCompany string `json:"IpLocateFindCloudCompany,omitempty"`
+
+	IpSize      int  `json:"IpSize,omitempty"`
+	IpSizeIsCdn bool `json:"IpSizeIsCdn,omitempty"`
+
+	FinalIsCdn bool `json:"FinalIsCdn,omitempty"`
 }
 
-// NewDomainCheckResult 初始化一个新的 CheckResult 实例
-func NewDomainCheckResult(raw, fmt string, fromUrl bool) *CheckResult {
-	return &CheckResult{
+// NewDomainCheckInfo 初始化一个新的 CheckInfo 实例
+func NewDomainCheckInfo(raw, fmt string, fromUrl bool) *CheckInfo {
+	return &CheckInfo{
 		Raw:     raw,
 		Fmt:     fmt,
 		FromUrl: fromUrl,
 	}
 }
 
-// NewIPCheckResult 初始化一个新的 CheckResult 实例
-func NewIPCheckResult(raw, fmt string, isIpv4 bool, fromUrl bool) *CheckResult {
-	result := &CheckResult{
+// NewIPCheckInfo 初始化一个新的 CheckInfo 实例
+func NewIPCheckInfo(raw, fmt string, isIpv4 bool, fromUrl bool) *CheckInfo {
+	result := &CheckInfo{
 		Raw:     raw,
 		Fmt:     fmt,
 		IsIpv4:  isIpv4,

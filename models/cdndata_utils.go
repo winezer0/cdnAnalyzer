@@ -52,7 +52,7 @@ func CdnDataMergeSafe(cdnDatas ...CDNData) (map[string]interface{}, error) {
 // AddDataToCdnDataCategory 将 dataList 中的数据添加到 CDNData 的指定 Category 和字段中
 func AddDataToCdnDataCategory(cdnData *CDNData, categoryName string, fieldName string, providerKey string, dataList []string) error {
 	// 获取对应 Category 的 map[string][]string 字段
-	targetMap := getCategoryField(cdnData, categoryName, fieldName)
+	targetMap := GetCategoryField(cdnData, categoryName, fieldName)
 	if targetMap == nil {
 		return fmt.Errorf("failed to get target map for category: %s, field: %s", categoryName, fieldName)
 	}
@@ -95,8 +95,8 @@ func AddDataToCdnDataCategory(cdnData *CDNData, categoryName string, fieldName s
 	return nil
 }
 
-// getCategoryField 根据 categoryName 和 fieldName 返回对应的 map[string][]string
-func getCategoryField(cdnData *CDNData, categoryName, fieldName string) map[string][]string {
+// GetCategoryField 根据 categoryName 和 fieldName 返回对应的 map[string][]string
+func GetCategoryField(cdnData *CDNData, categoryName, fieldName string) map[string][]string {
 	var category *Category
 
 	switch categoryName {
@@ -105,7 +105,7 @@ func getCategoryField(cdnData *CDNData, categoryName, fieldName string) map[stri
 	case "waf":
 		category = &cdnData.WAF
 	case "cloud":
-		category = &cdnData.Cloud
+		category = &cdnData.CLOUD
 	default:
 		return nil
 	}

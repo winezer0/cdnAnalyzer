@@ -7,22 +7,22 @@ import (
 	"strings"
 )
 
-// cnameInCdn 检查传入的 CNAME 字符串是否包含任一 CDN 厂商的 CNAME
-func cnameInCdn(cname string, cdnCNAMEs []string) bool {
-	cname = strings.Trim(cname, ".")
-	for _, cn := range cdnCNAMEs {
-		if strings.Contains(strings.ToLower(cname), strings.ToLower(cn)) {
+// isContainKeys 检查传入的 字符串是否包含任一子字符串
+func isContainKeys(str string, keys []string) bool {
+	str = strings.Trim(str, ".")
+	for _, cn := range keys {
+		if strings.Contains(strings.ToLower(str), strings.ToLower(cn)) {
 			return true
 		}
 	}
 	return false
 }
 
-// CnamesInCdnMap 检查一组 CNAME 是否命中某个 CDN 厂商，并复用 cnameInCdn 实现
-func CnamesInCdnMap(cnames []string, cdnCNAMEsMap map[string][]string) (bool, string) {
+// KeysInMap 检查一组 CNAME 是否命中某个 CDN 厂商，并复用 isContainKeys 实现
+func KeysInMap(cnames []string, cdnCNAMEsMap map[string][]string) (bool, string) {
 	for _, cname := range cnames {
 		for companyName, cdnCNames := range cdnCNAMEsMap {
-			if ok := cnameInCdn(cname, cdnCNames); ok {
+			if ok := isContainKeys(cname, cdnCNames); ok {
 				return true, companyName
 			}
 		}
@@ -54,8 +54,8 @@ func ipInCdn(ip string, ranger cidranger.Ranger) bool {
 	return err == nil && contains
 }
 
-// IpsInCdnMap 检查多个 IP 是否命中某个 CDN 厂商，并返回厂商名称
-func IpsInCdnMap(ips []string, cdnIPsMap map[string][]string) (bool, string) {
+// IpsInMap 检查多个 IP 是否命中某个 CDN 厂商，并返回厂商名称
+func IpsInMap(ips []string, cdnIPsMap map[string][]string) (bool, string) {
 	for companyName, cdnIPs := range cdnIPsMap {
 		ranger := buildRanger(cdnIPs) // 为每个厂商只构建一次 CIDR 查找器
 		for _, ip := range ips {
@@ -81,8 +81,8 @@ func asnInCdn(asn uint64, cndASNs []string) bool {
 	return false
 }
 
-// ASNsInCdnMap 检查多个 ASN 是否属于某个 CDN 厂商，并返回厂商名称
-func ASNsInCdnMap(asns []uint64, cdnASNsMap map[string][]string) (bool, string) {
+// ASNsInMap 检查多个 ASN 是否属于某个 CDN 厂商，并返回厂商名称
+func ASNsInMap(asns []uint64, cdnASNsMap map[string][]string) (bool, string) {
 	for _, asn := range asns {
 		for companyName, cdnASNs := range cdnASNsMap {
 			if asnInCdn(asn, cdnASNs) {
@@ -93,25 +93,8 @@ func ASNsInCdnMap(asns []uint64, cdnASNsMap map[string][]string) (bool, string) 
 	return false, ""
 }
 
-// ipLocateInCdn 检查传入的 IP定位 字符串是否包含任一 CDN 厂商的 IP归属地范围关键字中
-func ipLocateInCdn(ipLocate string, cdnIpLocates []string) bool {
-	ipLocate = strings.Trim(ipLocate, ".")
-	for _, cn := range cdnIpLocates {
-		if strings.Contains(strings.ToLower(ipLocate), strings.ToLower(cn)) {
-			return true
-		}
-	}
-	return false
-}
-
-// IpLocatesInCdn 检查一组 IP定位 是否命中某个 CDN 厂商
-func IpLocatesInCdn(ipLocates []string, cdnIpLocatesMap map[string][]string) (bool, string) {
-	for _, ipLocate := range ipLocates {
-		for companyName, cdnIpLocates := range cdnIpLocatesMap {
-			if ok := ipLocateInCdn(ipLocate, cdnIpLocates); ok {
-				return true, companyName
-			}
-		}
-	}
-	return false, ""
+// IpsSizeIsCdn 检查多个 IP 是否命中某个 CDN 厂商，并返回厂商名称
+func IpsSizeIsCdn(ips []string, limitSize int) (bool, int) {
+	size := len(ips)
+	return size > limitSize, size
 }

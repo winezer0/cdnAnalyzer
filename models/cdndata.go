@@ -3,7 +3,7 @@ package models
 type CDNData struct {
 	CDN   Category `json:"cdn"`
 	WAF   Category `json:"waf"`
-	Cloud Category `json:"cloud"`
+	CLOUD Category `json:"cloud"`
 }
 
 type Category struct {
@@ -26,6 +26,6 @@ func NewEmptyCDNDataPointer() *CDNData {
 	return &CDNData{
 		CDN:   newEmptyCategory(),
 		WAF:   newEmptyCategory(),
-		Cloud: newEmptyCategory(),
+		CLOUD: newEmptyCategory(),
 	}
 }
