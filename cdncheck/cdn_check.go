@@ -93,8 +93,25 @@ func ASNsInCdnMap(asns []uint64, cdnASNsMap map[string][]string) (bool, string) 
 	return false, ""
 }
 
-var cloudNameList = []string{
-	"阿里云", "华为云", "腾讯云",
-	"天翼云", "金山云", "UCloud", "青云", "QingCloud", "百度云", "盛大云", "世纪互联蓝云",
-	"Azure", "Amazon", "Microsoft", "Google", "vultr", "CloudFlare", "Choopa",
+// ipLocateInCdn 检查传入的 IP定位 字符串是否包含任一 CDN 厂商的 IP归属地范围关键字中
+func ipLocateInCdn(ipLocate string, cdnIpLocates []string) bool {
+	ipLocate = strings.Trim(ipLocate, ".")
+	for _, cn := range cdnIpLocates {
+		if strings.Contains(strings.ToLower(ipLocate), strings.ToLower(cn)) {
+			return true
+		}
+	}
+	return false
+}
+
+// IpLocatesInCdn 检查一组 IP定位 是否命中某个 CDN 厂商
+func IpLocatesInCdn(ipLocates []string, cdnIpLocatesMap map[string][]string) (bool, string) {
+	for _, ipLocate := range ipLocates {
+		for companyName, cdnIpLocates := range cdnIpLocatesMap {
+			if ok := ipLocateInCdn(ipLocate, cdnIpLocates); ok {
+				return true, companyName
+			}
+		}
+	}
+	return false, ""
 }
