@@ -262,19 +262,21 @@ func main() {
 
 	for _, result := range allResults {
 		cnames := result.CNAME
-		cnameIsCDN, cnameCompany := cdncheck.CnamesInCdnMap(cnames, sourceData.CDN.CNAME)
-
-		// 合并 A 和 AAAA 记录 判断IP是否在cdn内
+		// 合并 A 和 AAAA 记录
 		allIPs := maputils.UniqueMergeSlices(result.A, result.AAAA)
-		ipIsCDN, ipCompany := cdncheck.IpsInCdnMap(allIPs, sourceData.CDN.IP)
-
 		//合并 asn记录列表 需要处理后合并
 		allAsns := maputils.UniqueMergeAnySlices(asndb.GetUniqueOrgNumbers(result.Ipv4Asn), asndb.GetUniqueOrgNumbers(result.Ipv6Asn))
-		asnIsCDN, asnCompany := cdncheck.ASNsInCdnMap(allAsns, sourceData.CDN.ASN)
-
 		//合并 IP定位列表 需要处理后合并
 		ipLocates := maputils.UniqueMergeSlices(maputils.GetMapsUniqueValues(result.Ipv4Locate), maputils.GetMapsUniqueValues(result.Ipv6Locate))
+
 		// 检查结果中的CDN情况
+		//判断cname是否在cdn内
+		cnameIsCDN, cnameCompany := cdncheck.CnamesInCdnMap(cnames, sourceData.CDN.CNAME)
+		// 判断IP是否在cdn内
+		ipIsCDN, ipCompany := cdncheck.IpsInCdnMap(allIPs, sourceData.CDN.IP)
+		// 判断asn是否在cdn内
+		asnIsCDN, asnCompany := cdncheck.ASNsInCdnMap(allAsns, sourceData.CDN.ASN)
+
 		// 检查结果中的WAF情况
 		// 检查结果中的Cloud情况
 	}
