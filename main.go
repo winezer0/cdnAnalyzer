@@ -93,18 +93,15 @@ func processDomain(
 		eDNSQueryResult := dnsquery.MergeEDNSResults(eDNSQueryResults)
 		dnsQueryResult = dnsquery.MergeEDNSToDNS(eDNSQueryResult, dnsQueryResult)
 	}
-
+	//优化dns查询结果
 	dnsquery.OptimizeDNSResult(&dnsQueryResult)
-
 	// 填充结果
-	findResult := populateDNSResult(domainEntry, &dnsQueryResult)
-
+	dnsResult := populateDNSResult(domainEntry, &dnsQueryResult)
 	// 发送结果到 channel
-	resultChan <- findResult
+	resultChan <- dnsResult
 }
 
 func main() {
-
 	targetFile := "C:\\Users\\WINDOWS\\Desktop\\demo.txt" //需要进行查询的目标文件
 	if !fileutils.IsFileExists(targetFile) {
 		fmt.Printf("file [%v] Is Not File Exists .", targetFile)
@@ -118,7 +115,7 @@ func main() {
 	//分类输入数据为 IP Domain Invalid
 	classifier := classifyTargets(targets)
 	//存储所有结果
-	var allResults []*models.CheckInfo
+	var checkResults []*models.CheckInfo
 
 	//加载dns解析服务器配置文件，用于dns解析调用
 	resolversFile := "asset/resolvers.txt" //dns解析服务器
@@ -139,25 +136,23 @@ func main() {
 	// Step 5: 并发查询并收集DNS解析结果
 	timeout := 5 * time.Second // DNS 查询超时时间
 	var wg sync.WaitGroup
-	resultChan := make(chan *models.CheckInfo, len(classifier.Domains))
+	dnsResultChan := make(chan *models.CheckInfo, len(classifier.Domains))
 
 	for _, domainEntry := range classifier.Domains {
 		wg.Add(1)
-		go processDomain(domainEntry, resolvers, randCities, timeout, resultChan, &wg)
+		go processDomain(domainEntry, resolvers, randCities, timeout, dnsResultChan, &wg)
 	}
 
 	// Step 6: 启动一个 goroutine 等待所有任务完成，并关闭 channel
 	go func() {
 		wg.Wait()
-		close(resultChan)
+		close(dnsResultChan)
 	}()
 
 	// Step 7: 接收DNS查询结果，实时输出，并保存到列表中
-	for result := range resultChan {
-		allResults = append(allResults, result)
-
-		// 实时输出结果
-		finalInfo, _ := json.MarshalIndent(result, "", "  ")
+	for dnsResult := range dnsResultChan {
+		checkResults = append(checkResults, dnsResult)
+		finalInfo, _ := json.MarshalIndent(dnsResult, "", "  ")
 		fmt.Println(string(finalInfo))
 	}
 
@@ -178,18 +173,18 @@ func main() {
 	ipv6LocateDb := "asset/zxipv6wry.db"
 	ipv6Engine, _ := zxipv6wry.NewIPv6Location(ipv6LocateDb)
 
-	//将 IP初始化到 allResults
+	//将 IP初始化到 checkResults
 	//将所有IP转换到
-	for _, ipEntry := range classifier.IPs {
+	for _, ipEntry := range classifier.IPS {
 		ipResult := models.NewIPCheckInfo(ipEntry.Raw, ipEntry.Fmt, ipEntry.IsIPv4, ipEntry.FromUrl)
-		allResults = append(allResults, ipResult)
+		checkResults = append(checkResults, ipResult)
 	}
 
-	//循环 allResults
-	for _, findResult := range allResults {
-		//对 每个 findResult.AipResult.AAAA 进行IP定位查询
-		ipv4s := findResult.A
-		ipv6s := findResult.AAAA
+	//循环 checkResults
+	for _, checkResult := range checkResults {
+		//对 每个 checkResult.AipResult.AAAA 进行IP定位查询
+		ipv4s := checkResult.A
+		ipv6s := checkResult.AAAA
 
 		//查询Ipv4的IP定位信息
 		var ipv4Locations []map[string]string
@@ -228,10 +223,10 @@ func main() {
 			ipv6AsnInfos = append(ipv6AsnInfos, *ipv6AsnInfo)
 		}
 
-		findResult.Ipv6Asn = ipv6AsnInfos
-		findResult.Ipv4Asn = ipv4AsnInfos
-		findResult.Ipv4Locate = ipv4Locations
-		findResult.Ipv6Locate = ipv6Locations
+		checkResult.Ipv6Asn = ipv6AsnInfos
+		checkResult.Ipv4Asn = ipv4AsnInfos
+		checkResult.Ipv4Locate = ipv4Locations
+		checkResult.Ipv6Locate = ipv6Locations
 	}
 
 	//加载source.json配置文件 检查当前结果是否存在CDN
@@ -242,28 +237,28 @@ func main() {
 	}
 	fmt.Printf("%v", maputils.AnyToJsonStr(sourceData))
 
-	for _, result := range allResults {
-		cnameList := result.CNAME
+	for _, checkResult := range checkResults {
+		cnameList := checkResult.CNAME
 		// 合并 A 和 AAAA 记录
-		ipList := maputils.UniqueMergeSlices(result.A, result.AAAA)
+		ipList := maputils.UniqueMergeSlices(checkResult.A, checkResult.AAAA)
 		//合并 asn记录列表 需要处理后合并
-		asnList := maputils.UniqueMergeAnySlices(asndb.GetUniqueOrgNumbers(result.Ipv4Asn), asndb.GetUniqueOrgNumbers(result.Ipv6Asn))
+		asnList := maputils.UniqueMergeAnySlices(asndb.GetUniqueOrgNumbers(checkResult.Ipv4Asn), asndb.GetUniqueOrgNumbers(checkResult.Ipv6Asn))
 		//合并 IP定位列表 需要处理后合并
-		ipLocateList := maputils.UniqueMergeSlices(maputils.GetMapsUniqueValues(result.Ipv4Locate), maputils.GetMapsUniqueValues(result.Ipv6Locate))
+		ipLocateList := maputils.UniqueMergeSlices(maputils.GetMapsUniqueValues(checkResult.Ipv4Locate), maputils.GetMapsUniqueValues(checkResult.Ipv6Locate))
 		//判断IP解析结果数量是否在CDN内
-		result.IpSizeIsCdn, result.IpSize = cdncheck.IpsSizeIsCdn(ipList, 3)
+		checkResult.IpSizeIsCdn, checkResult.IpSize = cdncheck.IpsSizeIsCdn(ipList, 3)
 		//检查结果中的 CDN | WAF | CLOUD 情况
-		result.IsCdn, result.CdnCompany = cdncheck.CheckCategory(sourceData.CDN, ipList, asnList, cnameList, ipLocateList)
-		result.IsWaf, result.WafCompany = cdncheck.CheckCategory(sourceData.WAF, ipList, asnList, cnameList, ipLocateList)
-		result.IsCloud, result.CloudCompany = cdncheck.CheckCategory(sourceData.CLOUD, ipList, asnList, cnameList, ipLocateList)
+		checkResult.IsCdn, checkResult.CdnCompany = cdncheck.CheckCategory(sourceData.CDN, ipList, asnList, cnameList, ipLocateList)
+		checkResult.IsWaf, checkResult.WafCompany = cdncheck.CheckCategory(sourceData.WAF, ipList, asnList, cnameList, ipLocateList)
+		checkResult.IsCloud, checkResult.CloudCompany = cdncheck.CheckCategory(sourceData.CLOUD, ipList, asnList, cnameList, ipLocateList)
 	}
 
 	// Step 8: 可选：将结果写入文件
-	err = os.WriteFile(targetFile+".results.json", maputils.AnyToJsonBytes(allResults), 0644)
+	err = os.WriteFile(targetFile+".results.json", maputils.AnyToJsonBytes(checkResults), 0644)
 	//将结果写入到CSV
-	sliceToMaps, err := maputils.ConvertStructSliceToMaps(allResults)
+	sliceToMaps, err := maputils.ConvertStructSliceToMaps(checkResults)
 	if err == nil {
-		fmt.Printf("%v", maputils.AnyToJsonStr(allResults))
+		fmt.Printf("%v", maputils.AnyToJsonStr(checkResults))
 		fileutils.WriteCSV(targetFile+".results.csv", sliceToMaps, true)
 		//fileutils.WriteCSV2(targetFile+".results.csv", sliceToMaps, true, "a+", nil)
 	} else {

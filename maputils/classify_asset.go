@@ -18,7 +18,7 @@ type TargetEntry struct {
 
 // TargetClassifier 分类器结构体
 type TargetClassifier struct {
-	IPs     []TargetEntry
+	IPS     []TargetEntry
 	Domains []TargetEntry
 	Invalid []string
 }
@@ -26,7 +26,7 @@ type TargetClassifier struct {
 // NewTargetClassifier 创建新的分类器实例
 func NewTargetClassifier() *TargetClassifier {
 	return &TargetClassifier{
-		IPs:     make([]TargetEntry, 0),
+		IPS:     make([]TargetEntry, 0),
 		Domains: make([]TargetEntry, 0),
 		Invalid: make([]string, 0),
 	}
@@ -39,7 +39,7 @@ func (tc *TargetClassifier) Classify(targets []string) {
 
 		switch category {
 		case "IP":
-			tc.IPs = append(tc.IPs, TargetEntry{
+			tc.IPS = append(tc.IPS, TargetEntry{
 				Raw:     raw,
 				Fmt:     fmtVal,
 				FromUrl: isURL,
@@ -131,7 +131,7 @@ func classifyTarget(target string) (string, string, string, bool, bool) {
 
 // Total 获取所有分类的数量总和
 func (tc *TargetClassifier) Total() int {
-	return len(tc.IPs) + len(tc.Domains) + len(tc.Invalid)
+	return len(tc.IPS) + len(tc.Domains) + len(tc.Invalid)
 }
 
 // countURLs 统计列表中来自 URL 的条目数量
@@ -150,7 +150,7 @@ func (tc *TargetClassifier) Summary() {
 	total := tc.Total()
 
 	fmt.Printf("Total targets: %d\n", total)
-	fmt.Printf("IPs: %d (from URL: %d)\n", len(tc.IPs), countURLs(tc.IPs))
+	fmt.Printf("IPS: %d (from URL: %d)\n", len(tc.IPS), countURLs(tc.IPS))
 	fmt.Printf("Domains: %d (from URL: %d)\n", len(tc.Domains), countURLs(tc.Domains))
 	fmt.Printf("Invalid: %d\n", len(tc.Invalid))
 }

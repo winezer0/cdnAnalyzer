@@ -18,7 +18,7 @@ func TestLookupASNByMMDB(t *testing.T) {
 	ipv6dbsize, _ := CountMMDBSize(mmDb["ipv6"])
 	t.Logf("CountMMDBSize ipv6: %d\n", ipv6dbsize)
 
-	// 定义要测试的 IPs
+	// 定义要测试的 IPS
 	testIPs := []string{
 		"8.8.8.8",         // Google DNS (IPv4)
 		"2606:4700::6813", // Cloudflare (IPv6)
