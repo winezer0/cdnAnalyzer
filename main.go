@@ -253,9 +253,9 @@ func main() {
 		//判断IP解析结果数量是否在CDN内
 		result.IpSizeIsCdn, result.IpSize = cdncheck.IpsSizeIsCdn(ipList, 3)
 		//检查结果中的 CDN | WAF | CLOUD 情况
-		result.IsCdn, result.CdnCompany = cdncheck.CheckCategory(sourceData.CDN, cnameList, ipList, asnList, ipLocateList)
-		result.IsWaf, result.WafCompany = cdncheck.CheckCategory(sourceData.WAF, cnameList, ipList, asnList, ipLocateList)
-		result.IsCloud, result.CloudCompany = cdncheck.CheckCategory(sourceData.CLOUD, cnameList, ipList, asnList, ipLocateList)
+		result.IsCdn, result.CdnCompany = cdncheck.CheckCategory(sourceData.CDN, ipList, asnList, cnameList, ipLocateList)
+		result.IsWaf, result.WafCompany = cdncheck.CheckCategory(sourceData.WAF, ipList, asnList, cnameList, ipLocateList)
+		result.IsCloud, result.CloudCompany = cdncheck.CheckCategory(sourceData.CLOUD, ipList, asnList, cnameList, ipLocateList)
 	}
 
 	// Step 8: 可选：将结果写入文件

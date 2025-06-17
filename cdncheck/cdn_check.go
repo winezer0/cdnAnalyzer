@@ -20,9 +20,9 @@ func containKeys(str string, keys []string) bool {
 }
 
 // keysInMap 检查一组 CNAME 是否命中某个 CDN 厂商，并复用 containKeys 实现
-func keysInMap(cnames []string, cdnCNAMEsMap map[string][]string) (bool, string) {
+func keysInMap(cnames []string, cnamesMap map[string][]string) (bool, string) {
 	for _, cname := range cnames {
-		for companyName, cdnCNames := range cdnCNAMEsMap {
+		for companyName, cdnCNames := range cnamesMap {
 			if ok := containKeys(cname, cdnCNames); ok {
 				return true, companyName
 			}
@@ -32,9 +32,9 @@ func keysInMap(cnames []string, cdnCNAMEsMap map[string][]string) (bool, string)
 }
 
 // buildIpRanger 构建一个 CIDR 查找器（ranger）用于快速判断 IP 是否在某组 CIDR 范围内
-func buildIpRanger(cdnIPs []string) cidranger.Ranger {
+func buildIpRanger(cidrList []string) cidranger.Ranger {
 	ranger := cidranger.NewPCTrieRanger()
-	for _, cdn := range cdnIPs {
+	for _, cdn := range cidrList {
 		_, network, err := net.ParseCIDR(cdn)
 		if err != nil {
 			continue
@@ -56,8 +56,8 @@ func ipInRanger(ip string, ranger cidranger.Ranger) bool {
 }
 
 // ipsInMap 检查多个 IP 是否命中某个 CDN 厂商，并返回厂商名称
-func ipsInMap(ips []string, cdnIPsMap map[string][]string) (bool, string) {
-	for companyName, cdnIPs := range cdnIPsMap {
+func ipsInMap(ips []string, ipsMap map[string][]string) (bool, string) {
+	for companyName, cdnIPs := range ipsMap {
 		ranger := buildIpRanger(cdnIPs) // 为每个厂商只构建一次 CIDR 查找器
 		for _, ip := range ips {
 			if ipInRanger(ip, ranger) {
@@ -69,8 +69,8 @@ func ipsInMap(ips []string, cdnIPsMap map[string][]string) (bool, string) {
 }
 
 // asnInList 检查传入的 uint64 格式的 ASN 号是否在 CDN 厂商的 ASN 列表中
-func asnInList(asn uint64, cndASNs []string) bool {
-	for _, asnStr := range cndASNs {
+func asnInList(asn uint64, asnList []string) bool {
+	for _, asnStr := range asnList {
 		_asnInt, err := strconv.Atoi(asnStr)
 		if err != nil {
 			continue
@@ -82,8 +82,8 @@ func asnInList(asn uint64, cndASNs []string) bool {
 	return false
 }
 
-// asnsInMap 检查多个 ASN 是否属于某个 CDN 厂商，并返回厂商名称
-func asnsInMap(asns []uint64, cdnASNsMap map[string][]string) (bool, string) {
+// asnInMap 检查多个 ASN 是否属于某个 CDN 厂商，并返回厂商名称
+func asnInMap(asns []uint64, cdnASNsMap map[string][]string) (bool, string) {
 	for _, asn := range asns {
 		for companyName, cdnASNs := range cdnASNsMap {
 			if asnInList(asn, cdnASNs) {
@@ -100,20 +100,13 @@ func IpsSizeIsCdn(ips []string, limitSize int) (bool, int) {
 	return size > limitSize, size
 }
 
-func CheckCategory(
-	categoryMap models.Category,
-	cnames []string,
-	ips []string,
-	asns []uint64,
-	ipLocates []string,
-) (bool, string) {
-
+func CheckCategory(categoryMap models.Category, ipList []string, asnList []uint64, cnameList []string, ipLocateList []string) (bool, string) {
 	// 定义检查项：每个检查项是一个函数调用
 	checks := []func() (bool, string){
-		func() (bool, string) { return keysInMap(cnames, categoryMap.CNAME) },
-		func() (bool, string) { return keysInMap(ipLocates, categoryMap.KEYS) },
-		func() (bool, string) { return asnsInMap(asns, categoryMap.ASN) },
-		func() (bool, string) { return ipsInMap(ips, categoryMap.IP) },
+		func() (bool, string) { return keysInMap(cnameList, categoryMap.CNAME) },
+		func() (bool, string) { return keysInMap(ipLocateList, categoryMap.KEYS) },
+		func() (bool, string) { return asnInMap(asnList, categoryMap.ASN) },
+		func() (bool, string) { return ipsInMap(ipList, categoryMap.IP) },
 	}
 
 	// 依次执行检查
