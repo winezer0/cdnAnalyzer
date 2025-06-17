@@ -24,46 +24,17 @@ type CheckInfo struct {
 	Ipv4Asn []asndb.ASNInfo `json:"Ipv4Asn,omitempty"` // A记录的ASN查询信息
 	Ipv6Asn []asndb.ASNInfo `json:"Ipv6Asn,omitempty"` // AAAA记录的ASN查询信息
 
-	CnameIsCDN          bool   `json:"CnameIsCDN,omitempty"`
-	CnameFindCdnCompany string `json:"CnameFindCdnCompany,omitempty"`
+	IsCdn      bool   `json:"IsCdn,omitempty"`
+	CdnCompany string `json:"CdnCompany,omitempty"`
 
-	IpIsCDN          bool   `json:"IpIsCDN,omitempty"`
-	IpFindCdnCompany string `json:"IpFindCdnCompany,omitempty"`
+	IsWaf      bool   `json:"IsWaf,omitempty"`
+	WafCompany string `json:"WafCompany,omitempty"`
 
-	AsnIsCDN          bool   `json:"AsnIsCDN,omitempty"`
-	AsnFindCdnCompany string `json:"AsnFindCdnCompany,omitempty"`
-
-	IpLocateIsCDN          bool   `json:"IpLocateIsCDN,omitempty"`
-	IpLocateFindCdnCompany string `json:"IpLocateFindCdnCompany,omitempty"`
-
-	CnameIsWAF          bool   `json:"CnameIsWAF,omitempty"`
-	CnameFindWafCompany string `json:"CnameFindWafCompany,omitempty"`
-
-	IpIsWAF          bool   `json:"IpIsWAF,omitempty"`
-	IpFindWafCompany string `json:"IpFindWafCompany,omitempty"`
-
-	AsnIsWAF          bool   `json:"AsnIsWAF,omitempty"`
-	AsnFindWafCompany string `json:"AsnFindWafCompany,omitempty"`
-
-	IpLocateIsWAF          bool   `json:"IpLocateIsWAF,omitempty"`
-	IpLocateFindWafCompany string `json:"IpLocateFindWafCompany,omitempty"`
-
-	CnameIsCLOUD          bool   `json:"CnameIsCLOUD,omitempty"`
-	CnameFindCloudCompany string `json:"CnameFindCloudCompany,omitempty"`
-
-	IpIsCLOUD          bool   `json:"IpIsCLOUD,omitempty"`
-	IpFindCloudCompany string `json:"IpFindCloudCompany,omitempty"`
-
-	AsnIsCLOUD          bool   `json:"AsnIsCLOUD,omitempty"`
-	AsnFindCloudCompany string `json:"AsnFindCloudCompany,omitempty"`
-
-	IpLocateIsCLOUD          bool   `json:"IpLocateIsCLOUD,omitempty"`
-	IpLocateFindCloudCompany string `json:"IpLocateFindCloudCompany,omitempty"`
+	IsCloud      bool   `json:"IsCloud,omitempty"`
+	CloudCompany string `json:"CloudCompany,omitempty"`
 
 	IpSize      int  `json:"IpSize,omitempty"`
 	IpSizeIsCdn bool `json:"IpSizeIsCdn,omitempty"`
-
-	FinalIsCdn bool `json:"FinalIsCdn,omitempty"`
 }
 
 // NewDomainCheckInfo 初始化一个新的 CheckInfo 实例

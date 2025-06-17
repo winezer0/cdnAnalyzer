@@ -243,57 +243,19 @@ func main() {
 	fmt.Printf("%v", maputils.AnyToJsonStr(sourceData))
 
 	for _, result := range allResults {
-		cnames := result.CNAME
+		cnameList := result.CNAME
 		// 合并 A 和 AAAA 记录
-		allIPs := maputils.UniqueMergeSlices(result.A, result.AAAA)
+		ipList := maputils.UniqueMergeSlices(result.A, result.AAAA)
 		//合并 asn记录列表 需要处理后合并
-		allAsns := maputils.UniqueMergeAnySlices(asndb.GetUniqueOrgNumbers(result.Ipv4Asn), asndb.GetUniqueOrgNumbers(result.Ipv6Asn))
+		asnList := maputils.UniqueMergeAnySlices(asndb.GetUniqueOrgNumbers(result.Ipv4Asn), asndb.GetUniqueOrgNumbers(result.Ipv6Asn))
 		//合并 IP定位列表 需要处理后合并
-		ipLocates := maputils.UniqueMergeSlices(maputils.GetMapsUniqueValues(result.Ipv4Locate), maputils.GetMapsUniqueValues(result.Ipv6Locate))
+		ipLocateList := maputils.UniqueMergeSlices(maputils.GetMapsUniqueValues(result.Ipv4Locate), maputils.GetMapsUniqueValues(result.Ipv6Locate))
 		//判断IP解析结果数量是否在CDN内
-		ipSizeIsCdn, ipSize := cdncheck.IpsSizeIsCdn(allIPs, 3)
-		fmt.Printf("ipSizeIsCdn: %v ipSize:%v\n", ipSizeIsCdn, ipSize)
-		//检查结果中的CDN情况
-		//判断cname是否在cdn内
-		cnameIsCDN, cnameFindCdnCompany := cdncheck.KeysInMap(cnames, sourceData.CDN.CNAME)
-		fmt.Printf("cnameIsCDN: %v cnameFindCdnCompany:%v\n", cnameIsCDN, cnameFindCdnCompany)
-		// 判断IP是否在cdn内
-		ipIsCDN, ipFindCdnCompany := cdncheck.IpsInMap(allIPs, sourceData.CDN.IP)
-		fmt.Printf("ipIsCDN: %v ipFindCdnCompany:%v\n", ipIsCDN, ipFindCdnCompany)
-
-		// 判断asn是否在cdn内
-		asnIsCDN, asnFindCdnCompany := cdncheck.ASNsInMap(allAsns, sourceData.CDN.ASN)
-		fmt.Printf("asnIsCDN: %v asnFindCdnCompany:%v\n", asnIsCDN, asnFindCdnCompany)
-
-		//判断IP定位是否在CDN内
-		ipLocateIsCDN, ipLocateFindCdnCompany := cdncheck.KeysInMap(ipLocates, sourceData.CDN.KEYS)
-		fmt.Printf("ipLocateIsCDN: %v ipLocateFindCdnCompany:%v\n", ipLocateIsCDN, ipLocateFindCdnCompany)
-		result.IpLocateIsCDN = ipLocateIsCDN
-
-		result.IpSizeIsCdn = ipSizeIsCdn
-		result.AsnIsCDN = asnIsCDN
-		result.CnameIsCDN = cnameIsCDN
-		result.IpIsCDN = ipIsCDN
-
-		//判断cname是否在waf内
-		result.CnameIsWAF, result.CnameFindCdnCompany = cdncheck.KeysInMap(cnames, sourceData.WAF.CNAME)
-		// 判断IP是否在waf内
-		result.IpIsWAF, result.IpFindWafCompany = cdncheck.IpsInMap(allIPs, sourceData.WAF.IP)
-		// 判断asn是否在waf内
-		result.AsnIsWAF, result.AsnFindWafCompany = cdncheck.ASNsInMap(allAsns, sourceData.WAF.ASN)
-		//判断IP定位是否在WAF内
-		result.IpLocateIsWAF, result.IpLocateFindWafCompany = cdncheck.KeysInMap(ipLocates, sourceData.WAF.KEYS)
-
-		//判断cname是否在cloud内
-		result.CnameIsCLOUD, result.CnameFindCloudCompany = cdncheck.KeysInMap(cnames, sourceData.CLOUD.CNAME)
-		// 判断IP是否在cloud内
-		result.IpIsCLOUD, result.IpFindCloudCompany = cdncheck.IpsInMap(allIPs, sourceData.CLOUD.IP)
-		// 判断asn是否在cloud内
-		result.AsnIsCLOUD, result.AsnFindCloudCompany = cdncheck.ASNsInMap(allAsns, sourceData.CLOUD.ASN)
-		//判断IP定位是否在CLOUD内
-		result.IpLocateIsCLOUD, result.IpLocateFindCloudCompany = cdncheck.KeysInMap(ipLocates, sourceData.CLOUD.KEYS)
-
-		result.FinalIsCdn = ipSizeIsCdn || ipIsCDN || cnameIsCDN || asnIsCDN
+		result.IpSizeIsCdn, result.IpSize = cdncheck.IpsSizeIsCdn(ipList, 3)
+		//检查结果中的 CDN | WAF | CLOUD 情况
+		result.IsCdn, result.CdnCompany = cdncheck.CheckCategory(sourceData.CDN, cnameList, ipList, asnList, ipLocateList)
+		result.IsWaf, result.WafCompany = cdncheck.CheckCategory(sourceData.WAF, cnameList, ipList, asnList, ipLocateList)
+		result.IsCloud, result.CloudCompany = cdncheck.CheckCategory(sourceData.CLOUD, cnameList, ipList, asnList, ipLocateList)
 	}
 
 	// Step 8: 可选：将结果写入文件
@@ -307,5 +269,4 @@ func main() {
 	} else {
 		fmt.Errorf("Convert Struct Slice To Maps error: %v\n", err)
 	}
-
 }
