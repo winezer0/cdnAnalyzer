@@ -1,10 +1,10 @@
 package ednsquery
 
 import (
-	"cdnCheck/domaininfo/dnsquery"
 	"cdnCheck/maputils"
 	"fmt"
 	"github.com/miekg/dns"
+	"github.com/panjf2000/ants/v2"
 	"net"
 	"sync"
 	"time"
@@ -79,69 +79,85 @@ func ResolveEDNS(domain string, EDNSAddr string, dnsServer string, timeout time.
 	}
 }
 
-// ResolveEDNSWithCities 使用不同城市位置进行EDNS查询
-func ResolveEDNSWithCities(domain string, timeout time.Duration, Cities []map[string]string, queryCNAME bool) map[string]EDNSResult {
+// ResolveEDNSWithCities  批量EDNS查询
+func ResolveEDNSWithCities(
+	domain string,
+	timeout time.Duration,
+	Cities []map[string]string,
+	queryCNAME bool,
+	maxConcurrency int,
+) map[string]EDNSResult {
+
 	finalDomain := domain
-	dnsServers := []string{"8.8.8.8:53"}
+	dnsServers := []string{"8.8.8.8:53"} // 默认 DNS
 
 	if queryCNAME {
-		// 获取 CNAME 链并取最后一个
-		cnameChain, err := LookupCNAMEChain(domain, defaultServerAddress, timeout)
+		var err error
+		finalDomain, err = getFinalDomain(domain, defaultServerAddress, timeout)
 		if err != nil {
-			fmt.Printf("Failed to lookup CNAME chain for %s: %v\n", domain, err)
-		} else if len(cnameChain) > 0 {
-			fmt.Printf("CNAME chain for %s found\n", cnameChain)
-			finalDomain = cnameChain[len(cnameChain)-1]
+			fmt.Printf("Failed to resolve final domain for %s: %v\n", domain, err)
 		}
-		// 获取 NS 服务器，并加上默认 DNS // 发现 ns1.a.shifen.com:53 查询原始域名结果是空的, 如果没有查询cname的话 最好为每个域名补充个默认dns服务器
-		nsServers, err := LookupNSServers(finalDomain, defaultServerAddress, timeout)
-		if err != nil || len(nsServers) == 0 {
-			fmt.Printf("Failed to lookup NS servers for %s, using fallback: 8.8.8.8:53\n", finalDomain)
-		} else {
-			dnsServers = append(dnsServers, dnsquery.DnsServerAddPort(nsServers[0]))
-			fmt.Printf("Success lookup NS servers: %v, using fallback: %v\n", nsServers, nsServers[0])
-		}
+
+		nsServers := getAuthoritativeNameservers(finalDomain, defaultServerAddress, timeout)
+		dnsServers = append(dnsServers, nsServers...)
 	}
 
-	// 并发执行查询
-	var wg sync.WaitGroup
-	resultsChan := make(chan map[string]EDNSResult, len(Cities)*len(dnsServers))
-	resultMap := make(map[string]EDNSResult)
-	var mu sync.Mutex // 用于并发安全写入 resultMap
+	// 创建线程池（ants v2）
+	pool, err := ants.NewPool(maxConcurrency, ants.WithOptions(ants.Options{
+		Nonblocking: true,
+	}))
+	if err != nil {
+		panic(err)
+	}
+	defer pool.Release()
 
+	var wg sync.WaitGroup
+	resultMap := make(map[string]EDNSResult)
+	var mu sync.Mutex // 保护 resultMap 并发写入
+
+	results := make(chan struct{}, len(Cities)*len(dnsServers)) // 只用于等待完成
+
+	// 提交任务
 	for _, dnsServer := range dnsServers {
 		for _, entry := range Cities {
 			city := maputils.GetMapValue(entry, "City")
 			cityIP := maputils.GetMapValue(entry, "IP")
 
 			wg.Add(1)
-			go func(city string, cityIP string, dnsServer string) {
+
+			task := func(city, cityIP, dnsServer string) {
 				defer wg.Done()
 
 				result := ResolveEDNS(finalDomain, cityIP, dnsServer, timeout)
-
 				key := fmt.Sprintf("%s@%s", city, dnsServer)
 
 				mu.Lock()
 				resultMap[key] = result
 				mu.Unlock()
 
-				resultsChan <- map[string]EDNSResult{
-					key: result,
-				}
-			}(city, cityIP, dnsServer)
+				results <- struct{}{}
+			}
+
+			err := pool.Submit(func() {
+				task(city, cityIP, dnsServer)
+			})
+
+			if err != nil {
+				// 回退：同步执行
+				go task(city, cityIP, dnsServer)
+			}
 		}
 	}
 
-	// 等待所有协程完成
+	// 等待所有任务完成
 	go func() {
 		wg.Wait()
-		close(resultsChan)
+		close(results)
 	}()
 
-	// 可选：收集日志或其他用途的结果
-	for range resultsChan {
-		// 这里只是为了等待所有 goroutine 完成
+	// 等待所有结果（只为了阻塞主线程）
+	for range results {
+		// 仅用于接收完所有信号
 	}
 
 	return resultMap
