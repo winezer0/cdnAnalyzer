@@ -1,13 +1,11 @@
 package queryip
 
 import (
-	"cdnCheck/cdncheck"
 	"cdnCheck/ipinfo/asninfo"
 	"cdnCheck/ipinfo/ipv4info"
 	"cdnCheck/ipinfo/ipv6info"
-	"cdnCheck/maputils"
-	"cdnCheck/models"
 	"fmt"
+	"net"
 )
 
 // IpDbConfig 存储程序配置
@@ -18,6 +16,19 @@ type IpDbConfig struct {
 	Ipv6LocateDb string
 }
 
+// DBEngines 存储所有数据库引擎实例
+type DBEngines struct {
+	AsnEngine  *asninfo.MMDBManager
+	IPv4Engine *ipv4info.Ipv4Location
+	IPv6Engine *ipv6info.Ipv6Location
+}
+
+// IPProcessor IP信息查询处理器
+type IPProcessor struct {
+	Config  *IpDbConfig
+	Engines *DBEngines
+}
+
 // IPDbInfo 存储IP解析的中间结果
 type IPDbInfo struct {
 	IPv4Locations []map[string]string
@@ -26,50 +37,51 @@ type IPDbInfo struct {
 	IPv6AsnInfos  []asninfo.ASNInfo
 }
 
-// DBEngines 存储所有数据库引擎实例
-type DBEngines struct {
-	IPv6Engine *ipv6info.Ipv6Location
-}
-
-// IPProcessor IP信息查询处理器
-type IPProcessor struct {
-	Engines *DBEngines
-	Config  *IpDbConfig
-}
-
 // NewIPProcessor 创建新的IP处理器
 func NewIPProcessor(engines *DBEngines, config *IpDbConfig) *IPProcessor {
 	return &IPProcessor{
-		Engines: engines,
 		Config:  config,
+		Engines: engines,
 	}
 }
 
 // InitDBEngines 初始化所有数据库引擎
 func InitDBEngines(config *IpDbConfig) (*DBEngines, error) {
-	// 初始化ASN数据库
-	if err := asninfo.InitMMDBConn(config.AsnIpv4Db, config.AsnIpv6Db); err != nil {
+	// 初始化ASN数据库管理器
+	asnConfig := &asninfo.MMDBConfig{
+		IPv4Path:             config.AsnIpv4Db,
+		IPv6Path:             config.AsnIpv6Db,
+		MaxConcurrentQueries: 100,
+	}
+	asnManager := asninfo.NewMMDBManager(asnConfig)
+	if err := asnManager.InitMMDBConn(); err != nil {
 		return nil, fmt.Errorf("初始化ASN数据库失败: %w", err)
 	}
 
-	// 初始化IPv4数据库
-	if err := ipv4info.LoadDBFile(config.Ipv4LocateDb); err != nil {
+	// 初始化IPv4地理位置数据库
+	ipv4Engine, err := ipv4info.NewIPv4Location(config.Ipv4LocateDb)
+	if err != nil {
+		asnManager.Close()
 		return nil, fmt.Errorf("初始化IPv4数据库失败: %w", err)
 	}
 
-	// 初始化IPv6数据库
+	// 初始化IPv6地理位置数据库
 	ipv6Engine, err := ipv6info.NewIPv6Location(config.Ipv6LocateDb)
 	if err != nil {
+		asnManager.Close()
+		ipv4Engine.Close()
 		return nil, fmt.Errorf("初始化IPv6数据库失败: %w", err)
 	}
 
 	return &DBEngines{
+		AsnEngine:  asnManager,
+		IPv4Engine: ipv4Engine,
 		IPv6Engine: ipv6Engine,
 	}, nil
 }
 
-// parseIPInfo 解析IP信息并返回中间结果
-func parseIPInfo(ipv4s, ipv6s []string, engines *DBEngines) (*IPDbInfo, error) {
+// QueryIPInfo 查询IP信息（ASN和地理位置）
+func (p *IPProcessor) QueryIPInfo(ipv4s []string, ipv6s []string) (*IPDbInfo, error) {
 	info := &IPDbInfo{}
 
 	// 使用通道来并发处理IP信息
@@ -90,12 +102,11 @@ func parseIPInfo(ipv4s, ipv6s []string, engines *DBEngines) (*IPDbInfo, error) {
 	for _, ipv4 := range ipv4s {
 		go func(ip string) {
 			// 查询位置信息
-			location, _ := ipv4info.QueryIP(ip)
-			locationToStr := ipv4info.LocationToStr(*location)
-			locationMap := map[string]string{ip: locationToStr}
+			location := p.Engines.IPv4Engine.Find(ip)
+			locationMap := map[string]string{ip: location}
 
 			// 查询ASN信息
-			asnInfo := asninfo.FindASN(ip)
+			asnInfo := p.Engines.AsnEngine.FindASN(ip)
 
 			ipv4Chan <- ipv4Result{
 				location: locationMap,
@@ -108,11 +119,11 @@ func parseIPInfo(ipv4s, ipv6s []string, engines *DBEngines) (*IPDbInfo, error) {
 	for _, ipv6 := range ipv6s {
 		go func(ip string) {
 			// 查询位置信息
-			location := engines.IPv6Engine.Find(ip)
+			location := p.Engines.IPv6Engine.Find(ip)
 			locationMap := map[string]string{ip: location}
 
 			// 查询ASN信息
-			asnInfo := asninfo.FindASN(ip)
+			asnInfo := p.Engines.AsnEngine.FindASN(ip)
 
 			ipv6Chan <- ipv6Result{
 				location: locationMap,
@@ -138,72 +149,48 @@ func parseIPInfo(ipv4s, ipv6s []string, engines *DBEngines) (*IPDbInfo, error) {
 	return info, nil
 }
 
-// ProcessIPInfo 处理单个IP信息
-func (p *IPProcessor) ProcessIPInfo(ipv4s, ipv6s []string) (*IPDbInfo, error) {
-	return parseIPInfo(ipv4s, ipv6s, p.Engines)
-}
-
-// ProcessCheckInfo 处理单个CheckInfo的IP信息
-func (p *IPProcessor) ProcessCheckInfo(checkInfo *models.CheckInfo) error {
-	ipInfo, err := p.ProcessIPInfo(checkInfo.A, checkInfo.AAAA)
-	if err != nil {
-		return fmt.Errorf("处理IP信息失败: %w", err)
+// QuerySingleIP 查询单个IP的信息
+func (p *IPProcessor) QuerySingleIP(ip string) (string, *asninfo.ASNInfo) {
+	// 查询位置信息
+	var location string
+	if isIPv4(ip) {
+		location = p.Engines.IPv4Engine.Find(ip)
+	} else {
+		location = p.Engines.IPv6Engine.Find(ip)
 	}
 
-	// 更新CheckInfo的IP信息
-	checkInfo.Ipv6Asn = ipInfo.IPv6AsnInfos
-	checkInfo.Ipv4Asn = ipInfo.IPv4AsnInfos
-	checkInfo.Ipv4Locate = ipInfo.IPv4Locations
-	checkInfo.Ipv6Locate = ipInfo.IPv6Locations
+	// 查询ASN信息
+	asnInfo := p.Engines.AsnEngine.FindASN(ip)
 
-	return nil
+	return location, asnInfo
 }
 
-// ProcessCheckInfos 批量处理CheckInfo列表
-func (p *IPProcessor) ProcessCheckInfos(checkInfos []*models.CheckInfo) error {
-	for _, checkInfo := range checkInfos {
-		if err := p.ProcessCheckInfo(checkInfo); err != nil {
-			fmt.Printf("处理CheckInfo失败: %v\n", err)
-			continue
+// Close 关闭所有数据库连接
+func (p *IPProcessor) Close() error {
+	var lastErr error
+
+	// 关闭ASN数据库
+	if p.Engines.AsnEngine != nil {
+		if err := p.Engines.AsnEngine.Close(); err != nil {
+			lastErr = err
 		}
 	}
-	return nil
-}
 
-// ProcessCDNInfo 处理CDN相关信息
-func (p *IPProcessor) ProcessCDNInfo(checkInfo *models.CheckInfo, sourceData *models.CDNData) error {
-	cnameList := checkInfo.CNAME
-	// 合并 A 和 AAAA 记录
-	ipList := maputils.UniqueMergeSlices(checkInfo.A, checkInfo.AAAA)
-	// 合并 asn记录列表
-	asnList := maputils.UniqueMergeAnySlices(
-		asninfo.GetUniqueOrgNumbers(checkInfo.Ipv4Asn),
-		asninfo.GetUniqueOrgNumbers(checkInfo.Ipv6Asn),
-	)
-	// 合并 IP定位列表
-	ipLocateList := maputils.UniqueMergeSlices(
-		maputils.GetMapsUniqueValues(checkInfo.Ipv4Locate),
-		maputils.GetMapsUniqueValues(checkInfo.Ipv6Locate),
-	)
-
-	// 判断IP解析结果数量是否在CDN内
-	checkInfo.IpSizeIsCdn, checkInfo.IpSize = cdncheck.IpsSizeIsCdn(ipList, 3)
-
-	// 检查结果中的 CDN | WAF | CLOUD 情况
-	checkInfo.IsCdn, checkInfo.CdnCompany = cdncheck.CheckCategory(sourceData.CDN, ipList, asnList, cnameList, ipLocateList)
-	checkInfo.IsWaf, checkInfo.WafCompany = cdncheck.CheckCategory(sourceData.WAF, ipList, asnList, cnameList, ipLocateList)
-	checkInfo.IsCloud, checkInfo.CloudCompany = cdncheck.CheckCategory(sourceData.CLOUD, ipList, asnList, cnameList, ipLocateList)
-
-	return nil
-}
-
-// ProcessCDNInfos 批量处理CDN信息
-func (p *IPProcessor) ProcessCDNInfos(checkInfos []*models.CheckInfo, sourceData *models.CDNData) error {
-	for _, checkInfo := range checkInfos {
-		if err := p.ProcessCDNInfo(checkInfo, sourceData); err != nil {
-			fmt.Printf("处理CDN信息失败: %v\n", err)
-			continue
-		}
+	// 关闭IPv4数据库
+	if p.Engines.IPv4Engine != nil {
+		p.Engines.IPv4Engine.Close()
 	}
-	return nil
+
+	// 关闭IPv6数据库
+	if p.Engines.IPv6Engine != nil {
+		p.Engines.IPv6Engine.Close()
+	}
+
+	return lastErr
+}
+
+// isIPv4 判断是否为IPv4地址
+func isIPv4(ip string) bool {
+	parsedIP := net.ParseIP(ip)
+	return parsedIP != nil && parsedIP.To4() != nil
 }
