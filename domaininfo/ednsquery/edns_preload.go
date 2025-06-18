@@ -6,83 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/miekg/dns"
-	"github.com/panjf2000/ants/v2"
 	"net"
 	"strings"
-	"sync"
 	"time"
 )
-
-type PreQueryResult struct {
-	Domain        string
-	FinalDomain   string
-	Nameservers   []string
-	OriginalErr   error
-	NameserverErr error
-}
-
-func PreQueryDomains(
-	ctx context.Context,
-	domains []string,
-	defaultDNS string,
-	timeout time.Duration,
-	maxConcurrency int,
-) ([]PreQueryResult, error) {
-
-	pool, err := ants.NewPool(maxConcurrency)
-	if err != nil {
-		return nil, err
-	}
-	defer pool.Release()
-
-	resultChan := make(chan PreQueryResult, len(domains))
-	var wg sync.WaitGroup
-
-	for _, domain := range domains {
-		wg.Add(1)
-		go func(domain string) {
-			defer wg.Done()
-
-			var res PreQueryResult
-			res.Domain = domain
-
-			// Step 1: 获取最终域名（CNAME 跟踪）
-			finalDomain, err := getFinalDomain(domain, defaultDNS, timeout)
-			if err != nil {
-				res.OriginalErr = err
-				res.FinalDomain = domain
-			} else {
-				res.FinalDomain = finalDomain
-			}
-
-			// Step 2: 获取权威 DNS 服务器
-			nsList := getAuthoritativeNameservers(res.FinalDomain, defaultDNS, timeout)
-			if err != nil {
-				res.NameserverErr = err
-			} else {
-				res.Nameservers = nsList
-			}
-
-			select {
-			case <-ctx.Done():
-				return
-			case resultChan <- res:
-			}
-		}(domain)
-	}
-
-	go func() {
-		wg.Wait()
-		close(resultChan)
-	}()
-
-	var results []PreQueryResult
-	for r := range resultChan {
-		results = append(results, r)
-	}
-
-	return results, nil
-}
 
 // getAuthoritativeNameservers   辅助函数：获取权威 DNS 服务器列表
 func getAuthoritativeNameservers(domain, defaultNS string, timeout time.Duration) []string {

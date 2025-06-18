@@ -1,8 +1,6 @@
 package ednsquery
 
 import (
-	"cdnCheck/fileutils"
-	"cdnCheck/maputils"
 	"fmt"
 	"testing"
 	"time"
@@ -18,40 +16,44 @@ func TestEDNSQuery(t *testing.T) {
 	t.Logf("  Errors: %v", eDNSQueryResults.Errors)
 }
 
-func TestEDNSQueryWithMultiCities(t *testing.T) {
-	domain := "www.example.com" // 替换为你要测试的域名
-
-	var filename = "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\city_ip.csv"
-	cityMap, err := fileutils.ReadCSVToMap(filename)
-	if err != nil {
-		t.Errorf("Failed to read CSV: %v", err)
+func TestResolveEDNSDomainsWithCities(t *testing.T) {
+	// 测试域名列表
+	domains := []string{
+		"www.baidu.com",
+		"www.taobao.com",
 	}
 
-	// 随机选择 5 个城市
-	randCities := maputils.PickRandMaps(cityMap, 5)
-	// 随机选择 几个 城市
-	if len(randCities) == 0 {
-		fmt.Println("No cities selected, check cityMap or getRandMaps")
-	} else {
-		t.Logf("randCities: %v", randCities)
+	// 模拟几个城市位置（用于 EDNS_SUBNET 的 IP）
+	cities := []map[string]string{
+		{"City": "Beijing", "IP": "1.1.1.1"},
+		{"City": "Shanghai", "IP": "8.8.8.8"},
+		{"City": "Guangzhou", "IP": "114.114.114.114"},
 	}
 
-	eDNSQueryResults := ResolveEDNSWithCities(domain, 5*time.Second, randCities, true)
+	// 设置超时时间和最大并发数
+	timeout := 10 * time.Second
+	maxConcurrency := 10
 
-	if len(eDNSQueryResults) == 0 {
-		t.Fatal("Expected non-empty ENS QueryResults")
-	}
+	// 执行批量查询
+	results := ResolveEDNSDomainsWithCities(domains, cities, timeout, maxConcurrency)
 
-	t.Logf("Query EDNS QueryResults for %s:", domain)
-	for location, records := range eDNSQueryResults {
-		t.Logf("[%s] => %v", location, records)
-	}
-
-	t.Logf("Query results for %s:", domain)
-	for location, result := range eDNSQueryResults {
-		t.Logf("[%s]:", location)
-		t.Logf("  A:    %v", result.A)
-		t.Logf("  CNAME: %v", result.CNAME)
-		t.Logf("  Errors: %v", result.Errors)
+	// 打印结果
+	for domain, ednsMap := range results {
+		fmt.Printf("=== Results for Domain: %s ===\n", domain)
+		for location, res := range ednsMap {
+			fmt.Printf("Location: %s\n", location)
+			fmt.Printf("  Original Domain: %s\n", res.Domain)
+			fmt.Printf("  Final Domain: %s\n", res.FinalDomain)
+			fmt.Printf("  NameServers: %v\n", res.NameServers)
+			fmt.Printf("  CNAMEs: %v\n", res.CNAMEs)
+			fmt.Printf("  A Records: %v\n", res.A)
+			fmt.Printf("  AAAA Records: %v\n", res.AAAA)
+			fmt.Printf("  CNAME Records: %v\n", res.CNAME)
+			if len(res.Errors) > 0 {
+				fmt.Printf("  Errors: %v\n", res.Errors)
+			}
+			fmt.Println()
+		}
+		fmt.Println("==================================")
 	}
 }
