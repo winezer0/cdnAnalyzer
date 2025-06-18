@@ -63,13 +63,8 @@ func TestLookupASNByMMDB(t *testing.T) {
 				continue
 			}
 
-			t.Logf("IP: %15s | 版本: %d | 找到ASN: %v | ASN: %6d | 组织: %s",
-				ipInfo.IP,
-				ipInfo.IPVersion,
-				ipInfo.FoundASN,
-				ipInfo.OrganisationNumber,
-				ipInfo.OrganisationName,
-			)
+			t.Logf("单个IP查询结果:")
+			PrintASNInfo(ipInfo)
 		}
 	})
 
@@ -82,11 +77,8 @@ func TestLookupASNByMMDB(t *testing.T) {
 				continue
 			}
 			if result.Result != nil {
-				t.Logf("批量查询结果 - IP: %15s | ASN: %6d | 组织: %s",
-					result.Result.IP,
-					result.Result.OrganisationNumber,
-					result.Result.OrganisationName,
-				)
+				t.Logf("批量查询结果:")
+				PrintASNInfo(result.Result)
 			}
 		}
 	})

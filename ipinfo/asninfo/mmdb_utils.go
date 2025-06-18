@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"strings"
 )
 
 // ExportASNToCSV 将数据库中的所有 ASN 条目导出为 CSV 文件
@@ -77,4 +78,30 @@ func GetUniqueOrgNumbers(asnInfos []ASNInfo) []uint64 {
 	}
 
 	return result
+}
+
+// PrintASNInfo 打印ASN信息
+func PrintASNInfo(ipInfo *ASNInfo) {
+	if ipInfo == nil {
+		fmt.Println("ASN信息为空")
+		return
+	}
+
+	fmt.Printf("IP: %15s | 版本: %d | 找到ASN: %v | ASN: %6d | 组织: %s\n",
+		ipInfo.IP,
+		ipInfo.IPVersion,
+		ipInfo.FoundASN,
+		ipInfo.OrganisationNumber,
+		ipInfo.OrganisationName,
+	)
+}
+
+// getIpVersion 获取IP版本号
+func getIpVersion(ipString string) int {
+	ipVersion := 4
+	if strings.Contains(ipString, ":") {
+		ipVersion = 6
+	}
+
+	return ipVersion
 }
