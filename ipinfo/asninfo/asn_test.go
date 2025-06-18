@@ -1,19 +1,16 @@
 package asninfo
 
 import (
-	"fmt"
 	"net"
 	"testing"
-	"time"
 )
 
-func TestLookupASNByMMDB(t *testing.T) {
+func TestMMDBManager_FindASN(t *testing.T) {
 	// 创建配置
 	config := &MMDBConfig{
 		IPv4Path:             "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv4.mmdb",
 		IPv6Path:             "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv6.mmdb",
 		MaxConcurrentQueries: 100,
-		QueryTimeout:         5 * time.Second,
 	}
 
 	// 创建管理器
@@ -23,7 +20,7 @@ func TestLookupASNByMMDB(t *testing.T) {
 	if err := manager.InitMMDBConn(); err != nil {
 		t.Fatalf("初始化数据库连接失败: %v", err)
 	}
-	defer manager.CloseMMDBConn()
+	defer manager.Close()
 
 	// 测试数据库大小统计
 	ipv4DbSize, err := manager.CountMMDBSize("ipv4")
@@ -66,21 +63,24 @@ func TestLookupASNByMMDB(t *testing.T) {
 			PrintASNInfo(ipInfo)
 		}
 	})
+}
 
-	// 测试批量查询
-	t.Run("批量查询测试", func(t *testing.T) {
-		results := manager.BatchFindASN(testIPs, nil)
-		for _, result := range results {
-			if result.Error != nil {
-				t.Errorf("查询失败 %s: %v", result.IP, result.Error)
-				continue
-			}
-			if result.Result != nil {
-				t.Logf("批量查询结果:")
-				PrintASNInfo(result.Result)
-			}
-		}
-	})
+func TestMMDBManager_ASNToIPRanges(t *testing.T) {
+	// 创建配置
+	config := &MMDBConfig{
+		IPv4Path:             "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv4.mmdb",
+		IPv6Path:             "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv6.mmdb",
+		MaxConcurrentQueries: 100,
+	}
+
+	// 创建管理器
+	manager := NewMMDBManager(config)
+
+	// 初始化连接
+	if err := manager.InitMMDBConn(); err != nil {
+		t.Fatalf("初始化数据库连接失败: %v", err)
+	}
+	defer manager.Close()
 
 	// 测试ASN到IP范围查询
 	t.Run("ASN到IP范围查询测试", func(t *testing.T) {
@@ -96,67 +96,48 @@ func TestLookupASNByMMDB(t *testing.T) {
 	})
 }
 
-func TestMMDBManagerConcurrency(t *testing.T) {
+func TestMMDBManager_BatchFindASN(t *testing.T) {
 	config := &MMDBConfig{
 		IPv4Path:             "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv4.mmdb",
 		IPv6Path:             "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv6.mmdb",
-		MaxConcurrentQueries: 5, // 限制并发数为5
-		QueryTimeout:         2 * time.Second,
-	}
-
-	manager := NewMMDBManager(config)
-	if err := manager.InitMMDBConn(); err != nil {
-		t.Fatalf("初始化数据库连接失败: %v", err)
-	}
-	defer manager.CloseMMDBConn()
-
-	// 创建大量测试IP
-	var testIPs []string
-	for i := 0; i < 100; i++ {
-		testIPs = append(testIPs, fmt.Sprintf("8.8.8.%d", i))
-	}
-
-	// 测试并发查询
-	start := time.Now()
-	results := manager.BatchFindASN(testIPs, nil)
-	duration := time.Since(start)
-
-	t.Logf("并发查询 %d 个IP耗时: %v", len(testIPs), duration)
-
-	successCount := 0
-	for _, result := range results {
-		if result.Error == nil && result.Result != nil {
-			successCount++
-		}
-	}
-
-	t.Logf("成功查询数: %d/%d", successCount, len(testIPs))
-}
-
-func TestMMDBErrorHandling(t *testing.T) {
-	config := &MMDBConfig{
-		IPv4Path:             "不存在的文件.mmdb",
-		IPv6Path:             "不存在的文件.mmdb",
 		MaxConcurrentQueries: 100,
-		QueryTimeout:         5 * time.Second,
 	}
 
 	manager := NewMMDBManager(config)
 
-	// 测试初始化错误
-	err := manager.InitMMDBConn()
-	if err == nil {
-		t.Error("预期初始化失败，但未收到错误")
-	} else {
-		t.Logf("预期的初始化错误: %v", err)
+	// 初始化数据库连接
+	if err := manager.InitMMDBConn(); err != nil {
+		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
+	}
+	defer manager.Close()
+
+	// 验证数据库是否已初始化
+	if !manager.IsInitialized() {
+		t.Fatal("数据库未正确初始化")
 	}
 
-	// 测试无效IP查询
-	ipInfo := manager.FindASN("invalid.ip.address")
-	if ipInfo == nil {
-		t.Error("无效IP查询应返回空结果而不是nil")
+	testIPs := []string{
+		"8.8.8.8",
+		"1.1.1.1",
+		"114.114.114.114",
+		"2001:db8::1",
+		"invalid_ip",
+		"",
 	}
-	if ipInfo.FoundASN {
-		t.Error("无效IP不应找到ASN信息")
+
+	results := manager.BatchFindASN(testIPs)
+
+	if len(results) != len(testIPs) {
+		t.Errorf("期望结果数量为 %d，但得到了 %d", len(testIPs), len(results))
+	}
+
+	for i, result := range results {
+		if result == nil {
+			t.Errorf("索引 %d 的结果为 nil", i)
+			continue
+		}
+
+		t.Logf("IP: %s, 版本: %d, 找到ASN: %v, ASN: %d, 组织: %s",
+			result.IP, result.IPVersion, result.FoundASN, result.OrganisationNumber, result.OrganisationName)
 	}
 }

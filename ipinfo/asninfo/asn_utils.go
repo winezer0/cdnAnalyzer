@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-// ExportASNToCSV 将数据库中的所有 ASN 条目导出为 CSV 文件
-func ExportASNToCSV(outputPath string) error {
+// ExportToCSV 将数据库中的所有 ASN 条目导出为 CSV 文件
+func (m *MMDBManager) ExportToCSV(outputPath string) error {
 	// 创建输出文件
 	file, err := os.Create(outputPath)
 	if err != nil {
@@ -29,7 +29,7 @@ func ExportASNToCSV(outputPath string) error {
 	// 遍历 IPv4 和 IPv6 数据库
 	connectionIds := []string{"ipv4", "ipv6"}
 	for _, connectionId := range connectionIds {
-		reader, ok := mmDb[connectionId]
+		reader, ok := m.mmDb[connectionId]
 		if !ok {
 			continue // 跳过未加载的数据库
 		}

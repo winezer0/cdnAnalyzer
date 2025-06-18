@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 	"sync"
-	"time"
 
 	"github.com/oschwald/maxminddb-golang"
 )
@@ -16,7 +15,6 @@ type MMDBConfig struct {
 	IPv4Path             string
 	IPv6Path             string
 	MaxConcurrentQueries int
-	QueryTimeout         time.Duration
 }
 
 // MMDBManager 数据库管理器
@@ -32,18 +30,12 @@ func NewMMDBManager(config *MMDBConfig) *MMDBManager {
 	if config.MaxConcurrentQueries <= 0 {
 		config.MaxConcurrentQueries = 100
 	}
-	if config.QueryTimeout == 0 {
-		config.QueryTimeout = 5 * time.Second
-	}
-
 	return &MMDBManager{
 		config:    config,
 		mmDb:      make(map[string]*maxminddb.Reader),
 		queryChan: make(chan struct{}, config.MaxConcurrentQueries),
 	}
 }
-
-var mmDb = map[string]*maxminddb.Reader{}
 
 type ASNInfo struct {
 	IP                 string `json:"ip"`
@@ -97,8 +89,8 @@ func (m *MMDBManager) InitMMDBConn() error {
 	return nil
 }
 
-// CloseMMDBConn 关闭数据库连接
-func (m *MMDBManager) CloseMMDBConn() error {
+// Close 关闭数据库连接
+func (m *MMDBManager) Close() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -224,4 +216,15 @@ func (m *MMDBManager) CountMMDBSize(connectionId string) (int, error) {
 	}
 
 	return count, nil
+}
+
+// BatchFindASN 批量查询多个IP的ASN信息
+func (m *MMDBManager) BatchFindASN(ips []string) []*ASNInfo {
+	results := make([]*ASNInfo, len(ips))
+
+	for i, ip := range ips {
+		results[i] = m.FindASN(ip)
+	}
+
+	return results
 }

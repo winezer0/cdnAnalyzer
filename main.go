@@ -115,7 +115,7 @@ func main() {
 		fmt.Printf("初始化数据库失败: %v\n", err)
 		os.Exit(1)
 	}
-	//defer asninfo.CloseMMDBConn()
+	//defer asninfo.Close()
 
 	// 创建IP处理器
 	ipProcessor := queryip.NewIPProcessor(engines, config.ExtractIpDbConfig())
