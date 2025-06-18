@@ -1,162 +1,134 @@
 package dnsquery
 
 import (
-	"encoding/json"
+	"context"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
-func TestQueryAllDNS(t *testing.T) {
-	domain := "www.baidu.com"
-	dnsServer := "8.8.8.8:53"
-	timeout := 3 * time.Second
+// TestQueryDNS 测试单个 DNS 记录查询功能
+func TestQueryDNS(t *testing.T) {
+	domain := "example.com"
+	resolver := "8.8.8.8"
 
-	result := QueryAllDNS(domain, dnsServer, timeout)
-	b, _ := json.MarshalIndent(result, "", "  ")
-	t.Logf("QueryAllDNS result for %s @ %s:\n%s", domain, dnsServer, string(b))
+	// 测试 A 记录
+	records, err := QueryDNS(domain, resolver, "A", 5*time.Second)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, records)
 
-	if len(result.A) == 0 && len(result.CNAME) == 0 && len(result.NS) == 0 {
-		t.Errorf("QueryAllDNS failed, got empty result: %+v", result)
-	}
+	// 测试 AAAA 记录
+	records, err = QueryDNS(domain, resolver, "AAAA", 5*time.Second)
+	assert.NoError(t, err)
+	t.Logf("AAAA Records: %v", records)
+
+	// 测试 CNAME 记录
+	records, err = QueryDNS("www.cloudflare.com", resolver, "CNAME", 5*time.Second)
+	assert.NoError(t, err)
+	t.Logf("CNAME Records: %v", records)
+
+	// 测试 TXT 记录
+	records, err = QueryDNS("example.com", resolver, "TXT", 5*time.Second)
+	assert.NoError(t, err)
+	t.Logf("TXT Records: %v", records)
+
+	// 测试错误情况（非法 DNS 地址）
+	_, err = QueryDNS(domain, "invalid.dns.server", "A", 1*time.Second)
+	assert.Error(t, err)
 }
 
-func TestSyncQueryAllDNS(t *testing.T) {
-	domain := "www.baidu.com"
-	dnsServer := "8.8.8.8:53"
-	timeout := 3 * time.Second
-
-	result := SyncQueryAllDNS(domain, dnsServer, timeout)
-	b, _ := json.MarshalIndent(result, "", "  ")
-	t.Logf("QueryAllDNS result for %s @ %s:\n%s", domain, dnsServer, string(b))
-
-	if len(result.A) == 0 && len(result.CNAME) == 0 && len(result.NS) == 0 {
-		t.Errorf("QueryAllDNS failed, got empty result: %+v", result)
-	}
-}
-
-func TestSyncPoolQueryAllDNS(t *testing.T) {
-	domain := "www.baidu.com"
-	dnsServer := "8.8.8.8:53"
-	timeout := 3 * time.Second
-
-	result := SyncPoolQueryAllDNS(domain, dnsServer, timeout, 3)
-	b, _ := json.MarshalIndent(result, "", "  ")
-	t.Logf("QueryAllDNS result for %s @ %s:\n%s", domain, dnsServer, string(b))
-
-	if len(result.A) == 0 && len(result.CNAME) == 0 && len(result.NS) == 0 {
-		t.Errorf("QueryAllDNS failed, got empty result: %+v", result)
-	}
-}
-
-func TestQueryAllDNSWithMultiResolvers(t *testing.T) {
-	domain := "www.baidu.com"
-	timeout := 3 * time.Second
-	resolvers := []string{"8.8.8.8:53", "1.1.1.1:53", "8.8.4.4:53", "9.9.9.9:53", "114.114.114.114:53", "223.5.5.5:53"}
-
-	dnsResults := QueryAllDNSWithMultiResolvers(domain, resolvers, timeout)
-	dnsResult := MergeDNSResults(dnsResults)
-	b, _ := json.MarshalIndent(dnsResult, "", "  ")
-	t.Logf("QueryAllDNSWithMultiResolvers dnsResult for %s:\n%s", domain, string(b))
-
-	if len(dnsResult.A) == 0 && len(dnsResult.CNAME) == 0 && len(dnsResult.NS) == 0 {
-		t.Errorf("QueryAllDNSWithMultiResolvers failed, got empty dnsResult: %+v", dnsResult)
-	}
-}
-
-func TestLookupNSServer(t *testing.T) {
-	type args struct {
-		domain    string
-		dnsServer string
-		timeout   time.Duration
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Valid subdomain",
-			args: args{
-				domain:    "www.baidu.com",
-				dnsServer: "8.8.8.8:53",
-				timeout:   5 * time.Second,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Valid TLD domain",
-			args: args{
-				domain:    "example.com",
-				dnsServer: "1.1.1.1:53",
-				timeout:   5 * time.Second,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Invalid domain",
-			args: args{
-				domain:    "invalid.nonexistent.tld",
-				dnsServer: "8.8.8.8:53",
-				timeout:   3 * time.Second,
-			},
-			wantErr: true,
-		},
+func TestResolveAllDNSWithResolvers(t *testing.T) {
+	domain := "example.com"
+	resolvers := []string{
+		"8.8.8.8",
+		"1.1.1.1",
+		"9.9.9.9",
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := LookupNSServers(tt.args.domain, tt.args.dnsServer, tt.args.timeout)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("LookupNSServers() error = %v, wantErr %v", err, tt.wantErr)
-				return
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	start := time.Now()
+	results := ResolveDNSWithResolvers(ctx, domain, nil, resolvers, 5*time.Second, 3)
+	elapsed := time.Since(start)
+
+	t.Logf("✅ 总共查询 %d 个解析器，耗时: %v", len(resolvers), elapsed)
+	t.Log("----------------------------")
+
+	foundAnyRecord := false
+	successCount := 0
+
+	for _, res := range results {
+		t.Logf("📡 Resolver: %s", res.Resolver)
+
+		if len(res.Result.Error) > 0 {
+			t.Log("  ❌ Errors:")
+			for typ, err := range res.Result.Error {
+				t.Logf("    - [%s]: %s", typ, err)
 			}
-			if !tt.wantErr && len(got) == 0 {
-				t.Errorf("LookupNSServers() returned empty NS list but no error")
+		}
+
+		hasRecords := false
+
+		if len(res.Result.A) > 0 {
+			t.Log("  📡 A Records:")
+			for _, ip := range res.Result.A {
+				t.Logf("    - %s", ip)
 			}
-			t.Logf("NS Records for %s: %+v", tt.args.domain, got)
-		})
-	}
-}
+			hasRecords = true
+		}
 
-func TestLookupCNAMEChain(t *testing.T) {
-	tests := []struct {
-		name      string
-		domain    string
-		server    string
-		timeout   time.Duration
-		wantChain []string
-	}{
-		{
-			name:      "No CNAME",
-			domain:    "example.com",
-			server:    "8.8.8.8:53",
-			timeout:   3 * time.Second,
-			wantChain: []string{"example.com"},
-		},
-		{
-			name:      "Simple CNAME Chain",
-			domain:    "www.baidu.com",
-			server:    "8.8.8.8:53",
-			timeout:   3 * time.Second,
-			wantChain: []string{"www.baidu.com", "www.a.shifen.com."},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			chain, _ := LookupCNAMEChain(tt.domain, tt.server, tt.timeout)
-			t.Logf("CNAME chain for %s: %v", tt.domain, chain)
-
-			if len(chain) != len(tt.wantChain) {
-				t.Errorf("Expected length %d, got %d", len(tt.wantChain), len(chain))
-				return
+		if len(res.Result.AAAA) > 0 {
+			t.Log("  🌐 AAAA Records:")
+			for _, ip := range res.Result.AAAA {
+				t.Logf("    - %s", ip)
 			}
+			hasRecords = true
+		}
 
-			for i := range chain {
-				if chain[i] != tt.wantChain[i] {
-					t.Errorf("chain[%d] = %q, want %q", i, chain[i], tt.wantChain[i])
-				}
+		if len(res.Result.CNAME) > 0 {
+			t.Log("  🔁 CNAME Records:")
+			for _, cname := range res.Result.CNAME {
+				t.Logf("    - %s", cname)
 			}
-		})
+			hasRecords = true
+		}
+
+		if len(res.Result.NS) > 0 {
+			t.Log("  📦 NS Records:")
+			for _, ns := range res.Result.NS {
+				t.Logf("    - %s", ns)
+			}
+			hasRecords = true
+		}
+
+		if len(res.Result.MX) > 0 {
+			t.Log("  📨 MX Records:")
+			for _, mx := range res.Result.MX {
+				t.Logf("    - %s", mx)
+			}
+			hasRecords = true
+		}
+
+		if len(res.Result.TXT) > 0 {
+			t.Log("  📄 TXT Records:")
+			for _, txt := range res.Result.TXT {
+				t.Logf("    - %q", txt)
+			}
+			hasRecords = true
+		}
+
+		if hasRecords {
+			successCount++
+			foundAnyRecord = true
+		} else {
+			t.Log("No useful records returned")
+		}
+
+		t.Log("----------------------------")
 	}
+
+	assert.True(t, foundAnyRecord, "至少应有一个 resolver 返回了有效记录")
+	assert.Equal(t, len(resolvers), len(results))
+	assert.GreaterOrEqual(t, successCount, 1, "至少一个 resolver 成功返回记录")
 }

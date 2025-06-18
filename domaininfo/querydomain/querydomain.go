@@ -72,7 +72,7 @@ func queryDNS(domainEntry classify.TargetEntry, config *QueryConfig) (*QueryResu
 	domain := domainEntry.Fmt
 
 	// 常规 DNS 查询
-	dnsResults := dnsquery.QueryAllDNSWithMultiResolvers(domain, config.Resolvers, config.Timeout)
+	dnsResults := dnsquery.ResolveDNSWithResolvers(domain, config.Resolvers, config.Timeout, maxConcurrency)
 	dnsQueryResult := dnsquery.MergeDNSResults(dnsResults)
 
 	// EDNS 查询
