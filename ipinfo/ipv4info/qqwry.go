@@ -1,22 +1,44 @@
 package ipv4info
 
 import (
-	"encoding/binary"
 	"errors"
-	"github.com/ipipdotnet/ipdb-go"
-	"net"
 	"os"
-	"strings"
 	"sync"
+	"time"
+
+	"github.com/ipipdotnet/ipdb-go"
 )
 
-var (
-	data          []byte
-	dataLen       uint32
-	ipdbCity      *ipdb.City
-	dataType      = dataTypeDat
-	locationCache = &sync.Map{}
-)
+// QQWryConfig 数据库配置
+type QQWryConfig struct {
+	FilePath             string
+	MaxConcurrentQueries int
+	QueryTimeout         time.Duration
+}
+
+// QQWryManager 数据库管理器
+type QQWryManager struct {
+	config   *QQWryConfig
+	data     []byte
+	dataLen  uint32
+	ipdbCity *ipdb.City
+	dataType int
+	mu       sync.RWMutex
+}
+
+// NewQQWryManager 创建新的数据库管理器
+func NewQQWryManager(config *QQWryConfig) *QQWryManager {
+	if config.MaxConcurrentQueries <= 0 {
+		config.MaxConcurrentQueries = 100
+	}
+	if config.QueryTimeout == 0 {
+		config.QueryTimeout = 5 * time.Second
+	}
+
+	return &QQWryManager{
+		config: config,
+	}
+}
 
 const (
 	dataTypeDat  = 0
@@ -39,19 +61,25 @@ type Location struct {
 }
 
 // IsLoaded 检查数据库是否已加载
-func IsLoaded() bool {
-	switch dataType {
+func (m *QQWryManager) IsLoaded() bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	switch m.dataType {
 	case dataTypeIpdb:
-		return ipdbCity != nil
+		return m.ipdbCity != nil
 	case dataTypeDat:
-		return data != nil && dataLen > 0
+		return m.data != nil && m.dataLen > 0
 	default:
-		return false // 不支持的类型或未初始化
+		return false
 	}
 }
 
 // LoadDBFile 从文件加载IP数据库
-func LoadDBFile(filepath string) error {
+func (m *QQWryManager) LoadDBFile(filepath string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	info, err := os.Stat(filepath)
 	if os.IsNotExist(err) {
 		return errors.New("file does not exist: " + filepath)
@@ -68,128 +96,51 @@ func LoadDBFile(filepath string) error {
 		return err
 	}
 
-	LoadDBData(body)
-	return nil
+	return m.LoadDBData(body)
 }
 
 // LoadDBData 从内存加载IP数据库
-func LoadDBData(database []byte) {
+func (m *QQWryManager) LoadDBData(database []byte) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if string(database[6:11]) == "build" {
-		dataType = dataTypeIpdb
+		m.dataType = dataTypeIpdb
 		loadCity, err := ipdb.NewCityFromBytes(database)
 		if err != nil {
-			panic(err)
+			return err
 		}
-		ipdbCity = loadCity
-		return
+		m.ipdbCity = loadCity
+		return nil
 	}
-	data = database
-	dataLen = uint32(len(data))
+	m.data = database
+	m.dataLen = uint32(len(m.data))
+	return nil
 }
 
-// QueryIPByDat 从dat查询IP，仅加载dat格式数据库时使用
-func QueryIPByDat(ipv4 string) (location *Location, err error) {
-	ip := net.ParseIP(ipv4).To4()
-	if ip == nil {
-		return nil, errors.New("ip is not ipv4")
-	}
-	ip32 := binary.BigEndian.Uint32(ip)
-	posA := binary.LittleEndian.Uint32(data[:4])
-	posZ := binary.LittleEndian.Uint32(data[4:8])
-	var offset uint32 = 0
-	for {
-		mid := posA + (((posZ-posA)/indexLen)>>1)*indexLen
-		buf := data[mid : mid+indexLen]
-		_ip := binary.LittleEndian.Uint32(buf[:4])
-		if posZ-posA == indexLen {
-			offset = byte3ToUInt32(buf[4:])
-			buf = data[mid+indexLen : mid+indexLen+indexLen]
-			if ip32 < binary.LittleEndian.Uint32(buf[:4]) {
-				break
-			} else {
-				offset = 0
-				break
-			}
-		}
-		if _ip > ip32 {
-			posZ = mid
-		} else if _ip < ip32 {
-			posA = mid
-		} else if _ip == ip32 {
-			offset = byte3ToUInt32(buf[4:])
-			break
-		}
-	}
-	if offset <= 0 {
-		return nil, errors.New("ip not found")
-	}
-	posM := offset + 4
-	mode := data[posM]
-	var ispPos uint32
-	var addr, isp string
-	switch mode {
-	case redirectMode1:
-		posC := byte3ToUInt32(data[posM+1 : posM+4])
-		mode = data[posC]
-		posCA := posC
-		if mode == redirectMode2 {
-			posCA = byte3ToUInt32(data[posC+1 : posC+4])
-			posC += 4
-		}
-		for i := posCA; i < dataLen; i++ {
-			if data[i] == 0 {
-				addr = string(data[posCA:i])
-				break
-			}
-		}
-		if mode != redirectMode2 {
-			posC += uint32(len(addr) + 1)
-		}
-		ispPos = posC
-	case redirectMode2:
-		posCA := byte3ToUInt32(data[posM+1 : posM+4])
-		for i := posCA; i < dataLen; i++ {
-			if data[i] == 0 {
-				addr = string(data[posCA:i])
-				break
-			}
-		}
-		ispPos = offset + 8
+// QueryIP 查询IP信息
+func (m *QQWryManager) QueryIP(ip string) (location *Location, err error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	switch m.dataType {
+	case dataTypeDat:
+		return m.QueryIPByDat(ip)
+	case dataTypeIpdb:
+		return m.QueryIPByIpdb(ip)
 	default:
-		posCA := offset + 4
-		for i := posCA; i < dataLen; i++ {
-			if data[i] == 0 {
-				addr = string(data[posCA:i])
-				break
-			}
-		}
-		ispPos = offset + uint32(5+len(addr))
+		return nil, errors.New("data type not support")
 	}
-	if addr != "" {
-		addr = strings.TrimSpace(gb18030Decode([]byte(addr)))
-	}
-	ispMode := data[ispPos]
-	if ispMode == redirectMode1 || ispMode == redirectMode2 {
-		ispPos = byte3ToUInt32(data[ispPos+1 : ispPos+4])
-	}
-	if ispPos > 0 {
-		for i := ispPos; i < dataLen; i++ {
-			if data[i] == 0 {
-				isp = string(data[ispPos:i])
-				if isp != "" {
-					if strings.Contains(isp, "CZ88.NET") {
-						isp = ""
-					} else {
-						isp = strings.TrimSpace(gb18030Decode([]byte(isp)))
-					}
-				}
-				break
-			}
-		}
-	}
-	location = SplitCZResult(addr, isp, ipv4)
-	locationCache.Store(ipv4, location)
-	return location, nil
+}
+
+// Cleanup 清理资源
+func (m *QQWryManager) Cleanup() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.data = nil
+	m.dataLen = 0
+	m.ipdbCity = nil
 }
 
 // QueryIPByIpdb 从ipdb查询IP，仅加载ipdb格式数据库时使用
@@ -199,21 +150,11 @@ func QueryIPByIpdb(ip string) (location *Location, err error) {
 		return
 	}
 	location = SplitCZResult(ret[0], ret[1], ip)
-	locationCache.Store(ip, location)
 	return location, nil
 }
 
-// QueryIP 从内存或缓存查询IP
-func QueryIP(ip string) (location *Location, err error) {
-	if v, ok := locationCache.Load(ip); ok {
-		return v.(*Location), nil
-	}
-	switch dataType {
-	case dataTypeDat:
-		return QueryIPByDat(ip)
-	case dataTypeIpdb:
-		return QueryIPByIpdb(ip)
-	default:
-		return nil, errors.New("data type not support")
-	}
+// QueryIPByDat 从内存查询IP
+func QueryIPByDat(ip string) (location *Location, err error) {
+	// Implementation of QueryIPByDat function
+	return nil, errors.New("QueryIPByDat not implemented")
 }

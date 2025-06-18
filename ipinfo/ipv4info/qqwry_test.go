@@ -4,14 +4,6 @@ import (
 	"testing"
 )
 
-func init() {
-	//支持直接加载 qqwry.dat 或 qqwry.ipdb 文件
-	dbpath := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\qqwry.ipdb"
-	if err := LoadDBFile(dbpath); err != nil {
-		panic(err)
-	}
-}
-
 func TestQueryIP(t *testing.T) {
 	datas := []string{
 		"8.8.8.8",
@@ -22,6 +14,12 @@ func TestQueryIP(t *testing.T) {
 		"2408:8652:200::c101",
 		"2409:8900:103f:14f:d7e:cd36:11af:be83",
 		"fe80::5c12:27dc:93a4:3426", // 链路本地地址，可能查不到地理位置
+	}
+
+	//支持直接加载 qqwry.dat 或 qqwry.ipdb 文件
+	dbpath := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\qqwry.ipdb"
+	if err := LoadDBFile(dbpath); err != nil {
+		panic(err)
 	}
 
 	for _, queryIp := range datas {
