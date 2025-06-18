@@ -1,4 +1,4 @@
-package asndb
+package asninfo
 
 import (
 	"fmt"

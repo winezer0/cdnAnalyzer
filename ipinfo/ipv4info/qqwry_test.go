@@ -1,4 +1,4 @@
-package qqwry
+package ipv4info
 
 import (
 	"testing"

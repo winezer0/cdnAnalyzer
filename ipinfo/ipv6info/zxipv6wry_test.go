@@ -1,4 +1,4 @@
-package zxipv6wry
+package ipv6info
 
 import (
 	"testing"

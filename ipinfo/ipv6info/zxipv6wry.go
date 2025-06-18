@@ -1,4 +1,4 @@
-package zxipv6wry
+package ipv6info
 
 // forked from https://github.com/zu1k/nali
 // ipv6db数据使用http://ip.zxinc.org的免费离线数据（更新到2021年）

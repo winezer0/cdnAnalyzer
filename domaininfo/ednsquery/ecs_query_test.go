@@ -1,6 +1,7 @@
-package dnsquery
+package ednsquery
 
 import (
+	"cdnCheck/domaininfo/dnsquery"
 	"cdnCheck/fileutils"
 	"cdnCheck/maputils"
 	"fmt"
@@ -56,7 +57,7 @@ func TestEDNSQueryWithMultiCities(t *testing.T) {
 	}
 
 	//合并 eDNSQueryResults
-	eDNSQueryResult := MergeEDNSResults(eDNSQueryResults)
+	eDNSQueryResult := dnsquery.MergeEDNSResults(eDNSQueryResults)
 	fmt.Printf("  A:    %v\n", eDNSQueryResult.A)
 	fmt.Printf("  CNAME: %v\n", eDNSQueryResult.CNAME)
 	fmt.Printf("  Errors: %v\n", eDNSQueryResult.Errors)

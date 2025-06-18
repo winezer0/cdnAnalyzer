@@ -1,7 +1,7 @@
 package models
 
 import (
-	"cdnCheck/iplocate/asndb"
+	"cdnCheck/ipinfo/asninfo"
 )
 
 // CheckInfo 用于保存资产结果时间的类型
@@ -21,8 +21,8 @@ type CheckInfo struct {
 	Ipv4Locate []map[string]string `json:"Ipv4Locate,omitempty"` // A记录的IP解析信息
 	Ipv6Locate []map[string]string `json:"Ipv6Locate,omitempty"` // AAAA记录的IP解析信息
 
-	Ipv4Asn []asndb.ASNInfo `json:"Ipv4Asn,omitempty"` // A记录的ASN查询信息
-	Ipv6Asn []asndb.ASNInfo `json:"Ipv6Asn,omitempty"` // AAAA记录的ASN查询信息
+	Ipv4Asn []asninfo.ASNInfo `json:"Ipv4Asn,omitempty"` // A记录的ASN查询信息
+	Ipv6Asn []asninfo.ASNInfo `json:"Ipv6Asn,omitempty"` // AAAA记录的ASN查询信息
 
 	IsCdn      bool   `json:"IsCdn,omitempty"`
 	CdnCompany string `json:"CdnCompany,omitempty"`

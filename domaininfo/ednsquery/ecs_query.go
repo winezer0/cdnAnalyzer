@@ -1,6 +1,7 @@
-package dnsquery
+package ednsquery
 
 import (
+	"cdnCheck/domaininfo/dnsquery"
 	"fmt"
 	"github.com/miekg/dns"
 	"net"
@@ -68,7 +69,7 @@ func EDNSQueryWithMultiCities(domain string, timeout time.Duration, Cities []map
 
 	if queryCNAME {
 		// 获取 CNAME 链并取最后一个
-		cnameChain, err := LookupCNAMEChain(domain, defaultServerAddress, timeout)
+		cnameChain, err := dnsquery.LookupCNAMEChain(domain, defaultServerAddress, timeout)
 		if err != nil {
 			fmt.Printf("Failed to lookup CNAME chain for %s: %v\n", domain, err)
 		} else if len(cnameChain) > 0 {
@@ -76,11 +77,11 @@ func EDNSQueryWithMultiCities(domain string, timeout time.Duration, Cities []map
 			finalDomain = cnameChain[len(cnameChain)-1]
 		}
 		// 获取 NS 服务器，并加上默认 DNS // 发现 ns1.a.shifen.com:53 查询原始域名结果是空的, 如果没有查询cname的话 最好为每个域名补充个默认dns服务器
-		nsServers, err := LookupNSServers(finalDomain, defaultServerAddress, timeout)
+		nsServers, err := dnsquery.LookupNSServers(finalDomain, defaultServerAddress, timeout)
 		if err != nil || len(nsServers) == 0 {
 			fmt.Printf("Failed to lookup NS servers for %s, using fallback: 8.8.8.8:53\n", finalDomain)
 		} else {
-			dnsServers = append(dnsServers, DnsServerAddPort(nsServers[0]))
+			dnsServers = append(dnsServers, dnsquery.DnsServerAddPort(nsServers[0]))
 			fmt.Printf("Success lookup NS servers: %v, using fallback: %v\n", nsServers, nsServers[0])
 		}
 	}
