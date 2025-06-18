@@ -14,27 +14,27 @@ func TestQueryDNS(t *testing.T) {
 	resolver := "8.8.8.8"
 
 	// 测试 A 记录
-	records, err := QueryDNS(domain, resolver, "A", 5*time.Second)
+	records, err := ResolveDNS(domain, resolver, "A", 5*time.Second)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, records)
 
 	// 测试 AAAA 记录
-	records, err = QueryDNS(domain, resolver, "AAAA", 5*time.Second)
+	records, err = ResolveDNS(domain, resolver, "AAAA", 5*time.Second)
 	assert.NoError(t, err)
 	t.Logf("AAAA Records: %v", records)
 
 	// 测试 CNAME 记录
-	records, err = QueryDNS("www.cloudflare.com", resolver, "CNAME", 5*time.Second)
+	records, err = ResolveDNS("www.cloudflare.com", resolver, "CNAME", 5*time.Second)
 	assert.NoError(t, err)
 	t.Logf("CNAME Records: %v", records)
 
 	// 测试 TXT 记录
-	records, err = QueryDNS("example.com", resolver, "TXT", 5*time.Second)
+	records, err = ResolveDNS("example.com", resolver, "TXT", 5*time.Second)
 	assert.NoError(t, err)
 	t.Logf("TXT Records: %v", records)
 
 	// 测试错误情况（非法 DNS 地址）
-	_, err = QueryDNS(domain, "invalid.dns.server", "A", 1*time.Second)
+	_, err = ResolveDNS(domain, "invalid.dns.server", "A", 1*time.Second)
 	assert.Error(t, err)
 }
 

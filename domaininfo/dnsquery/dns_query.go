@@ -28,8 +28,8 @@ type ResolverResult struct {
 	Result   DNSResult `json:"result,omitempty"`
 }
 
-// QueryDNS 查询指定类型的DNS记录，支持超时
-func QueryDNS(domain, dnsServer, queryType string, timeout time.Duration) ([]string, error) {
+// ResolveDNS 查询指定类型的DNS记录，支持超时
+func ResolveDNS(domain, dnsServer, queryType string, timeout time.Duration) ([]string, error) {
 	client := &dns.Client{Timeout: timeout}
 	m := &dns.Msg{}
 	m.SetQuestion(dns.Fqdn(domain), dns.StringToType[queryType])
@@ -129,7 +129,7 @@ func ResolveDNSWithResolvers(
 				default:
 				}
 
-				recs, err := QueryDNS(domain, resolver, qType, timeout)
+				recs, err := ResolveDNS(domain, resolver, qType, timeout)
 				mu.Lock()
 				if err != nil {
 					result.Error[qType] = err.Error()
@@ -208,7 +208,7 @@ func ResolveDNSWithResolversAtom(
 			err := pool.Submit(func() {
 				defer wg.Done()
 
-				recs, err := QueryDNS(domain, resolver, qType, timeout)
+				recs, err := ResolveDNS(domain, resolver, qType, timeout)
 
 				mu.Lock()
 				idx := resolverMap[resolver]
@@ -225,7 +225,7 @@ func ResolveDNSWithResolversAtom(
 				go func() {
 					defer wg.Done()
 
-					recs, err := QueryDNS(domain, resolver, qType, timeout)
+					recs, err := ResolveDNS(domain, resolver, qType, timeout)
 
 					mu.Lock()
 					idx := resolverMap[resolver]

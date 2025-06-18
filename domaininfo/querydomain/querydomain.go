@@ -76,7 +76,7 @@ func queryDNS(domainEntry classify.TargetEntry, config *QueryConfig) (*QueryResu
 	dnsQueryResult := dnsquery.MergeDNSResults(dnsResults)
 
 	// EDNS 查询
-	eDNSQueryResults := ednsquery.EDNSQueryWithMultiCities(domain, config.Timeout, config.RandCities, false)
+	eDNSQueryResults := ednsquery.ResolveEDNSWithCities(domain, config.Timeout, config.RandCities, false)
 	if len(eDNSQueryResults) == 0 {
 		fmt.Fprintf(os.Stderr, "EDNS 查询结果为空: %s\n", domain)
 	} else {

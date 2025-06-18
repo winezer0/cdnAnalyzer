@@ -1,7 +1,6 @@
 package ednsquery
 
 import (
-	"cdnCheck/domaininfo/dnsquery"
 	"cdnCheck/fileutils"
 	"cdnCheck/maputils"
 	"fmt"
@@ -11,7 +10,7 @@ import (
 
 func TestEDNSQuery(t *testing.T) {
 	domain := "www.baidu.com" // 替换为你要测试的域名
-	eDNSQueryResults := EDNSQuery(domain, "175.1.238.1", "8.8.8.8:53", 5*time.Second)
+	eDNSQueryResults := ResolveEDNS(domain, "175.1.238.1", "8.8.8.8:53", 5*time.Second)
 
 	t.Logf("Query results for %s:", domain)
 	t.Logf("  A:    %v", eDNSQueryResults.A)
@@ -37,7 +36,7 @@ func TestEDNSQueryWithMultiCities(t *testing.T) {
 		t.Logf("randCities: %v", randCities)
 	}
 
-	eDNSQueryResults := EDNSQueryWithMultiCities(domain, 5*time.Second, randCities, true)
+	eDNSQueryResults := ResolveEDNSWithCities(domain, 5*time.Second, randCities, true)
 
 	if len(eDNSQueryResults) == 0 {
 		t.Fatal("Expected non-empty ENS QueryResults")
@@ -55,10 +54,4 @@ func TestEDNSQueryWithMultiCities(t *testing.T) {
 		t.Logf("  CNAME: %v", result.CNAME)
 		t.Logf("  Errors: %v", result.Errors)
 	}
-
-	//合并 eDNSQueryResults
-	eDNSQueryResult := dnsquery.MergeEDNSResults(eDNSQueryResults)
-	fmt.Printf("  A:    %v\n", eDNSQueryResult.A)
-	fmt.Printf("  CNAME: %v\n", eDNSQueryResult.CNAME)
-	fmt.Printf("  Errors: %v\n", eDNSQueryResult.Errors)
 }

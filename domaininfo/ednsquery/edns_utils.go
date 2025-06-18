@@ -81,7 +81,7 @@ func LookupCNAMEChain(domain, dnsServer string, timeout time.Duration) ([]string
 		visited[current] = struct{}{}
 		chain = append(chain, current)
 
-		cnames, err := dnsquery.QueryDNS(current, dnsServer, "CNAME", timeout)
+		cnames, err := dnsquery.ResolveDNS(current, dnsServer, "CNAME", timeout)
 		if err != nil || len(cnames) == 0 {
 			break // 没有CNAME或查询出错，终止
 		}

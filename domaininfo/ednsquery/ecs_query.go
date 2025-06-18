@@ -2,6 +2,7 @@ package ednsquery
 
 import (
 	"cdnCheck/domaininfo/dnsquery"
+	"cdnCheck/maputils"
 	"fmt"
 	"github.com/miekg/dns"
 	"net"
@@ -18,12 +19,36 @@ type EDNSResult struct {
 	Errors []string
 }
 
-func EDNSQuery(domain string, EDNSAddr string, dnsServer string, timeout time.Duration) EDNSResult {
+// eDNSMessage 创建并返回一个包含 EDNS（扩展 DNS）选项的 DNS 查询消息
+// 参数： domain：要查询的域名。 EDNSAddr：用于设置 EDNS0_SUBNET 选项的 A 地址。
+// 返回值： 返回一个指向 dnsquery.Msg 结构体的指针，表示生成的 DNS 查询消息。
+func eDNSMessage(domain, EDNSAddr string) *dns.Msg {
+	e := new(dns.EDNS0_SUBNET) // EDNS
+	e.Code = dns.EDNS0SUBNET
+	e.Family = 1
+	e.SourceNetmask = 24
+	e.Address = net.ParseIP(EDNSAddr).To4()
+	e.SourceScope = 0
+
+	o := new(dns.OPT)
+	o.Hdr.Name = "."
+	o.Hdr.Rrtype = dns.TypeOPT
+	o.Option = append(o.Option, e)
+	o.SetUDPSize(dns.DefaultMsgSize)
+
+	m := new(dns.Msg)
+	m.SetQuestion(domain, dns.TypeA)
+	m.Extra = append(m.Extra, o)
+	return m
+}
+
+// ResolveEDNS 进行EDNS信息查询
+func ResolveEDNS(domain string, EDNSAddr string, dnsServer string, timeout time.Duration) EDNSResult {
 	domain = dns.Fqdn(domain)
 
 	Client := new(dns.Client)
 	Client.Timeout = timeout
-	dnsMsg := newEDNSMessage(domain, EDNSAddr)
+	dnsMsg := eDNSMessage(domain, EDNSAddr)
 
 	in, _, err := Client.Exchange(dnsMsg, dnsServer)
 	if err != nil {
@@ -54,16 +79,8 @@ func EDNSQuery(domain string, EDNSAddr string, dnsServer string, timeout time.Du
 	}
 }
 
-func MustGetString(m map[string]string, key string) string {
-	val, ok := m[key]
-	if !ok {
-		panic(fmt.Sprintf("entry missing key: %s", key))
-	}
-	return val
-}
-
-func EDNSQueryWithMultiCities(domain string, timeout time.Duration, Cities []map[string]string, queryCNAME bool) map[string]EDNSResult {
-
+// ResolveEDNSWithCities 使用不同城市位置进行EDNS查询
+func ResolveEDNSWithCities(domain string, timeout time.Duration, Cities []map[string]string, queryCNAME bool) map[string]EDNSResult {
 	finalDomain := domain
 	dnsServers := []string{"8.8.8.8:53"}
 
@@ -94,14 +111,14 @@ func EDNSQueryWithMultiCities(domain string, timeout time.Duration, Cities []map
 
 	for _, dnsServer := range dnsServers {
 		for _, entry := range Cities {
-			city := MustGetString(entry, "City")
-			cityIP := MustGetString(entry, "IP")
+			city := maputils.GetMapValue(entry, "City")
+			cityIP := maputils.GetMapValue(entry, "IP")
 
 			wg.Add(1)
 			go func(city string, cityIP string, dnsServer string) {
 				defer wg.Done()
 
-				result := EDNSQuery(finalDomain, cityIP, dnsServer, timeout)
+				result := ResolveEDNS(finalDomain, cityIP, dnsServer, timeout)
 
 				key := fmt.Sprintf("%s@%s", city, dnsServer)
 
@@ -128,27 +145,4 @@ func EDNSQueryWithMultiCities(domain string, timeout time.Duration, Cities []map
 	}
 
 	return resultMap
-}
-
-// newEDNSMessage 创建并返回一个包含 EDNS（扩展 DNS）选项的 DNS 查询消息
-// 参数： domain：要查询的域名。 EDNSAddr：用于设置 EDNS0_SUBNET 选项的 A 地址。
-// 返回值： 返回一个指向 dnsquery.Msg 结构体的指针，表示生成的 DNS 查询消息。
-func newEDNSMessage(domain, EDNSAddr string) *dns.Msg {
-	e := new(dns.EDNS0_SUBNET) //EDNS
-	e.Code = dns.EDNS0SUBNET
-	e.Family = 1
-	e.SourceNetmask = 24
-	e.Address = net.ParseIP(EDNSAddr).To4()
-	e.SourceScope = 0
-
-	o := new(dns.OPT)
-	o.Hdr.Name = "."
-	o.Hdr.Rrtype = dns.TypeOPT
-	o.Option = append(o.Option, e)
-	o.SetUDPSize(dns.DefaultMsgSize)
-
-	m := new(dns.Msg)
-	m.SetQuestion(domain, dns.TypeA)
-	m.Extra = append(m.Extra, o)
-	return m
 }

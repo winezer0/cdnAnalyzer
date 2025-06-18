@@ -32,7 +32,6 @@ func (p *CDNProcessor) ProcessCDNInfo(checkInfo *models.CheckInfo, sourceData *m
 		maputils.GetMapsUniqueValues(checkInfo.Ipv6Locate),
 	)
 
-	// 判断IP解析结果数量是否在CDN内
 	checkInfo.IpSizeIsCdn, checkInfo.IpSize = cdncheck.IpsSizeIsCdn(ipList, 3)
 
 	// 检查结果中的 CDN | WAF | CLOUD 情况
