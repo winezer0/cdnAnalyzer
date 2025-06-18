@@ -56,4 +56,21 @@ func TestResolveEDNSDomainsWithCities(t *testing.T) {
 		}
 		fmt.Println("==================================")
 	}
+
+	mergedAll := MergeAllDomainsResults(results)
+
+	for domain, merged := range mergedAll {
+		fmt.Printf("=== Merged Result for %s ===\n", domain)
+		fmt.Printf("Final Domain: %s\n", merged.FinalDomain)
+		fmt.Printf("Name Servers: %v\n", merged.NameServers)
+		fmt.Printf("CNAME Chain: %v\n", merged.CNAMEs)
+		fmt.Printf("A Records: %v\n", merged.A)
+		fmt.Printf("AAAA Records: %v\n", merged.AAAA)
+		fmt.Printf("CNAME Records: %v\n", merged.CNAME)
+		if len(merged.Errors) > 0 {
+			fmt.Printf("Errors: %v\n", merged.Errors)
+		}
+		fmt.Println()
+	}
+
 }
