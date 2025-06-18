@@ -16,7 +16,6 @@ type MMDBConfig struct {
 	IPv4Path             string
 	IPv6Path             string
 	MaxConcurrentQueries int
-	CacheSize            int
 	QueryTimeout         time.Duration
 }
 

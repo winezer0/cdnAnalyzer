@@ -13,7 +13,6 @@ func TestLookupASNByMMDB(t *testing.T) {
 		IPv4Path:             "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv4.mmdb",
 		IPv6Path:             "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv6.mmdb",
 		MaxConcurrentQueries: 100,
-		CacheSize:            1000,
 		QueryTimeout:         5 * time.Second,
 	}
 
@@ -27,17 +26,17 @@ func TestLookupASNByMMDB(t *testing.T) {
 	defer manager.CloseMMDBConn()
 
 	// 测试数据库大小统计
-	ipv4dbsize, err := manager.CountMMDBSize("ipv4")
+	ipv4DbSize, err := manager.CountMMDBSize("ipv4")
 	if err != nil {
 		t.Errorf("统计IPv4数据库大小失败: %v", err)
 	}
-	t.Logf("IPv4数据库大小: %d", ipv4dbsize)
+	t.Logf("IPv4数据库大小: %d", ipv4DbSize)
 
-	ipv6dbsize, err := manager.CountMMDBSize("ipv6")
+	ipv6DbSize, err := manager.CountMMDBSize("ipv6")
 	if err != nil {
 		t.Errorf("统计IPv6数据库大小失败: %v", err)
 	}
-	t.Logf("IPv6数据库大小: %d", ipv6dbsize)
+	t.Logf("IPv6数据库大小: %d", ipv6DbSize)
 
 	// 定义测试IP列表
 	testIPs := []string{
