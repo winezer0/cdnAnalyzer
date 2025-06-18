@@ -4,21 +4,42 @@ import (
 	"fmt"
 	"net"
 	"testing"
+	"time"
 )
 
 func TestLookupASNByMMDB(t *testing.T) {
-	// 打开数据库连接
-	ipv4Filepath := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv4.mmdb"
-	ipv6Filepath := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv6.mmdb"
-	InitMMDBConn(ipv4Filepath, ipv6Filepath)
-	defer CloseMMDBConn()
+	// 创建配置
+	config := &MMDBConfig{
+		IPv4Path:             "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv4.mmdb",
+		IPv6Path:             "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv6.mmdb",
+		MaxConcurrentQueries: 100,
+		CacheSize:            1000,
+		QueryTimeout:         5 * time.Second,
+	}
 
-	ipv4dbsize, _ := CountMMDBSize(mmDb["ipv4"])
-	t.Logf("CountMMDBSize ipv4: %d\n", ipv4dbsize)
-	ipv6dbsize, _ := CountMMDBSize(mmDb["ipv6"])
-	t.Logf("CountMMDBSize ipv6: %d\n", ipv6dbsize)
+	// 创建管理器
+	manager := NewMMDBManager(config)
 
-	// 定义要测试的 IPS
+	// 初始化连接
+	if err := manager.InitMMDBConn(); err != nil {
+		t.Fatalf("初始化数据库连接失败: %v", err)
+	}
+	defer manager.CloseMMDBConn()
+
+	// 测试数据库大小统计
+	ipv4dbsize, err := manager.CountMMDBSize("ipv4")
+	if err != nil {
+		t.Errorf("统计IPv4数据库大小失败: %v", err)
+	}
+	t.Logf("IPv4数据库大小: %d", ipv4dbsize)
+
+	ipv6dbsize, err := manager.CountMMDBSize("ipv6")
+	if err != nil {
+		t.Errorf("统计IPv6数据库大小失败: %v", err)
+	}
+	t.Logf("IPv6数据库大小: %d", ipv6dbsize)
+
+	// 定义测试IP列表
 	testIPs := []string{
 		"8.8.8.8",         // Google DNS (IPv4)
 		"2606:4700::6813", // Cloudflare (IPv6)
@@ -27,58 +48,124 @@ func TestLookupASNByMMDB(t *testing.T) {
 		"116.162.1.1",     // Cloudflare
 	}
 
-	for _, ipStr := range testIPs {
-		ip := net.ParseIP(ipStr)
-		if ip == nil {
-			t.Errorf("无效的IP地址: %s", ipStr)
-			continue
-		}
+	// 测试单个IP查询
+	t.Run("单个IP查询测试", func(t *testing.T) {
+		for _, ipStr := range testIPs {
+			ip := net.ParseIP(ipStr)
+			if ip == nil {
+				t.Errorf("无效的IP地址: %s", ipStr)
+				continue
+			}
 
-		ipInfo := FindASN(ipStr)
-		if ipInfo == nil {
-			t.Errorf("无法解析IP信息: %s", ipStr)
-			continue
-		}
-		fmt.Printf("ipInfo: %v\n", ipInfo)
-		fmt.Printf("IP: %15s | ASN: %6d | 组织: %s\n",
-			ipInfo.IP,
-			ipInfo.OrganisationNumber,
-			ipInfo.OrganisationName,
-		)
-	}
+			ipInfo := manager.FindASN(ipStr)
+			if ipInfo == nil {
+				t.Errorf("无法解析IP信息: %s", ipStr)
+				continue
+			}
 
-	results, err := ASNToIPRanges(13335)
-	t.Logf("ASNToIPRanges results: %v Error:%v", len(results), err)
+			t.Logf("IP: %15s | 版本: %d | 找到ASN: %v | ASN: %6d | 组织: %s",
+				ipInfo.IP,
+				ipInfo.IPVersion,
+				ipInfo.FoundASN,
+				ipInfo.OrganisationNumber,
+				ipInfo.OrganisationName,
+			)
+		}
+	})
+
+	// 测试批量查询
+	t.Run("批量查询测试", func(t *testing.T) {
+		results := manager.BatchFindASN(testIPs, nil)
+		for _, result := range results {
+			if result.Error != nil {
+				t.Errorf("查询失败 %s: %v", result.IP, result.Error)
+				continue
+			}
+			if result.Result != nil {
+				t.Logf("批量查询结果 - IP: %15s | ASN: %6d | 组织: %s",
+					result.Result.IP,
+					result.Result.OrganisationNumber,
+					result.Result.OrganisationName,
+				)
+			}
+		}
+	})
+
+	// 测试ASN到IP范围查询
+	t.Run("ASN到IP范围查询测试", func(t *testing.T) {
+		results, err := manager.ASNToIPRanges(13335)
+		if err != nil {
+			t.Errorf("ASN到IP范围查询失败: %v", err)
+			return
+		}
+		t.Logf("找到 %d 个IP范围", len(results))
+		for _, ipNet := range results {
+			t.Logf("IP范围: %s", ipNet.String())
+		}
+	})
 }
 
-func TestExportMMDBToCSV(t *testing.T) {
-	// 打开数据库连接
-	ipv4Filepath := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv4.mmdb"
-	ipv6Filepath := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv6.mmdb"
-	InitMMDBConn(ipv4Filepath, ipv6Filepath)
-	defer CloseMMDBConn()
-
-	outputPath := "C:\\Users\\WINDOWS\\Downloads\\geolite2-asn-all.csv"
-	ExportASNToCSV(outputPath)
-}
-
-func TestFastFindASNToIPRanges(t *testing.T) {
-	// 打开数据库连接
-	ipv4Filepath := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv4.mmdb"
-	ipv6Filepath := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv6.mmdb"
-	InitMMDBConn(ipv4Filepath, ipv6Filepath)
-	defer CloseMMDBConn()
-
-	// 查询某个 ASN（例如 Google 的 ASN 15169）
-	asn := uint64(13335)
-	ipNets, found := FastASNToIPRanges(asn)
-	if !found {
-		fmt.Printf("未找到 ASN %d 对应的 IP 段\n", asn)
-		return
+func TestMMDBManagerConcurrency(t *testing.T) {
+	config := &MMDBConfig{
+		IPv4Path:             "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv4.mmdb",
+		IPv6Path:             "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv6.mmdb",
+		MaxConcurrentQueries: 5, // 限制并发数为5
+		QueryTimeout:         2 * time.Second,
 	}
 
-	fmt.Printf("找到 ASN %d 的 %d 个 IP 段:\n", asn, len(ipNets))
-	for _, ipNet := range ipNets {
-		fmt.Println("  ", ipNet.String())
+	manager := NewMMDBManager(config)
+	if err := manager.InitMMDBConn(); err != nil {
+		t.Fatalf("初始化数据库连接失败: %v", err)
+	}
+	defer manager.CloseMMDBConn()
+
+	// 创建大量测试IP
+	var testIPs []string
+	for i := 0; i < 100; i++ {
+		testIPs = append(testIPs, fmt.Sprintf("8.8.8.%d", i))
+	}
+
+	// 测试并发查询
+	start := time.Now()
+	results := manager.BatchFindASN(testIPs, nil)
+	duration := time.Since(start)
+
+	t.Logf("并发查询 %d 个IP耗时: %v", len(testIPs), duration)
+
+	successCount := 0
+	for _, result := range results {
+		if result.Error == nil && result.Result != nil {
+			successCount++
+		}
+	}
+
+	t.Logf("成功查询数: %d/%d", successCount, len(testIPs))
+}
+
+func TestMMDBErrorHandling(t *testing.T) {
+	config := &MMDBConfig{
+		IPv4Path:             "不存在的文件.mmdb",
+		IPv6Path:             "不存在的文件.mmdb",
+		MaxConcurrentQueries: 100,
+		QueryTimeout:         5 * time.Second,
+	}
+
+	manager := NewMMDBManager(config)
+
+	// 测试初始化错误
+	err := manager.InitMMDBConn()
+	if err == nil {
+		t.Error("预期初始化失败，但未收到错误")
+	} else {
+		t.Logf("预期的初始化错误: %v", err)
+	}
+
+	// 测试无效IP查询
+	ipInfo := manager.FindASN("invalid.ip.address")
+	if ipInfo == nil {
+		t.Error("无效IP查询应返回空结果而不是nil")
+	}
+	if ipInfo.FoundASN {
+		t.Error("无效IP不应找到ASN信息")
 	}
 }
