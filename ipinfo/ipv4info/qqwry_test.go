@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestIpv4LocationFind(t *testing.T) {
+func TestIpv4Location_Find(t *testing.T) {
 	// 集成测试：测试完整的查询流程
 	db, err := NewIPv4Location("C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\qqwry.dat")
 	if err != nil {
