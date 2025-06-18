@@ -3,11 +3,12 @@ package dnsquery
 import (
 	"context"
 	"fmt"
-	"github.com/miekg/dns"
-	"github.com/panjf2000/ants/v2"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/miekg/dns"
+	"github.com/panjf2000/ants/v2"
 )
 
 // DNSResult 统一返回结构
@@ -145,6 +146,98 @@ func ResolveDNSWithResolvers(
 			}
 			mu.Unlock()
 		})
+	}
+
+	// 等待所有任务完成
+	wg.Wait()
+	return results
+}
+
+type DNSResultForTask struct {
+	Resolver string
+	QType    string
+	Records  []string
+	Error    error
+}
+
+// ResolveDNSWithResolversAtom 更加原子性的查询操作  没有实现上下文处理
+func ResolveDNSWithResolversAtom(
+	domain string,
+	recordTypes []string,
+	resolvers []string,
+	timeout time.Duration,
+	maxConcurrency int,
+) []ResolverResult {
+
+	if len(recordTypes) == 0 {
+		recordTypes = DefaultRecordTypesSlice
+	}
+
+	// 最终结果数组
+	results := make([]ResolverResult, len(resolvers))
+	resolverMap := make(map[string]int) // resolver -> index
+	for i, r := range resolvers {
+		resolverMap[r] = i
+		results[i] = ResolverResult{
+			Resolver: r,
+			Result:   DNSResult{Error: make(map[string]string)},
+		}
+	}
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	// 创建线程池
+	pool, err := ants.NewPool(maxConcurrency, ants.WithOptions(ants.Options{
+		Nonblocking: true,
+	}))
+	if err != nil {
+		panic(err)
+	}
+	defer pool.Release()
+
+	// 为每个 resolver 的每个 recordType 提交任务
+	for _, resolver := range resolvers {
+		for _, qType := range recordTypes {
+			wg.Add(1)
+
+			// 捕获变量
+			resolver := resolver
+			qType := qType
+
+			err := pool.Submit(func() {
+				defer wg.Done()
+
+				recs, err := QueryDNS(domain, resolver, qType, timeout)
+
+				mu.Lock()
+				idx := resolverMap[resolver]
+				if err != nil {
+					results[idx].Result.Error[qType] = err.Error()
+				} else {
+					setRecord(&results[idx].Result, qType, recs)
+				}
+				mu.Unlock()
+			})
+
+			if err != nil {
+				// 回退：同步执行
+				go func() {
+					defer wg.Done()
+
+					recs, err := QueryDNS(domain, resolver, qType, timeout)
+
+					mu.Lock()
+					idx := resolverMap[resolver]
+					if err != nil {
+						results[idx].Result.Error[qType] = err.Error()
+					} else {
+						setRecord(&results[idx].Result, qType, recs)
+					}
+					mu.Unlock()
+				}()
+			}
+		}
 	}
 
 	// 等待所有任务完成

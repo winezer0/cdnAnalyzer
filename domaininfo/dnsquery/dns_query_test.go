@@ -2,9 +2,10 @@ package dnsquery
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // TestQueryDNS 测试单个 DNS 记录查询功能
@@ -45,14 +46,17 @@ func TestResolveAllDNSWithResolvers(t *testing.T) {
 		"9.9.9.9",
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	start1 := time.Now()
+	ResolveDNSWithResolversAtom(domain, nil, resolvers, 5*time.Second, 15)
+	elapsed1 := time.Since(start1)
+	t.Logf("✅ ResolveDNSWithResolversAtom 总共查询 %d 个解析器，耗时: %v", len(resolvers), elapsed1)
 
-	start := time.Now()
-	results := ResolveDNSWithResolvers(ctx, domain, nil, resolvers, 5*time.Second, 3)
-	elapsed := time.Since(start)
+	start2 := time.Now()
+	ctx := context.Background()
+	results := ResolveDNSWithResolvers(ctx, domain, nil, resolvers, 5*time.Second, 5)
+	elapsed := time.Since(start2)
 
-	t.Logf("✅ 总共查询 %d 个解析器，耗时: %v", len(resolvers), elapsed)
+	t.Logf("✅ ResolveDNSWithResolvers 总共查询 %d 个解析器，耗时: %v", len(resolvers), elapsed)
 	t.Log("----------------------------")
 
 	foundAnyRecord := false
