@@ -166,15 +166,6 @@ func ResolveEDNSWithCities(
 	return resultMap
 }
 
-type DomainPreQueryResult struct {
-	Domain      string
-	FinalDomain string
-	NameServers []string
-	CNAMEs      []string
-	Err         error
-}
-
-// ResolveEDNSDomainsWithCities 接收多个域名，先批量查询 CNAME / NS，再并发 EDNS 查询
 // ResolveEDNSDomainsWithCities 接收多个域名，先批量查询 CNAME / NS，再并发 EDNS 查询
 func ResolveEDNSDomainsWithCities(
 	domains []string,
@@ -195,186 +186,29 @@ func ResolveEDNSDomainsWithCities(
 	pool, _ := ants.NewPool(maxConcurrency)
 	defer pool.Release()
 
-	for _, pr := range preResults {
+	for _, pre := range preResults {
 		wg.Add(1)
 
-		pr := pr // 捕获变量
+		pre := pre // 捕获变量
 		pool.Submit(func() {
 			defer wg.Done()
 
 			ednsResults := ResolveEDNSWithCities(
-				pr.Domain,
-				pr.FinalDomain,
-				pr.NameServers,
-				pr.CNAMEs,
+				pre.Domain,
+				pre.FinalDomain,
+				pre.NameServers,
+				pre.CNAMEs,
 				Cities,
 				timeout,
 				maxConcurrency,
 			)
 
 			mu.Lock()
-			resultMap[pr.Domain] = ednsResults
+			resultMap[pre.Domain] = ednsResults
 			mu.Unlock()
 		})
 	}
 
 	wg.Wait()
 	return resultMap
-}
-
-// 辅助函数：异步并发预查 CNAME / NS
-func preQueryDomains(
-	ctx context.Context,
-	domains []string,
-	defaultDNS string,
-	timeout time.Duration,
-	maxConcurrency int,
-) []DomainPreQueryResult {
-
-	pool, _ := ants.NewPool(maxConcurrency)
-	defer pool.Release()
-
-	resultChan := make(chan DomainPreQueryResult, len(domains))
-	var wg sync.WaitGroup
-
-	for _, domain := range domains {
-		wg.Add(1)
-
-		go func(domain string) {
-			defer wg.Done()
-
-			var res DomainPreQueryResult
-			res.Domain = domain
-
-			// Step 1: 获取最终域名（CNAME 跟踪）
-			finalDomain, err := getFinalDomain(domain, defaultDNS, timeout)
-			if err != nil {
-				res.Err = err
-				res.FinalDomain = domain
-			} else {
-				res.FinalDomain = finalDomain
-			}
-
-			// Step 2: 获取 CNAME 链
-			cnameChain, err := LookupCNAMEChain(domain, defaultDNS, timeout)
-			if err == nil && len(cnameChain) > 0 {
-				res.CNAMEs = cnameChain
-			}
-
-			// Step 3: 获取权威 DNS 服务器
-			nsList := getAuthoritativeNameservers(res.FinalDomain, defaultDNS, timeout)
-			if err == nil && len(nsList) > 0 {
-				res.NameServers = nsList
-			}
-
-			select {
-			case <-ctx.Done():
-			case resultChan <- res:
-			}
-		}(domain)
-	}
-
-	go func() {
-		wg.Wait()
-		close(resultChan)
-	}()
-
-	var results []DomainPreQueryResult
-	for r := range resultChan {
-		results = append(results, r)
-	}
-
-	return results
-}
-
-// MergedResult 存放最后格式化的结果
-type MergedResult struct {
-	Domain      string   // 原始域名
-	FinalDomain string   // 最终解析出的域名（CNAME 链尾部）
-	NameServers []string // 权威 DNS 列表
-	CNAMEs      []string // CNAME 链条
-	A           []string // A 记录
-	AAAA        []string // AAAA 记录
-	CNAME       []string // CNAME 记录
-	Errors      []string // 错误信息
-}
-
-// MergeAllDomainsResults 合并每个域名下的所有地理位置的 EDNS 查询结果
-func MergeAllDomainsResults(results map[string]map[string]EDNSResult) map[string]MergedResult {
-	mergedResults := make(map[string]MergedResult)
-
-	for domain, ednsMap := range results {
-		mergedResults[domain] = MergeToMergedResult(ednsMap)
-	}
-
-	return mergedResults
-}
-
-// MergeToMergedResult 合并一个域名下所有 location 的查询结果为一个 MergedResult
-func MergeToMergedResult(locationResults map[string]EDNSResult) MergedResult {
-	mr := MergedResult{}
-	aSet := make(map[string]struct{})
-	aaaaSet := make(map[string]struct{})
-	cnameSet := make(map[string]struct{})
-	nsSet := make(map[string]struct{})
-	cnamesChainSet := make(map[string]struct{})
-	errorSet := make(map[string]struct{})
-
-	first := true
-
-	for _, res := range locationResults {
-		if first {
-			mr.Domain = res.Domain
-			mr.FinalDomain = res.FinalDomain
-			first = false
-		}
-
-		// 合并 NameServers
-		for _, ns := range res.NameServers {
-			nsSet[ns] = struct{}{}
-		}
-
-		// 合并 CNAMEs 链
-		for _, cname := range res.CNAMEs {
-			cnamesChainSet[cname] = struct{}{}
-		}
-
-		// 合并 A 记录
-		for _, a := range res.A {
-			aSet[a] = struct{}{}
-		}
-
-		// 合并 AAAA 记录
-		for _, aaaa := range res.AAAA {
-			aaaaSet[aaaa] = struct{}{}
-		}
-
-		// 合并 CNAME 记录
-		for _, cname := range res.CNAME {
-			cnameSet[cname] = struct{}{}
-		}
-
-		// 合并错误信息
-		for _, err := range res.Errors {
-			errorSet[err] = struct{}{}
-		}
-	}
-
-	mr.NameServers = keys(nsSet)
-	mr.CNAMEs = keys(cnamesChainSet)
-	mr.A = keys(aSet)
-	mr.AAAA = keys(aaaaSet)
-	mr.CNAME = keys(cnameSet)
-	mr.Errors = keys(errorSet)
-
-	return mr
-}
-
-// keys 将 map 的 key 转换为 slice（用于去重）
-func keys(m map[string]struct{}) []string {
-	list := make([]string, 0, len(m))
-	for k := range m {
-		list = append(list, k)
-	}
-	return list
 }

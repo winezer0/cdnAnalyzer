@@ -28,8 +28,8 @@ func (p *CDNProcessor) ProcessCDNInfo(checkInfo *models.CheckInfo, sourceData *m
 	)
 	// 合并 IP定位列表
 	ipLocateList := maputils.UniqueMergeSlices(
-		maputils.GetMapsUniqueValues(checkInfo.Ipv4Locate),
-		maputils.GetMapsUniqueValues(checkInfo.Ipv6Locate),
+		maputils.GetMapsValuesUnique(checkInfo.Ipv4Locate),
+		maputils.GetMapsValuesUnique(checkInfo.Ipv6Locate),
 	)
 
 	checkInfo.IpSizeIsCdn, checkInfo.IpSize = cdncheck.IpsSizeIsCdn(ipList, 3)

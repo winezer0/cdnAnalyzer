@@ -15,6 +15,22 @@ func GetMapValue(m map[string]string, key string) string {
 	return val
 }
 
+// GetMapsValuesUnique 提取maps结构中所有键值对的值
+func GetMapsValuesUnique(maps []map[string]string) []string {
+	seen := make(map[string]bool)
+	var values []string
+
+	for _, m := range maps {
+		for _, v := range m {
+			if !seen[v] {
+				seen[v] = true
+				values = append(values, v)
+			}
+		}
+	}
+	return values
+}
+
 // StructToMapString 将任意结构体实例转换为 map[string]string 非原始类型字段会尝试 JSON 序列化
 func StructToMapString(s interface{}) (map[string]string, error) {
 	result := make(map[string]string)
@@ -69,20 +85,4 @@ func ConvertStructSliceToMaps(slice interface{}) ([]map[string]string, error) {
 		results = append(results, structMap)
 	}
 	return results, nil
-}
-
-// GetMapsUniqueValues 提取maps结构中所有键值对的值
-func GetMapsUniqueValues(maps []map[string]string) []string {
-	seen := make(map[string]bool)
-	var values []string
-
-	for _, m := range maps {
-		for _, v := range m {
-			if !seen[v] {
-				seen[v] = true
-				values = append(values, v)
-			}
-		}
-	}
-	return values
 }

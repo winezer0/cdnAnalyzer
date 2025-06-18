@@ -37,40 +37,40 @@ func TestResolveEDNSDomainsWithCities(t *testing.T) {
 	// 执行批量查询
 	results := ResolveEDNSDomainsWithCities(domains, cities, timeout, maxConcurrency)
 
-	// 打印结果
-	for domain, ednsMap := range results {
-		fmt.Printf("=== Results for Domain: %s ===\n", domain)
-		for location, res := range ednsMap {
-			fmt.Printf("Location: %s\n", location)
-			fmt.Printf("  Original Domain: %s\n", res.Domain)
-			fmt.Printf("  Final Domain: %s\n", res.FinalDomain)
-			fmt.Printf("  NameServers: %v\n", res.NameServers)
-			fmt.Printf("  CNAMEs: %v\n", res.CNAMEs)
-			fmt.Printf("  A Records: %v\n", res.A)
-			fmt.Printf("  AAAA Records: %v\n", res.AAAA)
-			fmt.Printf("  CNAME Records: %v\n", res.CNAME)
-			if len(res.Errors) > 0 {
-				fmt.Printf("  Errors: %v\n", res.Errors)
-			}
-			fmt.Println()
-		}
-		fmt.Println("==================================")
-	}
+	//// 打印结果
+	//for domain, ednsMap := range results {
+	//	fmt.Printf("=== Results for Domain: %s ===\n", domain)
+	//	for location, res := range ednsMap {
+	//		fmt.Printf("Location: %s\n", location)
+	//		fmt.Printf("  Original Domain: %s\n", res.Domain)
+	//		fmt.Printf("  Final Domain: %s\n", res.FinalDomain)
+	//		fmt.Printf("  NameServers: %v\n", res.NameServers)
+	//		fmt.Printf("  CNAMEs: %v\n", res.CNAMEs)
+	//		fmt.Printf("  A Records: %v\n", res.A)
+	//		fmt.Printf("  AAAA Records: %v\n", res.AAAA)
+	//		fmt.Printf("  CNAME Records: %v\n", res.CNAME)
+	//		if len(res.Errors) > 0 {
+	//			fmt.Printf("  Errors: %v\n", res.Errors)
+	//		}
+	//		fmt.Println()
+	//	}
+	//	fmt.Println("==================================")
+	//}
 
-	mergedAll := MergeAllDomainsResults(results)
-
+	mergedAll := MergeEDNSDomainsResults(results)
 	for domain, merged := range mergedAll {
 		fmt.Printf("=== Merged Result for %s ===\n", domain)
+		fmt.Printf("basic Domain: %s\n", merged.Domain)
 		fmt.Printf("Final Domain: %s\n", merged.FinalDomain)
-		fmt.Printf("Name Servers: %v\n", merged.NameServers)
-		fmt.Printf("CNAME Chain: %v\n", merged.CNAMEs)
+		fmt.Printf("Used Locations: %v\n", merged.Locations)
 		fmt.Printf("A Records: %v\n", merged.A)
 		fmt.Printf("AAAA Records: %v\n", merged.AAAA)
 		fmt.Printf("CNAME Records: %v\n", merged.CNAME)
+		fmt.Printf("Name Servers: %v\n", merged.NameServers)
+		fmt.Printf("CNAME Chain: %v\n", merged.CNAMEs)
 		if len(merged.Errors) > 0 {
 			fmt.Printf("Errors: %v\n", merged.Errors)
 		}
 		fmt.Println()
 	}
-
 }
