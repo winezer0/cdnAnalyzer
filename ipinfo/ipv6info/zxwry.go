@@ -6,6 +6,7 @@ package ipv6info
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"github.com/zu1k/nali/pkg/wry"
 	"io"
 	"log"
@@ -18,29 +19,29 @@ type Ipv6Location struct {
 	wry.IPDB[uint64]
 }
 
-func NewIPv6Location(dbFilePath string) (*Ipv6Location, error) {
+func NewIPv6Location(filePath string) (*Ipv6Location, error) {
 	var fileData []byte
-	//dbFilePath := "zxipv6wry.db"
-	_, err := os.Stat(dbFilePath)
-	if err != nil && os.IsNotExist(err) {
-		if err != nil {
-			return nil, errors.New("数据文件不存在")
-		}
-	} else {
-		fileBase, err := os.OpenFile(dbFilePath, os.O_RDONLY, 0400)
-		if err != nil {
-			return nil, err
-		}
-		defer fileBase.Close()
 
-		fileData, err = io.ReadAll(fileBase)
-		if err != nil {
-			return nil, err
-		}
+	_, err := os.Stat(filePath)
+	if err != nil && os.IsNotExist(err) {
+		log.Fatalf("IP数据库文件[%v]不存在\n", filePath)
+		return nil, fmt.Errorf("IP数据库文件[%v]不存在", filePath)
 	}
 
-	if !checkFile(fileData) {
-		log.Fatalln("ZX IPv6数据库存在错误，请重新下载")
+	fileBase, err := os.OpenFile(filePath, os.O_RDONLY, 0400)
+	if err != nil {
+		return nil, err
+	}
+	defer fileBase.Close()
+
+	fileData, err = io.ReadAll(fileBase)
+	if err != nil {
+		return nil, err
+	}
+
+	if !checkIPv6File(fileData) {
+		log.Fatalf("IP数据库[%v]内容存在错误\n", filePath)
+		return nil, fmt.Errorf("IP数据库[%v]内容存在错误", filePath)
 	}
 
 	header := fileData[:24]
@@ -64,7 +65,7 @@ func NewIPv6Location(dbFilePath string) (*Ipv6Location, error) {
 	}, nil
 }
 
-func (db *Ipv6Location) FindByZX(query string, _ ...string) (result *wry.Result, err error) {
+func (db *Ipv6Location) find(query string) (result *wry.Result, err error) {
 	ip := net.ParseIP(query)
 	if ip == nil {
 		return nil, errors.New("query should be IPv6")
@@ -84,7 +85,7 @@ func (db *Ipv6Location) FindByZX(query string, _ ...string) (result *wry.Result,
 }
 
 func (db *Ipv6Location) Find(query string) string {
-	result, err := db.FindByZX(query)
+	result, err := db.find(query)
 	if err != nil || result == nil {
 		return ""
 	}
@@ -92,7 +93,7 @@ func (db *Ipv6Location) Find(query string) string {
 	return r
 }
 
-func checkFile(data []byte) bool {
+func checkIPv6File(data []byte) bool {
 	if len(data) < 4 {
 		return false
 	}

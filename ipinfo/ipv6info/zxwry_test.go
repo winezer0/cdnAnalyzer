@@ -14,7 +14,7 @@ func TestNewIpv6Location(t *testing.T) {
 		"fe80::5c12:27dc:93a4:3426",
 	}
 
-	dbFilePath := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\zxipv6wry.db"
+	dbFilePath := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\zxipv6wry.db"
 	ipv6, _ := NewIPv6Location(dbFilePath)
 	for _, d := range datas {
 		r := ipv6.Find(d)

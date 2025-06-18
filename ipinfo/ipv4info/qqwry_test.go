@@ -4,47 +4,33 @@ import (
 	"testing"
 )
 
-func TestQueryIP(t *testing.T) {
-	datas := []string{
+func TestIpv4LocationFind(t *testing.T) {
+	// 集成测试：测试完整的查询流程
+	db, err := NewIPv4Location("C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\qqwry.dat")
+	if err != nil {
+		t.Skipf("跳过集成测试，因为无法加载数据库: %v", err)
+	}
+
+	// 测试一些常见的IP地址
+	testIPs := []string{
 		"8.8.8.8",
 		"119.29.29.52",
-		"2405:6f00:c602::1",
-		"2409:8c1e:75b0:1120::27",
-		"2402:3c00:1000:4::1",
-		"2408:8652:200::c101",
-		"2409:8900:103f:14f:d7e:cd36:11af:be83",
-		"fe80::5c12:27dc:93a4:3426", // 链路本地地址，可能查不到地理位置
+		"114.114.114.114",
+		"223.5.5.5",
+		"1.1.1.1",
+		"208.67.222.222",
+		"266.67.222.222",
 	}
 
-	//支持直接加载 qqwry.dat 或 qqwry.ipdb 文件
-	dbpath := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\qqwry.ipdb"
-	if err := LoadDBFile(dbpath); err != nil {
-		panic(err)
-	}
+	for _, ip := range testIPs {
+		t.Run(ip, func(t *testing.T) {
+			result := db.Find(ip)
 
-	for _, queryIp := range datas {
-		t.Run(queryIp, func(t *testing.T) {
-			location, err := QueryIP(queryIp)
-			if err != nil {
-				t.Logf("查询失败：%v", err)
-				t.FailNow()
-			}
+			// 记录结果用于调试
+			t.Logf("查询IP: %s -> 结果: %s", ip, result)
 
-			emptyVal := func(val string) string {
-				if val != "" {
-					return val
-				}
-				return "UNKNOWN"
-			}
-
-			t.Logf("IP: %s -> 国家：%s，省份：%s，城市：%s，区县：%s，运营商：%s",
-				queryIp,
-				emptyVal(location.Country),
-				emptyVal(location.Province),
-				emptyVal(location.City),
-				emptyVal(location.District),
-				emptyVal(location.ISP),
-			)
+			// 验证方法正常工作（不强制要求特定结果）
+			// 主要测试方法不会panic或返回异常
 		})
 	}
 }

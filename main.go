@@ -52,7 +52,7 @@ func parseFlags() *Config {
 	flag.IntVar(&config.RandCityNum, "city-num", 5, "随机选择的城市数量")
 	flag.StringVar(&config.AsnIpv4Db, "asn-ipv4", "asset/geolite2-asn-ipv4.mmdb", "IPv4 ASN数据库路径")
 	flag.StringVar(&config.AsnIpv6Db, "asn-ipv6", "asset/geolite2-asn-ipv6.mmdb", "IPv6 ASN数据库路径")
-	flag.StringVar(&config.Ipv4LocateDb, "ipv4-db", "asset/qqwry.ipdb", "IPv4地理位置数据库路径")
+	flag.StringVar(&config.Ipv4LocateDb, "ipv4-db", "asset/qqwry.dat", "IPv4地理位置数据库路径")
 	flag.StringVar(&config.Ipv6LocateDb, "ipv6-db", "asset/zxipv6wry.db", "IPv6地理位置数据库路径")
 	flag.StringVar(&config.SourceJson, "source", "asset/source.json", "CDN源数据配置文件路径")
 
