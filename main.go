@@ -10,11 +10,55 @@ import (
 	"cdnCheck/maputils"
 	"cdnCheck/models"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"sync"
 	"time"
 )
+
+// Config 存储程序配置
+type Config struct {
+	TargetFile    string
+	OutputFile    string
+	ResolversFile string
+	ResolversNum  int
+	CityMapFile   string
+	RandCityNum   int
+	AsnIpv4Db     string
+	AsnIpv6Db     string
+	Ipv4LocateDb  string
+	Ipv6LocateDb  string
+	SourceJson    string
+}
+
+// parseFlags 解析命令行参数并返回配置
+func parseFlags() *Config {
+	config := &Config{}
+
+	// 定义命令行参数
+	flag.StringVar(&config.TargetFile, "target", "targets.txt", "目标文件路径")
+	flag.StringVar(&config.OutputFile, "output", "", "输出结果文件路径（默认为目标文件名.results.json）")
+	flag.StringVar(&config.ResolversFile, "resolvers", "asset/resolvers.txt", "DNS解析服务器配置文件路径")
+	flag.IntVar(&config.ResolversNum, "resolvers-num", 5, "选择用于解析的最大DNS服务器数量")
+	flag.StringVar(&config.CityMapFile, "city-map", "asset/city_ip.csv", "EDNS城市IP映射文件路径")
+	flag.IntVar(&config.RandCityNum, "city-num", 5, "随机选择的城市数量")
+	flag.StringVar(&config.AsnIpv4Db, "asn-ipv4", "asset/geolite2-asn-ipv4.mmdb", "IPv4 ASN数据库路径")
+	flag.StringVar(&config.AsnIpv6Db, "asn-ipv6", "asset/geolite2-asn-ipv6.mmdb", "IPv6 ASN数据库路径")
+	flag.StringVar(&config.Ipv4LocateDb, "ipv4-db", "asset/qqwry.ipdb", "IPv4地理位置数据库路径")
+	flag.StringVar(&config.Ipv6LocateDb, "ipv6-db", "asset/zxipv6wry.db", "IPv6地理位置数据库路径")
+	flag.StringVar(&config.SourceJson, "source", "asset/source.json", "CDN源数据配置文件路径")
+
+	// 解析命令行参数
+	flag.Parse()
+
+	// 设置默认输出文件路径
+	if config.OutputFile == "" {
+		config.OutputFile = config.TargetFile + ".results.json"
+	}
+
+	return config
+}
 
 func loadTargets(targetFile string) ([]string, error) {
 	targets, err := fileutils.ReadTextToList(targetFile)
@@ -102,13 +146,17 @@ func processDomain(
 }
 
 func main() {
-	targetFile := "C:\\Users\\WINDOWS\\Desktop\\demo.txt" //需要进行查询的目标文件
-	if !fileutils.IsFileExists(targetFile) {
-		fmt.Printf("file [%v] Is Not File Exists .", targetFile)
+	// 解析命令行参数
+	config := parseFlags()
+
+	// 检查目标文件是否存在
+	if !fileutils.IsFileExists(config.TargetFile) {
+		fmt.Printf("目标文件 [%v] 不存在\n", config.TargetFile)
 		os.Exit(1)
 	}
+
 	//加载输入目标
-	targets, err := loadTargets(targetFile)
+	targets, err := loadTargets(config.TargetFile)
 	if err != nil {
 		os.Exit(1)
 	}
@@ -118,17 +166,13 @@ func main() {
 	var checkResults []*models.CheckInfo
 
 	//加载dns解析服务器配置文件，用于dns解析调用
-	resolversFile := "asset/resolvers.txt" //dns解析服务器
-	resolversNum := 5                      //选择用于解析的最大DNS服务器数量 每个服务器将触发至少5次DNS解析
-	resolvers, err := loadResolvers(resolversFile, resolversNum)
+	resolvers, err := loadResolvers(config.ResolversFile, config.ResolversNum)
 	if err != nil {
 		os.Exit(1)
 	}
 
 	//加载本地EDNS城市IP信息
-	cityMapFile := "asset/city_ip.csv" //用于 EDNS 查询时模拟城市的IP
-	randCityNum := 5
-	randCities, err := loadCityMap(cityMapFile, randCityNum)
+	randCities, err := loadCityMap(config.CityMapFile, config.RandCityNum)
 	if err != nil {
 		os.Exit(1)
 	}
@@ -157,21 +201,17 @@ func main() {
 	}
 
 	//初始化IP数据库信息
-	asnIpv4Db := "asset/geolite2-asn-ipv4.mmdb" //IPv4的IP ASN数据库地址
-	asnIpv6Db := "asset/geolite2-asn-ipv6.mmdb" //IPv6的IP ASN数据库地址
 	//加载ASN db数据库
-	asndb.InitMMDBConn(asnIpv4Db, asnIpv6Db)
+	asndb.InitMMDBConn(config.AsnIpv4Db, config.AsnIpv6Db)
 	defer asndb.CloseMMDBConn()
 
 	//加载IPv4数据库
-	ipv4LocateDb := "asset/qqwry.ipdb"
-	if err := qqwry.LoadDBFile(ipv4LocateDb); err != nil {
+	if err := qqwry.LoadDBFile(config.Ipv4LocateDb); err != nil {
 		panic(err)
 	}
 
 	//加载IPv6数据库
-	ipv6LocateDb := "asset/zxipv6wry.db"
-	ipv6Engine, _ := zxipv6wry.NewIPv6Location(ipv6LocateDb)
+	ipv6Engine, _ := zxipv6wry.NewIPv6Location(config.Ipv6LocateDb)
 
 	//将 IP初始化到 checkResults
 	//将所有IP转换到
@@ -230,9 +270,8 @@ func main() {
 	}
 
 	//加载source.json配置文件 检查当前结果是否存在CDN
-	sourceJson := "asset/source.json"
 	sourceData := models.NewEmptyCDNDataPointer()
-	if err := fileutils.ReadJsonToStruct(sourceJson, sourceData); err != nil {
+	if err := fileutils.ReadJsonToStruct(config.SourceJson, sourceData); err != nil {
 		panic(err)
 	}
 	fmt.Printf("%v", maputils.AnyToJsonStr(sourceData))
@@ -253,14 +292,14 @@ func main() {
 		checkResult.IsCloud, checkResult.CloudCompany = cdncheck.CheckCategory(sourceData.CLOUD, ipList, asnList, cnameList, ipLocateList)
 	}
 
-	// Step 8: 可选：将结果写入文件
-	err = os.WriteFile(targetFile+".results.json", maputils.AnyToJsonBytes(checkResults), 0644)
+	// Step 8: 将结果写入文件
+	err = os.WriteFile(config.OutputFile, maputils.AnyToJsonBytes(checkResults), 0644)
 	//将结果写入到CSV
 	sliceToMaps, err := maputils.ConvertStructSliceToMaps(checkResults)
 	if err == nil {
 		fmt.Printf("%v", maputils.AnyToJsonStr(checkResults))
-		fileutils.WriteCSV(targetFile+".results.csv", sliceToMaps, true)
-		//fileutils.WriteCSV2(targetFile+".results.csv", sliceToMaps, true, "a+", nil)
+		csvOutputFile := config.OutputFile + ".csv"
+		fileutils.WriteCSV(csvOutputFile, sliceToMaps, true)
 	} else {
 		fmt.Errorf("Convert Struct Slice To Maps error: %v\n", err)
 	}
