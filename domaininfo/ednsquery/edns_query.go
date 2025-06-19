@@ -83,123 +83,106 @@ func ResolveEDNS(domain string, EDNSAddr string, dnsServer string, timeout time.
 	}
 }
 
-// ResolveEDNSWithCities 不再负责 CNAME / NS 查询，只执行 EDNS 查询任务
-func ResolveEDNSWithCities(domain string, finalDomain string, authoritativeNameservers []string, cnameChain []string, Cities []map[string]string, timeout time.Duration, maxConcurrency int) map[string]EDNSResult {
-	// 合并权威 DNS + 默认 DNS
-	dnsServers := []string{"8.8.8.8:53"}
-	dnsServers = maputils.UniqueMergeAnySlices(dnsServers, authoritativeNameservers)
+// ResolveEDNSWithCities 批量解析多个域名在多个 DNS 和 location 下的 EDNS 响应
+func ResolveEDNSWithCities(
+	domains []string,
+	cities []map[string]string,
+	timeout time.Duration,
+	maxConcurrency int,
+	queryCNAMES bool,
+	useSysNSQueryCNAMES bool,
+) map[string]map[string]EDNSResult {
 
-	// 创建线程池
-	pool, err := ants.NewPool(maxConcurrency, ants.WithOptions(ants.Options{
-		Nonblocking: true,
-	}))
+	// Step 1: 异步并发预查所有域名的 CNAME / NS
+	ctx := context.Background()
+	var preResults []DomainPreQueryResult
+
+	if queryCNAMES {
+		preResults = preQueryDomains(ctx, domains, timeout, maxConcurrency, useSysNSQueryCNAMES)
+	} else {
+		preResults = NewEmptyDomainPreQueryResults(domains)
+	}
+
+	// Step 2: 创建协程池进行并发查询
+	pool, err := ants.NewPool(maxConcurrency)
 	if err != nil {
 		panic(err)
 	}
 	defer pool.Release()
 
-	var wg sync.WaitGroup
-	resultMap := make(map[string]EDNSResult)
+	resultMap := make(map[string]map[string]EDNSResult)
 	var mu sync.Mutex
+	var wg sync.WaitGroup
 
-	results := make(chan struct{}, len(Cities)*len(dnsServers)) // 仅用于等待完成
+	resultsChan := make(chan struct{}, len(preResults)) // 控制等待完成
 
-	// 提交任务
-	for _, dnsServer := range dnsServers {
-		for _, entry := range Cities {
-			city := maputils.GetMapValue(entry, "City")
-			cityIP := maputils.GetMapValue(entry, "IP")
+	// 对每个域名启动任务
+	for _, pre := range preResults {
+		wg.Add(1)
 
-			wg.Add(1)
+		go func(pr DomainPreQueryResult) {
+			defer wg.Done()
 
-			task := func(city, cityIP, dnsServer string) {
-				defer wg.Done()
-				res := ResolveEDNS(finalDomain, cityIP, dnsServer, timeout)
-				key := fmt.Sprintf("%s@%s", city, dnsServer)
-				mu.Lock()
-				resultMap[key] = EDNSResult{
-					Domain:      domain,
-					FinalDomain: finalDomain,
-					NameServers: dnsServers,
-					CNAMEChains: cnameChain,
-					A:           res.A,
-					AAAA:        res.AAAA,
-					CNAME:       res.CNAME,
-					Errors:      res.Errors,
+			// 合并权威 DNS 和默认 DNS
+			dnsServers := []string{"8.8.8.8:53"}
+			if queryCNAMES && len(pr.NameServers) > 0 {
+				dnsServers = maputils.UniqueMergeSlices(dnsServers, pr.NameServers)
+			}
+
+			// 为该域名下的所有 DNS 和 Location 提交子任务
+			for _, dnsServer := range dnsServers {
+				for _, cityEntry := range cities {
+					city := maputils.GetMapValue(cityEntry, "City")
+					cityIP := maputils.GetMapValue(cityEntry, "IP")
+
+					wg.Add(1)
+
+					pool.Submit(func() {
+						defer wg.Done()
+
+						// 执行 EDNS 查询
+						res := ResolveEDNS(pr.FinalDomain, cityIP, dnsServer, timeout)
+
+						// 构造 key
+						key := fmt.Sprintf("%s@%s", city, dnsServer)
+
+						// 构建完整的 EDNSResult
+						ednsRes := EDNSResult{
+							Domain:      pr.Domain,
+							FinalDomain: pr.FinalDomain,
+							NameServers: dnsServers,
+							CNAMEChains: pr.CNAMEChains,
+							A:           res.A,
+							AAAA:        res.AAAA,
+							CNAME:       res.CNAME,
+							Errors:      res.Errors,
+						}
+
+						// 写入结果
+						mu.Lock()
+						if _, exists := resultMap[pr.Domain]; !exists {
+							resultMap[pr.Domain] = make(map[string]EDNSResult)
+						}
+						resultMap[pr.Domain][key] = ednsRes
+						mu.Unlock()
+
+						resultsChan <- struct{}{}
+					})
 				}
-				mu.Unlock()
-
-				results <- struct{}{}
 			}
-
-			err := pool.Submit(func() {
-				task(city, cityIP, dnsServer)
-			})
-
-			if err != nil {
-				go task(city, cityIP, dnsServer)
-			}
-		}
+		}(pre)
 	}
 
 	// 等待所有任务完成
 	go func() {
 		wg.Wait()
-		close(results)
+		close(resultsChan)
 	}()
 
 	// 等待所有结果
-	for range results {
-		// 仅用于接收完所有信号
+	for range resultsChan {
+		// 只用于阻塞主 goroutine
 	}
 
-	return resultMap
-}
-
-// ResolveEDNSDomainsWithCities 接收多个域名，先批量查询 CNAME / NS，再并发 EDNS 查询
-func ResolveEDNSDomainsWithCities(domains []string, Cities []map[string]string, timeout time.Duration, maxConcurrency int, queryCNAMES bool, useSysNS bool) map[string]map[string]EDNSResult {
-	// Step 1: 异步并发预查所有域名的 CNAME / NS
-	ctx := context.Background()
-
-	// 如果查询 cnames链的话 执行时间会翻倍
-	var preResults []DomainPreQueryResult
-	if queryCNAMES {
-		preResults = preQueryDomains(ctx, domains, timeout, maxConcurrency, useSysNS)
-	} else {
-		preResults = NewEmptyDomainPreQueryResults(domains)
-	}
-
-	// Step 2: 并发执行每个域名的 EDNS 查询
-	resultMap := make(map[string]map[string]EDNSResult)
-	var mu sync.Mutex
-	var wg sync.WaitGroup
-
-	pool, _ := ants.NewPool(maxConcurrency)
-	defer pool.Release()
-
-	for _, pre := range preResults {
-		wg.Add(1)
-
-		pre := pre // 捕获变量
-		pool.Submit(func() {
-			defer wg.Done()
-
-			eDNSResults := ResolveEDNSWithCities(
-				pre.Domain,
-				pre.FinalDomain,
-				pre.NameServers,
-				pre.CNAMEChains,
-				Cities,
-				timeout,
-				maxConcurrency,
-			)
-
-			mu.Lock()
-			resultMap[pre.Domain] = eDNSResults
-			mu.Unlock()
-		})
-	}
-
-	wg.Wait()
 	return resultMap
 }
