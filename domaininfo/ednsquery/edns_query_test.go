@@ -45,7 +45,7 @@ func TestResolveEDNSDomainsWithCities(t *testing.T) {
 	//		fmt.Printf("  Original Domain: %s\n", res.Domain)
 	//		fmt.Printf("  Final Domain: %s\n", res.FinalDomain)
 	//		fmt.Printf("  NameServers: %v\n", res.NameServers)
-	//		fmt.Printf("  CNAMEs: %v\n", res.CNAMEs)
+	//		fmt.Printf("  CNAMEChains: %v\n", res.CNAMEChains)
 	//		fmt.Printf("  A Records: %v\n", res.A)
 	//		fmt.Printf("  AAAA Records: %v\n", res.AAAA)
 	//		fmt.Printf("  CNAME Records: %v\n", res.CNAME)

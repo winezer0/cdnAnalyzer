@@ -43,8 +43,8 @@ func MergeToMergedResult(locationResults map[string]EDNSResult) MergedResult {
 			nsSet[ns] = struct{}{}
 		}
 
-		// 合并 CNAMEs 链
-		for _, cname := range res.CNAMEs {
+		// 合并 CNAMEChains 链
+		for _, cname := range res.CNAMEChains {
 			cnamesChainSet[cname] = struct{}{}
 		}
 

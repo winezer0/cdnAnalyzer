@@ -17,7 +17,7 @@ type EDNSResult struct {
 	Domain      string   // 原始域名
 	FinalDomain string   // 最终解析域名（CNAME 链尾部）
 	NameServers []string // 权威 DNS 列表
-	CNAMEs      []string // CNAME 链条
+	CNAMEChains []string // CNAME 链条
 	A           []string
 	AAAA        []string
 	CNAME       []string
@@ -123,7 +123,7 @@ func ResolveEDNSWithCities(domain string, finalDomain string, authoritativeNames
 					Domain:      domain,
 					FinalDomain: finalDomain,
 					NameServers: dnsServers,
-					CNAMEs:      cnameChain,
+					CNAMEChains: cnameChain,
 					A:           res.A,
 					AAAA:        res.AAAA,
 					CNAME:       res.CNAME,
