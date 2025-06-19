@@ -1,7 +1,6 @@
 package ednsquery
 
 import (
-	"cdnCheck/domaininfo/dnsquery"
 	"cdnCheck/maputils"
 	"context"
 	"fmt"
@@ -158,15 +157,14 @@ func ResolveEDNSWithCities(domain string, finalDomain string, authoritativeNames
 }
 
 // ResolveEDNSDomainsWithCities 接收多个域名，先批量查询 CNAME / NS，再并发 EDNS 查询
-func ResolveEDNSDomainsWithCities(domains []string, Cities []map[string]string, timeout time.Duration, maxConcurrency int, queryCNAMES bool) map[string]map[string]EDNSResult {
+func ResolveEDNSDomainsWithCities(domains []string, Cities []map[string]string, timeout time.Duration, maxConcurrency int, queryCNAMES bool, useSysNS bool) map[string]map[string]EDNSResult {
 	// Step 1: 异步并发预查所有域名的 CNAME / NS
 	ctx := context.Background()
 
 	// 如果查询 cnames链的话 执行时间会翻倍
 	var preResults []DomainPreQueryResult
 	if queryCNAMES {
-		defaultServerAddress := dnsquery.GetSystemDefaultAddress()
-		preResults = preQueryDomains(ctx, domains, defaultServerAddress, timeout, maxConcurrency)
+		preResults = preQueryDomains(ctx, domains, timeout, maxConcurrency, useSysNS)
 	} else {
 		preResults = NewEmptyDomainPreQueryResults(domains)
 	}

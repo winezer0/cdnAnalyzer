@@ -15,6 +15,21 @@ func UniqueMergeSlices(slices ...[]string) []string {
 	return result
 }
 
+// UniqueMergeSlicesSorted 将任意数量的 []string 字符串切片合并成一个结果切片，并去除重复项，保留首次出现的顺序。
+func UniqueMergeSlicesSorted(slices ...[]string) []string {
+	seen := make(map[string]struct{})
+	var result []string
+	for _, slice := range slices {
+		for _, item := range slice {
+			if _, exists := seen[item]; !exists {
+				seen[item] = struct{}{}
+				result = append(result, item)
+			}
+		}
+	}
+	return result
+}
+
 // UniqueMergeAnySlices Go1.18+ 泛型合并多个切片并去重（适用于所有 comparable 类型）
 func UniqueMergeAnySlices[T comparable](slices ...[]T) []T {
 	unique := make(map[T]struct{})

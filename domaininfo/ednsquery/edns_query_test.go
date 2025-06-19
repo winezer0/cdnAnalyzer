@@ -36,7 +36,7 @@ func TestResolveEDNSDomainsWithCities(t *testing.T) {
 	// === 第一次调用：启用 EDNS ===
 	t.Log("Running with EDNS enabled...")
 	start := time.Now()
-	resultsWithEDNS := ResolveEDNSDomainsWithCities(domains, cities, 5*time.Second, maxConcurrency, true)
+	resultsWithEDNS := ResolveEDNSDomainsWithCities(domains, cities, 5*time.Second, maxConcurrency, true, false)
 	durationWithEDNS := time.Since(start)
 	fmt.Printf("✅ Time taken EDNS with cnames: %v\n\n", durationWithEDNS)
 	printEDNSResultMap(MergeEDNSResultsMap(resultsWithEDNS))
@@ -45,7 +45,7 @@ func TestResolveEDNSDomainsWithCities(t *testing.T) {
 	// === 第二次调用：禁用 EDNS ===
 	t.Log("Running with EDNS disabled...")
 	start = time.Now()
-	ednsEesultsNoCNMAES := ResolveEDNSDomainsWithCities(domains, cities, 3*time.Second, maxConcurrency, false)
+	ednsEesultsNoCNMAES := ResolveEDNSDomainsWithCities(domains, cities, 3*time.Second, maxConcurrency, false, false)
 	ednsDurationNoCNMAES := time.Since(start)
 	fmt.Printf("✅ Time taken EDNS without cnames:  %v\n\n", ednsDurationNoCNMAES)
 

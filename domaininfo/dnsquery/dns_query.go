@@ -33,7 +33,7 @@ func ResolveDNS(domain, dnsServer, queryType string, timeout time.Duration) ([]s
 	client := &dns.Client{Timeout: timeout}
 	m := &dns.Msg{}
 	m.SetQuestion(dns.Fqdn(domain), dns.StringToType[queryType])
-	dnsServer = DnsServerAddPort(dnsServer)
+	dnsServer = nsServerAddPort(dnsServer)
 	resp, _, err := client.Exchange(m, dnsServer)
 	if err != nil {
 		return nil, err

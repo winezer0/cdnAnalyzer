@@ -37,19 +37,17 @@ func NewEmptyDomainPreQueryResults(domains []string) []DomainPreQueryResult {
 	return results
 }
 
-// 辅助函数：异步并发预查 CNAME / NS
-func preQueryDomains(
-	ctx context.Context,
-	domains []string,
-	defaultNS string,
-	timeout time.Duration,
-	maxConcurrency int,
-) []DomainPreQueryResult {
+// preQueryDomains 辅助函数：异步并发预查 CNAME / NS
+func preQueryDomains(ctx context.Context, domains []string, timeout time.Duration, maxConcurrency int, useSysNS bool) []DomainPreQueryResult {
+
+	defaultNS := "8.8.8.8:53"
+	if useSysNS {
+		defaultNS = dnsquery.GetSystemDefaultAddress()
+	}
 
 	pool, err := ants.NewPool(maxConcurrency)
 	if err != nil {
 		panic(err)
-		// 或者根据你的错误处理策略返回空结果或日志记录
 	}
 	defer pool.Release()
 
@@ -62,30 +60,53 @@ func preQueryDomains(
 
 		_ = pool.Submit(func() {
 			defer wg.Done()
+
+			var (
+				cnameChains []string
+				finalDomain string
+				cnameErr    error
+				nsServers   []string
+				nsErr       error
+			)
+
+			var stepWg sync.WaitGroup
+			stepWg.Add(2)
+
+			// Step 1: 并发执行 CNAME 查询
+			go func() {
+				defer stepWg.Done()
+				cnameChains, finalDomain, cnameErr = dnsquery.LookupCNAMEChains(domain, defaultNS, timeout)
+				if cnameErr != nil {
+					fmt.Printf("failed to lookup [%v] CNAME chains: %v\n", domain, cnameErr)
+				}
+			}()
+
+			// Step 2: 并发执行 NS 查询
+			go func() {
+				defer stepWg.Done()
+				nsServers, nsErr = dnsquery.LookupNSServers(domain, defaultNS, timeout)
+				if nsErr != nil {
+					fmt.Printf("failed to lookup [%v] NS servers: %v\n", domain, nsErr)
+				}
+			}()
+
+			// 等待两个步骤完成
+			stepWg.Wait()
+
+			// 填充结果
 			res := NewEmptyDomainPreQueryResult(domain)
-			// Step 1: 获取最终域名（基于 CNAMES 跟踪）
-			cnameChains, finalDomain, err := dnsquery.LookupCNAMEChains(domain, defaultNS, timeout)
-			if err != nil {
-				fmt.Printf("failed to lookup [%v] CNAME chains: %v\n", domain, err)
-			} else if len(cnameChains) > 0 {
-				fmt.Printf("success to lookup [%v] CNAME chains: %v\n", domain, cnameChains)
+			if cnameErr == nil && len(cnameChains) > 0 {
 				res.CNAMEChains = cnameChains
 				res.FinalDomain = finalDomain
+				//fmt.Printf("success to lookup [%v] Final Domain [%v] CNAME Chains: %v\n", domain, finalDomain, cnameChains)
 			}
 
-			// Step 2: 获取权威 DNS 服务器
-			nsServers, err := dnsquery.LookupNSServers(domain, defaultNS, timeout)
-			if err != nil {
-				fmt.Printf("failed to lookup [%v] NS servers: %v\n", domain, err)
-			} else if len(nsServers) > 0 {
-				nsList := make([]string, 0, len(nsServers))
-				for _, nsServer := range nsServers {
-					nsList = append(nsList, dnsquery.DnsServerAddPort(nsServer))
-				}
-				res.NameServers = nsList
-				fmt.Printf("success to lookup [%v] NS servers: %v\n", domain, nsList)
+			if nsErr == nil && len(nsServers) > 0 {
+				res.NameServers = dnsquery.NSServersAddPort(nsServers)
+				//fmt.Printf("success to lookup [%v] NS servers: %v\n", domain, res.NameServers)
 			}
 
+			// 防止在 context 被取消后继续发送结果
 			select {
 			case <-ctx.Done():
 				return
@@ -94,11 +115,13 @@ func preQueryDomains(
 		})
 	}
 
+	// 启动 goroutine 等待所有任务完成并关闭 channel
 	go func() {
 		wg.Wait()
 		close(resultChan)
 	}()
 
+	// 收集结果
 	var results []DomainPreQueryResult
 	for r := range resultChan {
 		results = append(results, r)

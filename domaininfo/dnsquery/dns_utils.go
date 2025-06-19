@@ -12,13 +12,21 @@ import (
 	"time"
 )
 
-// DnsServerAddPort 为dns服务器IP补充53端口
-func DnsServerAddPort(s string) string {
+// nsServerAddPort 为dns服务器IP补充53端口
+func nsServerAddPort(s string) string {
 	s = strings.TrimSuffix(strings.ToLower(s), ".")
 	if strings.Contains(s, ":") {
 		return s
 	}
 	return s + ":53"
+}
+
+func NSServersAddPort(nsServers []string) []string {
+	nsList := make([]string, 0, len(nsServers))
+	for _, nsServer := range nsServers {
+		nsList = append(nsList, nsServerAddPort(nsServer))
+	}
+	return nsList
 }
 
 // MergeDNSResults 合并去重多个 DNSResult
@@ -167,7 +175,8 @@ func LookupCNAMEChains(domain, dnsServer string, timeout time.Duration) ([]strin
 		if err != nil || len(cnames) == 0 {
 			break
 		}
-		cnameChains = append(cnameChains, cnames...)
+		//cnameChains = append(cnameChains, cnames...)
+		cnameChains = maputils.UniqueMergeSlicesSorted(cnameChains, cnames)
 		current = cnames[0]
 	}
 
