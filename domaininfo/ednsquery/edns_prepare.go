@@ -46,51 +46,52 @@ func preQueryDomains(
 	maxConcurrency int,
 ) []DomainPreQueryResult {
 
-	pool, _ := ants.NewPool(maxConcurrency)
+	pool, err := ants.NewPool(maxConcurrency)
+	if err != nil {
+		panic(err)
+		// 或者根据你的错误处理策略返回空结果或日志记录
+	}
 	defer pool.Release()
 
 	resultChan := make(chan DomainPreQueryResult, len(domains))
 	var wg sync.WaitGroup
 
 	for _, domain := range domains {
+		domain := domain // 避免闭包捕获问题
 		wg.Add(1)
 
-		go func(domain string) {
+		_ = pool.Submit(func() {
 			defer wg.Done()
-
-			var res DomainPreQueryResult
-			res.Domain = domain
-			res.FinalDomain = domain
-			res.NameServers = []string{}
-			res.CNAMEChains = []string{}
-
+			res := NewEmptyDomainPreQueryResult(domain)
 			// Step 1: 获取最终域名（基于 CNAMES 跟踪）
-			cnameChain, err := dnsquery.LookupCNAMEChains(domain, defaultNS, timeout)
+			cnameChains, finalDomain, err := dnsquery.LookupCNAMEChains(domain, defaultNS, timeout)
 			if err != nil {
-				fmt.Errorf("failed to lookup [%v] CNAME chains: %v\n", domain, err)
-			} else if len(cnameChain) > 0 {
-				fmt.Printf("success to lookup [%v] CNAME chains: %v\n", domain, cnameChain)
-				res.CNAMEChains = cnameChain
-				res.FinalDomain = cnameChain[len(cnameChain)-1]
+				fmt.Printf("failed to lookup [%v] CNAME chains: %v\n", domain, err)
+			} else if len(cnameChains) > 0 {
+				fmt.Printf("success to lookup [%v] CNAME chains: %v\n", domain, cnameChains)
+				res.CNAMEChains = cnameChains
+				res.FinalDomain = finalDomain
 			}
 
 			// Step 2: 获取权威 DNS 服务器
 			nsServers, err := dnsquery.LookupNSServers(domain, defaultNS, timeout)
 			if err != nil {
-				fmt.Errorf("failed to lookup [%v] NS servers: %v\n", domain, err)
+				fmt.Printf("failed to lookup [%v] NS servers: %v\n", domain, err)
 			} else if len(nsServers) > 0 {
 				nsList := make([]string, 0, len(nsServers))
 				for _, nsServer := range nsServers {
 					nsList = append(nsList, dnsquery.DnsServerAddPort(nsServer))
 				}
 				res.NameServers = nsList
+				fmt.Printf("success to lookup [%v] NS servers: %v\n", domain, nsList)
 			}
 
 			select {
 			case <-ctx.Done():
+				return
 			case resultChan <- res:
 			}
-		}(domain)
+		})
 	}
 
 	go func() {

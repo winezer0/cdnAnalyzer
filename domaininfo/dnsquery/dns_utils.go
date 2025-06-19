@@ -151,27 +151,25 @@ func GetSystemDefaultAddress() (addr string) {
 	return addr
 }
 
-// LookupCNAMEChains 查询域名的CNAME链路，直到没有CNAME为止 //只取第一个CNAME（通常只会有一个）
-func LookupCNAMEChains(domain, dnsServer string, timeout time.Duration) ([]string, error) {
+// LookupCNAMEChains 获取域名的cnames链条信息 不包含原域名
+func LookupCNAMEChains(domain, dnsServer string, timeout time.Duration) ([]string, string, error) {
 	var cnameChains []string
 	visited := make(map[string]struct{})
 	current := domain
 
 	for {
-		// 防止死循环
 		if _, ok := visited[current]; ok {
 			break
 		}
 		visited[current] = struct{}{}
-		cnameChains = append(cnameChains, current)
 
 		cnames, err := ResolveDNS(current, dnsServer, "CNAME", timeout)
 		if err != nil || len(cnames) == 0 {
-			break // 没有CNAME或查询出错，终止
+			break
 		}
-		// 只取第一个CNAME（通常只会有一个）
+		cnameChains = append(cnameChains, cnames...)
 		current = cnames[0]
 	}
 
-	return cnameChains, nil
+	return cnameChains, current, nil
 }

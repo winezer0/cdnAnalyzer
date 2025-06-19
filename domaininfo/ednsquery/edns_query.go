@@ -12,15 +12,17 @@ import (
 	"time"
 )
 
+// EDNSResult 存放最后格式化的结果
 type EDNSResult struct {
 	Domain      string   // 原始域名
-	FinalDomain string   // 最终解析域名（CNAME 链尾部）
+	FinalDomain string   // 最终解析出的域名（CNAME 链尾部）
 	NameServers []string // 权威 DNS 列表
 	CNAMEChains []string // CNAME 链条
-	A           []string
-	AAAA        []string
-	CNAME       []string
-	Errors      []string
+	A           []string // A 记录
+	AAAA        []string // AAAA 记录
+	CNAME       []string // CNAME 记录
+	Errors      []string // 错误信息
+	Locations   []string // 所有参与查询的 location（如 Beijing@8.8.8.8）
 }
 
 // eDNSMessage 创建并返回一个包含 EDNS（扩展 DNS）选项的 DNS 查询消息
@@ -160,8 +162,8 @@ func ResolveEDNSDomainsWithCities(domains []string, Cities []map[string]string, 
 	// Step 1: 异步并发预查所有域名的 CNAME / NS
 	ctx := context.Background()
 
-	var preResults []DomainPreQueryResult
 	// 如果查询 cnames链的话 执行时间会翻倍
+	var preResults []DomainPreQueryResult
 	if queryCNAMES {
 		defaultServerAddress := dnsquery.GetSystemDefaultAddress()
 		preResults = preQueryDomains(ctx, domains, defaultServerAddress, timeout, maxConcurrency)

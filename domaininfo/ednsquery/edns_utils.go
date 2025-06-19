@@ -1,21 +1,9 @@
 package ednsquery
 
-// MergedResult 存放最后格式化的结果
-// MergedResult 存放最后格式化的结果
-type MergedResult struct {
-	Domain      string   // 原始域名
-	FinalDomain string   // 最终解析出的域名（CNAME 链尾部）
-	NameServers []string // 权威 DNS 列表
-	CNAMEs      []string // CNAME 链条
-	A           []string // A 记录
-	AAAA        []string // AAAA 记录
-	CNAME       []string // CNAME 记录
-	Errors      []string // 错误信息
-	Locations   []string // 所有参与查询的 location（如 Beijing@8.8.8.8）
-}
+import "fmt"
 
-func MergeEDNSResultMap(locationResults map[string]EDNSResult) MergedResult {
-	mr := MergedResult{
+func MergeEDNSResultMap(locationResults map[string]EDNSResult) EDNSResult {
+	mr := EDNSResult{
 		Locations: make([]string, 0, len(locationResults)),
 	}
 
@@ -78,7 +66,7 @@ func MergeEDNSResultMap(locationResults map[string]EDNSResult) MergedResult {
 
 	// 合并其他字段
 	mr.NameServers = keys(nsSet)
-	mr.CNAMEs = keys(cnamesChainSet)
+	mr.CNAMEChains = keys(cnamesChainSet)
 	mr.A = keys(aSet)
 	mr.AAAA = keys(aaaaSet)
 	mr.CNAME = keys(cnameSet)
@@ -88,8 +76,8 @@ func MergeEDNSResultMap(locationResults map[string]EDNSResult) MergedResult {
 }
 
 // MergeEDNSResultsMap 合并每个域名下的所有地理位置的 EDNS 查询结果
-func MergeEDNSResultsMap(results map[string]map[string]EDNSResult) map[string]MergedResult {
-	mergedResults := make(map[string]MergedResult)
+func MergeEDNSResultsMap(results map[string]map[string]EDNSResult) map[string]EDNSResult {
+	mergedResults := make(map[string]EDNSResult)
 
 	for domain, ednsMap := range results {
 		mergedResults[domain] = MergeEDNSResultMap(ednsMap)
@@ -105,4 +93,19 @@ func keys(m map[string]struct{}) []string {
 		list = append(list, k)
 	}
 	return list
+}
+
+func printEDNSResultMap(mergedAll map[string]EDNSResult) {
+	for domain, merged := range mergedAll {
+		fmt.Printf("=== Merged Result for %s ===\n", domain)
+		fmt.Printf("basic Domain: %s\n", merged.Domain)
+		fmt.Printf("Final Domain: %s\n", merged.FinalDomain)
+		fmt.Printf("Used Locations: %v\n", merged.Locations)
+		fmt.Printf("A Records: %v\n", merged.A)
+		fmt.Printf("AAAA Records: %v\n", merged.AAAA)
+		fmt.Printf("CNAME Records: %v\n", merged.CNAME)
+		fmt.Printf("Name Servers: %v\n", merged.NameServers)
+		fmt.Printf("CNAME Chain: %v\n", merged.CNAMEChains)
+		fmt.Printf("Errors: %v\n", merged.Errors)
+	}
 }

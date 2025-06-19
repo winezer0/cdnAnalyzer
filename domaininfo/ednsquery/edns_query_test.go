@@ -31,46 +31,23 @@ func TestResolveEDNSDomainsWithCities(t *testing.T) {
 	}
 
 	// 设置超时时间和最大并发数
-	timeout := 3 * time.Second
 	maxConcurrency := 10
 
+	// === 第一次调用：启用 EDNS ===
+	t.Log("Running with EDNS enabled...")
+	start := time.Now()
+	resultsWithEDNS := ResolveEDNSDomainsWithCities(domains, cities, 5*time.Second, maxConcurrency, true)
+	durationWithEDNS := time.Since(start)
+	fmt.Printf("✅ Time taken EDNS with cnames: %v\n\n", durationWithEDNS)
+	printEDNSResultMap(MergeEDNSResultsMap(resultsWithEDNS))
+
 	// 执行批量查询
-	results := ResolveEDNSDomainsWithCities(domains, cities, timeout, maxConcurrency, true)
+	// === 第二次调用：禁用 EDNS ===
+	t.Log("Running with EDNS disabled...")
+	start = time.Now()
+	ednsEesultsNoCNMAES := ResolveEDNSDomainsWithCities(domains, cities, 3*time.Second, maxConcurrency, false)
+	ednsDurationNoCNMAES := time.Since(start)
+	fmt.Printf("✅ Time taken EDNS without cnames:  %v\n\n", ednsDurationNoCNMAES)
 
-	//// 打印结果
-	//for domain, ednsMap := range results {
-	//	fmt.Printf("=== Results for Domain: %s ===\n", domain)
-	//	for location, res := range ednsMap {
-	//		fmt.Printf("Location: %s\n", location)
-	//		fmt.Printf("  Original Domain: %s\n", res.Domain)
-	//		fmt.Printf("  Final Domain: %s\n", res.FinalDomain)
-	//		fmt.Printf("  NameServers: %v\n", res.NameServers)
-	//		fmt.Printf("  CNAMEChains: %v\n", res.CNAMEChains)
-	//		fmt.Printf("  A Records: %v\n", res.A)
-	//		fmt.Printf("  AAAA Records: %v\n", res.AAAA)
-	//		fmt.Printf("  CNAME Records: %v\n", res.CNAME)
-	//		if len(res.Errors) > 0 {
-	//			fmt.Printf("  Errors: %v\n", res.Errors)
-	//		}
-	//		fmt.Println()
-	//	}
-	//	fmt.Println("==================================")
-	//}
-
-	mergedAll := MergeEDNSResultsMap(results)
-	for domain, merged := range mergedAll {
-		fmt.Printf("=== Merged Result for %s ===\n", domain)
-		fmt.Printf("basic Domain: %s\n", merged.Domain)
-		fmt.Printf("Final Domain: %s\n", merged.FinalDomain)
-		fmt.Printf("Used Locations: %v\n", merged.Locations)
-		fmt.Printf("A Records: %v\n", merged.A)
-		fmt.Printf("AAAA Records: %v\n", merged.AAAA)
-		fmt.Printf("CNAME Records: %v\n", merged.CNAME)
-		fmt.Printf("Name Servers: %v\n", merged.NameServers)
-		fmt.Printf("CNAME Chain: %v\n", merged.CNAMEs)
-		if len(merged.Errors) > 0 {
-			fmt.Printf("Errors: %v\n", merged.Errors)
-		}
-		fmt.Println()
-	}
+	printEDNSResultMap(MergeEDNSResultsMap(ednsEesultsNoCNMAES))
 }
