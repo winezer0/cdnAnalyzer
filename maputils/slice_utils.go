@@ -19,8 +19,10 @@ func UniqueMergeSlices(slices ...[]string) []string {
 func UniqueMergeAnySlices[T comparable](slices ...[]T) []T {
 	unique := make(map[T]struct{})
 	for _, slice := range slices {
-		for _, v := range slice {
-			unique[v] = struct{}{}
+		if len(slice) > 0 {
+			for _, v := range slice {
+				unique[v] = struct{}{}
+			}
 		}
 	}
 	var result []T

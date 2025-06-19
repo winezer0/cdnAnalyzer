@@ -14,7 +14,7 @@ type MergedResult struct {
 	Locations   []string // 所有参与查询的 location（如 Beijing@8.8.8.8）
 }
 
-func MergeToMergedResult(locationResults map[string]EDNSResult) MergedResult {
+func MergeEDNSResultMap(locationResults map[string]EDNSResult) MergedResult {
 	mr := MergedResult{
 		Locations: make([]string, 0, len(locationResults)),
 	}
@@ -87,12 +87,12 @@ func MergeToMergedResult(locationResults map[string]EDNSResult) MergedResult {
 	return mr
 }
 
-// MergeEDNSDomainsResults 合并每个域名下的所有地理位置的 EDNS 查询结果
-func MergeEDNSDomainsResults(results map[string]map[string]EDNSResult) map[string]MergedResult {
+// MergeEDNSResultsMap 合并每个域名下的所有地理位置的 EDNS 查询结果
+func MergeEDNSResultsMap(results map[string]map[string]EDNSResult) map[string]MergedResult {
 	mergedResults := make(map[string]MergedResult)
 
 	for domain, ednsMap := range results {
-		mergedResults[domain] = MergeToMergedResult(ednsMap)
+		mergedResults[domain] = MergeEDNSResultMap(ednsMap)
 	}
 
 	return mergedResults

@@ -31,11 +31,11 @@ func TestResolveEDNSDomainsWithCities(t *testing.T) {
 	}
 
 	// 设置超时时间和最大并发数
-	timeout := 10 * time.Second
+	timeout := 3 * time.Second
 	maxConcurrency := 10
 
 	// 执行批量查询
-	results := ResolveEDNSDomainsWithCities(domains, cities, timeout, maxConcurrency)
+	results := ResolveEDNSDomainsWithCities(domains, cities, timeout, maxConcurrency, true)
 
 	//// 打印结果
 	//for domain, ednsMap := range results {
@@ -57,7 +57,7 @@ func TestResolveEDNSDomainsWithCities(t *testing.T) {
 	//	fmt.Println("==================================")
 	//}
 
-	mergedAll := MergeEDNSDomainsResults(results)
+	mergedAll := MergeEDNSResultsMap(results)
 	for domain, merged := range mergedAll {
 		fmt.Printf("=== Merged Result for %s ===\n", domain)
 		fmt.Printf("basic Domain: %s\n", merged.Domain)

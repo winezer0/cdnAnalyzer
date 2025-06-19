@@ -3,91 +3,105 @@ package ednsquery
 import (
 	"cdnCheck/domaininfo/dnsquery"
 	"context"
-	"errors"
 	"fmt"
-	"github.com/miekg/dns"
-	"net"
-	"strings"
+	"github.com/panjf2000/ants/v2"
+	"sync"
 	"time"
 )
 
-// lookupNSServers 递归查找最上级可用NS服务器
-func lookupNSServers(domain, dnsServer string, timeout time.Duration) ([]string, error) {
-	// 规范化域名，去除前后点
-	domain = strings.Trim(domain, ".")
-	labels := strings.Split(domain, ".")
-	for i := 0; i < len(labels); i++ {
-		parent := strings.Join(labels[i:], ".")
-		//ns, err := queryDNS(parent, dnsServer, "NS", timeout)
-		ns, err := lookupNSSOA(parent, dnsServer, timeout)
-		if err != nil || len(ns) == 0 {
-			continue // 没查到就往上一级查
-		}
-		return ns, nil
-	}
-	return nil, errors.New("no ns record found for any parent domain")
+type DomainPreQueryResult struct {
+	Domain      string
+	FinalDomain string
+	NameServers []string
+	CNAMEChains []string
+	Err         error
 }
 
-// lookupNSSOA 查询该域名的权威名称服务器（Name Server, NS）记录
-func lookupNSSOA(domain string, dnsServer string, timeout time.Duration) (adders []string, err error) {
-	client := new(dns.Client)
-	client.Timeout = timeout
-	msg := new(dns.Msg)
-	msg.SetQuestion(dns.Fqdn(domain), dns.TypeNS)
-	resp, _, err := client.Exchange(msg, dnsServer)
-	if err != nil {
-		return nil, err
+// NewEmptyDomainPreQueryResult 创建一个默认空值的 DomainPreQueryResult，只填充域名信息
+func NewEmptyDomainPreQueryResult(domain string) DomainPreQueryResult {
+	return DomainPreQueryResult{
+		Domain:      domain,
+		FinalDomain: domain,     // 默认空字符串
+		NameServers: []string{}, // 默认空切片
+		CNAMEChains: []string{}, // 默认空切片
+		Err:         nil,        // 默认无错误
 	}
-	// 检查 Authority Section 是否有 SOA
-	for _, rr := range resp.Ns {
-		if soa, ok := rr.(*dns.SOA); ok {
-			adders = append(adders, soa.Ns)
-		}
-	}
-	for _, ans := range resp.Answer {
-		if ns, ok := ans.(*dns.NS); ok {
-			adders = append(adders, ns.Ns)
-		}
-	}
-	if len(adders) == 0 {
-		return nil, errors.New("no ns record")
-	}
-	return adders, nil
 }
 
-// GetSystemDefaultAddress 获取系统默认的本地dns服务器
-func GetSystemDefaultAddress() (addr string) {
-	resolver := net.Resolver{}
-	resolver.PreferGo = true
-	resolver.Dial = func(ctx context.Context, network, address string) (net.Conn, error) {
-		addr = address
-		return nil, fmt.Errorf(address)
+// NewEmptyDomainPreQueryResults 创建一批默认空值的 DomainPreQueryResult，每个对应一个域名
+func NewEmptyDomainPreQueryResults(domains []string) []DomainPreQueryResult {
+	results := make([]DomainPreQueryResult, 0, len(domains))
+	for _, domain := range domains {
+		results = append(results, NewEmptyDomainPreQueryResult(domain))
 	}
-	_, _ = resolver.LookupHost(context.Background(), "Addr")
-	return addr
+	return results
 }
 
-// lookupCNAMEChains 查询域名的CNAME链路，直到没有CNAME为止 //只取第一个CNAME（通常只会有一个）
-func lookupCNAMEChains(domain, dnsServer string, timeout time.Duration) ([]string, error) {
-	var chain []string
-	visited := make(map[string]struct{})
-	current := domain
+// 辅助函数：异步并发预查 CNAME / NS
+func preQueryDomains(
+	ctx context.Context,
+	domains []string,
+	defaultNS string,
+	timeout time.Duration,
+	maxConcurrency int,
+) []DomainPreQueryResult {
 
-	for {
-		// 防止死循环
-		if _, ok := visited[current]; ok {
-			break
-		}
-		visited[current] = struct{}{}
-		chain = append(chain, current)
+	pool, _ := ants.NewPool(maxConcurrency)
+	defer pool.Release()
 
-		cnames, err := dnsquery.ResolveDNS(current, dnsServer, "CNAME", timeout)
-		if err != nil || len(cnames) == 0 {
-			break // 没有CNAME或查询出错，终止
-		}
-		// 只取第一个CNAME（通常只会有一个）
-		current = cnames[0]
+	resultChan := make(chan DomainPreQueryResult, len(domains))
+	var wg sync.WaitGroup
+
+	for _, domain := range domains {
+		wg.Add(1)
+
+		go func(domain string) {
+			defer wg.Done()
+
+			var res DomainPreQueryResult
+			res.Domain = domain
+			res.FinalDomain = domain
+			res.NameServers = []string{}
+			res.CNAMEChains = []string{}
+
+			// Step 1: 获取最终域名（基于 CNAMES 跟踪）
+			cnameChain, err := dnsquery.LookupCNAMEChains(domain, defaultNS, timeout)
+			if err != nil {
+				fmt.Errorf("failed to lookup [%v] CNAME chains: %v\n", domain, err)
+			} else if len(cnameChain) > 0 {
+				fmt.Printf("success to lookup [%v] CNAME chains: %v\n", domain, cnameChain)
+				res.CNAMEChains = cnameChain
+				res.FinalDomain = cnameChain[len(cnameChain)-1]
+			}
+
+			// Step 2: 获取权威 DNS 服务器
+			nsServers, err := dnsquery.LookupNSServers(domain, defaultNS, timeout)
+			if err != nil {
+				fmt.Errorf("failed to lookup [%v] NS servers: %v\n", domain, err)
+			} else if len(nsServers) > 0 {
+				nsList := make([]string, 0, len(nsServers))
+				for _, nsServer := range nsServers {
+					nsList = append(nsList, dnsquery.DnsServerAddPort(nsServer))
+				}
+				res.NameServers = nsList
+			}
+
+			select {
+			case <-ctx.Done():
+			case resultChan <- res:
+			}
+		}(domain)
 	}
 
-	return chain, nil
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	var results []DomainPreQueryResult
+	for r := range resultChan {
+		results = append(results, r)
+	}
+
+	return results
 }

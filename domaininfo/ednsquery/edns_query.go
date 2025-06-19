@@ -1,6 +1,7 @@
 package ednsquery
 
 import (
+	"cdnCheck/domaininfo/dnsquery"
 	"cdnCheck/maputils"
 	"context"
 	"fmt"
@@ -10,8 +11,6 @@ import (
 	"sync"
 	"time"
 )
-
-var defaultServerAddress = GetSystemDefaultAddress()
 
 type EDNSResult struct {
 	Domain      string   // 原始域名
@@ -76,17 +75,18 @@ func ResolveEDNS(domain string, EDNSAddr string, dnsServer string, timeout time.
 	}
 
 	return EDNSResult{
-		A:     ipv4s,
-		AAAA:  ipv6s,
-		CNAME: cnames,
+		Domain: domain,
+		A:      ipv4s,
+		AAAA:   ipv6s,
+		CNAME:  cnames,
 	}
 }
 
 // ResolveEDNSWithCities 不再负责 CNAME / NS 查询，只执行 EDNS 查询任务
 func ResolveEDNSWithCities(domain string, finalDomain string, authoritativeNameservers []string, cnameChain []string, Cities []map[string]string, timeout time.Duration, maxConcurrency int) map[string]EDNSResult {
-
 	// 合并权威 DNS + 默认 DNS
-	dnsServers := append([]string{"8.8.8.8:53"}, authoritativeNameservers...)
+	dnsServers := []string{"8.8.8.8:53"}
+	dnsServers = maputils.UniqueMergeAnySlices(dnsServers, authoritativeNameservers)
 
 	// 创建线程池
 	pool, err := ants.NewPool(maxConcurrency, ants.WithOptions(ants.Options{
@@ -113,11 +113,8 @@ func ResolveEDNSWithCities(domain string, finalDomain string, authoritativeNames
 
 			task := func(city, cityIP, dnsServer string) {
 				defer wg.Done()
-
 				res := ResolveEDNS(finalDomain, cityIP, dnsServer, timeout)
-
 				key := fmt.Sprintf("%s@%s", city, dnsServer)
-
 				mu.Lock()
 				resultMap[key] = EDNSResult{
 					Domain:      domain,
@@ -159,11 +156,18 @@ func ResolveEDNSWithCities(domain string, finalDomain string, authoritativeNames
 }
 
 // ResolveEDNSDomainsWithCities 接收多个域名，先批量查询 CNAME / NS，再并发 EDNS 查询
-func ResolveEDNSDomainsWithCities(domains []string, Cities []map[string]string, timeout time.Duration, maxConcurrency int) map[string]map[string]EDNSResult {
-
+func ResolveEDNSDomainsWithCities(domains []string, Cities []map[string]string, timeout time.Duration, maxConcurrency int, queryCNAMES bool) map[string]map[string]EDNSResult {
 	// Step 1: 异步并发预查所有域名的 CNAME / NS
 	ctx := context.Background()
-	preResults := preQueryDomains(ctx, domains, defaultServerAddress, timeout, maxConcurrency)
+
+	var preResults []DomainPreQueryResult
+	// 如果查询 cnames链的话 执行时间会翻倍
+	if queryCNAMES {
+		defaultServerAddress := dnsquery.GetSystemDefaultAddress()
+		preResults = preQueryDomains(ctx, domains, defaultServerAddress, timeout, maxConcurrency)
+	} else {
+		preResults = NewEmptyDomainPreQueryResults(domains)
+	}
 
 	// Step 2: 并发执行每个域名的 EDNS 查询
 	resultMap := make(map[string]map[string]EDNSResult)
@@ -184,7 +188,7 @@ func ResolveEDNSDomainsWithCities(domains []string, Cities []map[string]string, 
 				pre.Domain,
 				pre.FinalDomain,
 				pre.NameServers,
-				pre.CNAMEs,
+				pre.CNAMEChains,
 				Cities,
 				timeout,
 				maxConcurrency,

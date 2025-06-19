@@ -2,9 +2,14 @@ package dnsquery
 
 import (
 	"cdnCheck/maputils"
+	"context"
+	"errors"
+	"fmt"
+	"github.com/miekg/dns"
 	"net"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // DnsServerAddPort 为dns服务器IP补充53端口
@@ -80,4 +85,93 @@ func OptimizeDNSResult(dnsResult *DNSResult) {
 		}
 	}
 	dnsResult.AAAA = newAAAA
+}
+
+// LookupNSServers 递归查找最上级可用NS服务器
+func LookupNSServers(domain, dnsServer string, timeout time.Duration) ([]string, error) {
+	// 规范化域名，去除前后点
+	domain = strings.Trim(domain, ".")
+	labels := strings.Split(domain, ".")
+	for i := 0; i < len(labels); i++ {
+		parent := strings.Join(labels[i:], ".")
+		nameServers, err := lookupNSServer(parent, dnsServer, timeout)
+		if err != nil || len(nameServers) == 0 {
+			continue // 没查到就往上一级查
+		}
+		return nameServers, nil
+	}
+	return nil, errors.New("no ns record found for any parent domain")
+}
+
+// lookupNSServer 查询该域名的权威名称服务器（NS 记录）和 SOA 中的 NS
+func lookupNSServer(domain string, dnsServer string, timeout time.Duration) ([]string, error) {
+	client := new(dns.Client)
+	client.Timeout = timeout
+
+	msg := new(dns.Msg)
+	msg.SetQuestion(dns.Fqdn(domain), dns.TypeNS)
+
+	resp, _, err := client.Exchange(msg, dnsServer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query NS records: %w", err)
+	}
+
+	var nameServers []string
+
+	// 检查 Authority Section 是否有 SOA，并提取其中的 NS
+	for _, record := range resp.Ns {
+		if soa, ok := record.(*dns.SOA); ok {
+			nameServers = append(nameServers, soa.Ns)
+		}
+	}
+
+	// 提取 Answer Section 中的 NS 记录
+	for _, answerRecord := range resp.Answer {
+		if ns, ok := answerRecord.(*dns.NS); ok {
+			nameServers = append(nameServers, ns.Ns)
+		}
+	}
+
+	if len(nameServers) == 0 {
+		return nil, fmt.Errorf("no NS records found for domain: %s", domain)
+	}
+
+	return nameServers, nil
+}
+
+// GetSystemDefaultAddress 获取系统默认的本地dns服务器
+func GetSystemDefaultAddress() (addr string) {
+	resolver := net.Resolver{}
+	resolver.PreferGo = true
+	resolver.Dial = func(ctx context.Context, network, address string) (net.Conn, error) {
+		addr = address
+		return nil, fmt.Errorf(address)
+	}
+	_, _ = resolver.LookupHost(context.Background(), "Addr")
+	return addr
+}
+
+// LookupCNAMEChains 查询域名的CNAME链路，直到没有CNAME为止 //只取第一个CNAME（通常只会有一个）
+func LookupCNAMEChains(domain, dnsServer string, timeout time.Duration) ([]string, error) {
+	var cnameChains []string
+	visited := make(map[string]struct{})
+	current := domain
+
+	for {
+		// 防止死循环
+		if _, ok := visited[current]; ok {
+			break
+		}
+		visited[current] = struct{}{}
+		cnameChains = append(cnameChains, current)
+
+		cnames, err := ResolveDNS(current, dnsServer, "CNAME", timeout)
+		if err != nil || len(cnames) == 0 {
+			break // 没有CNAME或查询出错，终止
+		}
+		// 只取第一个CNAME（通常只会有一个）
+		current = cnames[0]
+	}
+
+	return cnameChains, nil
 }
