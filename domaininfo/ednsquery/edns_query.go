@@ -83,15 +83,7 @@ func ResolveEDNS(domain string, EDNSAddr string, dnsServer string, timeout time.
 }
 
 // ResolveEDNSWithCities 不再负责 CNAME / NS 查询，只执行 EDNS 查询任务
-func ResolveEDNSWithCities(
-	domain string,
-	finalDomain string,
-	authoritativeNameservers []string,
-	cnames []string,
-	Cities []map[string]string,
-	timeout time.Duration,
-	maxConcurrency int,
-) map[string]EDNSResult {
+func ResolveEDNSWithCities(domain string, finalDomain string, authoritativeNameservers []string, cnameChain []string, Cities []map[string]string, timeout time.Duration, maxConcurrency int) map[string]EDNSResult {
 
 	// 合并权威 DNS + 默认 DNS
 	dnsServers := append([]string{"8.8.8.8:53"}, authoritativeNameservers...)
@@ -131,7 +123,7 @@ func ResolveEDNSWithCities(
 					Domain:      domain,
 					FinalDomain: finalDomain,
 					NameServers: dnsServers,
-					CNAMEs:      cnames,
+					CNAMEs:      cnameChain,
 					A:           res.A,
 					AAAA:        res.AAAA,
 					CNAME:       res.CNAME,
@@ -167,12 +159,7 @@ func ResolveEDNSWithCities(
 }
 
 // ResolveEDNSDomainsWithCities 接收多个域名，先批量查询 CNAME / NS，再并发 EDNS 查询
-func ResolveEDNSDomainsWithCities(
-	domains []string,
-	Cities []map[string]string,
-	timeout time.Duration,
-	maxConcurrency int,
-) map[string]map[string]EDNSResult {
+func ResolveEDNSDomainsWithCities(domains []string, Cities []map[string]string, timeout time.Duration, maxConcurrency int) map[string]map[string]EDNSResult {
 
 	// Step 1: 异步并发预查所有域名的 CNAME / NS
 	ctx := context.Background()
@@ -193,7 +180,7 @@ func ResolveEDNSDomainsWithCities(
 		pool.Submit(func() {
 			defer wg.Done()
 
-			ednsResults := ResolveEDNSWithCities(
+			eDNSResults := ResolveEDNSWithCities(
 				pre.Domain,
 				pre.FinalDomain,
 				pre.NameServers,
@@ -204,7 +191,7 @@ func ResolveEDNSDomainsWithCities(
 			)
 
 			mu.Lock()
-			resultMap[pre.Domain] = ednsResults
+			resultMap[pre.Domain] = eDNSResults
 			mu.Unlock()
 		})
 	}
