@@ -23,9 +23,11 @@ func TestDNSProcessor_Process(t *testing.T) {
 			{"City": "Beijing", "IP": "1.1.1.1"},
 			{"City": "Shanghai", "IP": "8.8.8.8"},
 		},
-		Timeout:            5 * time.Second,
-		MaxDNSConcurrency:  5,
-		MaxEDNSConcurrency: 5,
+		Timeout:             5 * time.Second,
+		MaxDNSConcurrency:   5,
+		MaxEDNSConcurrency:  5,
+		QueryEDNSCNAMES:     true,
+		UseSysNSQueryCNAMES: false,
 	}
 
 	processor := NewDNSProcessor(config, &entries)
@@ -66,9 +68,11 @@ func TestDNSProcessor_FastProcess(t *testing.T) {
 			{"City": "Beijing", "IP": "1.1.1.1"},
 			{"City": "Shanghai", "IP": "8.8.8.8"},
 		},
-		Timeout:            5 * time.Second,
-		MaxDNSConcurrency:  5,
-		MaxEDNSConcurrency: 5,
+		Timeout:             5 * time.Second,
+		MaxDNSConcurrency:   5,
+		MaxEDNSConcurrency:  5,
+		QueryEDNSCNAMES:     true,
+		UseSysNSQueryCNAMES: false,
 	}
 
 	processor := NewDNSProcessor(config, &entries)

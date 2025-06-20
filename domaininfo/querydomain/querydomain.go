@@ -5,16 +5,19 @@ import (
 	"cdnCheck/domaininfo/dnsquery"
 	"cdnCheck/domaininfo/ednsquery"
 	"fmt"
+	"sync"
 	"time"
 )
 
 // DNSQueryConfig 存储DNS查询配置
 type DNSQueryConfig struct {
-	Resolvers          []string
-	CityMap            []map[string]string
-	Timeout            time.Duration
-	MaxDNSConcurrency  int
-	MaxEDNSConcurrency int
+	Resolvers           []string
+	CityMap             []map[string]string
+	Timeout             time.Duration
+	MaxDNSConcurrency   int
+	MaxEDNSConcurrency  int
+	QueryEDNSCNAMES     bool
+	UseSysNSQueryCNAMES bool
 }
 
 // DNSProcessor DNS查询处理器
@@ -59,8 +62,8 @@ func (pro *DNSProcessor) Process() *dnsquery.DomainDNSResultMap {
 		pro.DNSQueryConfig.CityMap,
 		pro.DNSQueryConfig.Timeout,
 		pro.DNSQueryConfig.MaxEDNSConcurrency,
-		true, // queryCNAMES
-		true, // useSysNSQueryCNAMES
+		pro.DNSQueryConfig.QueryEDNSCNAMES,
+		pro.DNSQueryConfig.UseSysNSQueryCNAMES,
 	)
 	// 合并为每域名一个EDNSResult
 	domainEDNSResultMap := ednsquery.MergeDomainCityEDNSResultMap(ednsResultMap)
@@ -72,95 +75,74 @@ func (pro *DNSProcessor) Process() *dnsquery.DomainDNSResultMap {
 
 // FastProcess 并行执行DNS和EDNS查询，并允许分别指定并发线程数
 func (pro *DNSProcessor) FastProcess() *dnsquery.DomainDNSResultMap {
-	// 1. 获取所有域名（不重复）
 	domains := classify.ExtractFMTsPtr(pro.DomainEntries)
 
-	fmt.Printf("domains: %v\n", domains)
-	fmt.Printf("resolvers: %v\n", pro.DNSQueryConfig.Resolvers)
-	fmt.Printf("cityMap: %v\n", pro.DNSQueryConfig.CityMap)
+	var finalDNSMap dnsquery.DomainDNSResultMap
+	var finalEDNSMap ednsquery.DomainEDNSResultMap
 
-	type dnsResult struct {
-		domainDNSResultMap dnsquery.DomainDNSResultMap
-	}
-	type ednsResult struct {
-		domainEDNSResultMap ednsquery.DomainEDNSResultMap
-	}
+	var wg sync.WaitGroup
+	wg.Add(2)
 
-	dnsChan := make(chan dnsResult, 1)
-	ednsChan := make(chan ednsResult, 1)
+	// DNS 查询 channel
+	dnsChan := make(chan dnsquery.DomainDNSResultMap, 1)
+	// EDNS 查询 channel
+	ednsChan := make(chan ednsquery.DomainEDNSResultMap, 1)
 
+	// 启动 DNS 查询 goroutine
 	go func() {
-		defer close(dnsChan)
+		defer wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
 				fmt.Println("DNS goroutine panic:", r)
-				dnsChan <- dnsResult{domainDNSResultMap: make(dnsquery.DomainDNSResultMap)}
+				dnsChan <- dnsquery.DomainDNSResultMap{}
 			}
 		}()
-		dnsResultMap := dnsquery.ResolveDNSWithResolversMulti(
+		resultMap := dnsquery.ResolveDNSWithResolversMulti(
 			domains,
 			nil,
 			pro.DNSQueryConfig.Resolvers,
 			pro.DNSQueryConfig.Timeout,
 			pro.DNSQueryConfig.MaxDNSConcurrency,
 		)
-		fmt.Printf("dnsResultMap len: %d  -> %v\n", len(dnsResultMap), dnsResultMap)
-		merged := dnsquery.MergeDomainResolverResultMap(dnsResultMap)
-		fmt.Printf("merged DNSResultMap len: %d  -> %v\n", len(merged), merged)
-		dnsChan <- dnsResult{domainDNSResultMap: merged}
+		merged := dnsquery.MergeDomainResolverResultMap(resultMap)
+		dnsChan <- merged
 	}()
 
+	// 启动 EDNS 查询 goroutine
 	go func() {
-		defer close(ednsChan)
+		defer wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
 				fmt.Println("EDNS goroutine panic:", r)
-				ednsChan <- ednsResult{domainEDNSResultMap: make(ednsquery.DomainEDNSResultMap)}
+				ednsChan <- ednsquery.DomainEDNSResultMap{}
 			}
 		}()
-		ednsResultMap := ednsquery.ResolveEDNSWithCities(
+		resultMap := ednsquery.ResolveEDNSWithCities(
 			domains,
 			pro.DNSQueryConfig.CityMap,
 			pro.DNSQueryConfig.Timeout,
 			pro.DNSQueryConfig.MaxEDNSConcurrency,
-			true,
-			true,
+			pro.DNSQueryConfig.QueryEDNSCNAMES,
+			pro.DNSQueryConfig.UseSysNSQueryCNAMES,
 		)
-		fmt.Printf("ednsResultMap len: %d -> %v\n", len(ednsResultMap), ednsResultMap)
-		merged := ednsquery.MergeDomainCityEDNSResultMap(ednsResultMap)
-		fmt.Printf("merged EDNSResultMap len: %d -> %v\n", len(merged), merged)
-		ednsChan <- ednsResult{domainEDNSResultMap: merged}
+		merged := ednsquery.MergeDomainCityEDNSResultMap(resultMap)
+		ednsChan <- merged
 	}()
 
-	var finalDNSMap dnsquery.DomainDNSResultMap
-	var finalEDNSMap ednsquery.DomainEDNSResultMap
+	// 等待两个任务完成并关闭channel
+	go func() {
+		wg.Wait()
+		close(dnsChan)
+		close(ednsChan)
+	}()
 
-	gotDNS := false
-	gotEDNS := false
-	for !(gotDNS && gotEDNS) {
-		select {
-		case dnsRes, ok := <-dnsChan:
-			if ok {
-				finalDNSMap = dnsRes.domainDNSResultMap
-				fmt.Printf("main: finalDNSMap after assign: %d -> %v\n", len(finalDNSMap), finalDNSMap)
-			}
-			gotDNS = true
-		case ednsRes, ok := <-ednsChan:
-			if ok {
-				finalEDNSMap = ednsRes.domainEDNSResultMap
-				fmt.Printf("main: finalEDNSMap after assign: %d -> %v\n", len(finalEDNSMap), finalEDNSMap)
-			}
-			gotEDNS = true
-		}
-	}
+	// 阻塞等待结果
+	finalDNSMap = <-dnsChan
+	finalEDNSMap = <-ednsChan
 
-	if len(finalDNSMap) == 0 {
-		fmt.Println("No DNS results found")
+	// 合并结果（如果需要）
+	if len(finalEDNSMap) > 0 {
+		MergeEDNSMapToDNSMap(finalDNSMap, finalEDNSMap)
 	}
-	if len(finalEDNSMap) == 0 {
-		fmt.Println("No EDNS results found")
-	}
-
-	MergeEDNSMapToDNSMap(finalDNSMap, finalEDNSMap)
 	return &finalDNSMap
 }
