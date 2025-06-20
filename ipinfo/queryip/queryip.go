@@ -23,26 +23,12 @@ type DBEngines struct {
 	IPv6Engine *ipv6info.Ipv6Location
 }
 
-// IPProcessor IP信息查询处理器
-type IPProcessor struct {
-	Config  *IpDbConfig
-	Engines *DBEngines
-}
-
 // IPDbInfo 存储IP解析的中间结果
 type IPDbInfo struct {
 	IPv4Locations []map[string]string
 	IPv6Locations []map[string]string
 	IPv4AsnInfos  []asninfo.ASNInfo
 	IPv6AsnInfos  []asninfo.ASNInfo
-}
-
-// NewIPProcessor 创建新的IP处理器
-func NewIPProcessor(engines *DBEngines, config *IpDbConfig) *IPProcessor {
-	return &IPProcessor{
-		Config:  config,
-		Engines: engines,
-	}
 }
 
 // InitDBEngines 初始化所有数据库引擎
@@ -81,7 +67,7 @@ func InitDBEngines(config *IpDbConfig) (*DBEngines, error) {
 }
 
 // QueryIPInfo 查询IP信息（ASN和地理位置）
-func (p *IPProcessor) QueryIPInfo(ipv4s []string, ipv6s []string) (*IPDbInfo, error) {
+func (engines *DBEngines) QueryIPInfo(ipv4s []string, ipv6s []string) (*IPDbInfo, error) {
 	info := &IPDbInfo{}
 
 	// 使用通道来并发处理IP信息
@@ -102,11 +88,11 @@ func (p *IPProcessor) QueryIPInfo(ipv4s []string, ipv6s []string) (*IPDbInfo, er
 	for _, ipv4 := range ipv4s {
 		go func(ip string) {
 			// 查询位置信息
-			location := p.Engines.IPv4Engine.Find(ip)
+			location := engines.IPv4Engine.Find(ip)
 			locationMap := map[string]string{ip: location}
 
 			// 查询ASN信息
-			asnInfo := p.Engines.AsnEngine.FindASN(ip)
+			asnInfo := engines.AsnEngine.FindASN(ip)
 
 			ipv4Chan <- ipv4Result{
 				location: locationMap,
@@ -119,11 +105,11 @@ func (p *IPProcessor) QueryIPInfo(ipv4s []string, ipv6s []string) (*IPDbInfo, er
 	for _, ipv6 := range ipv6s {
 		go func(ip string) {
 			// 查询位置信息
-			location := p.Engines.IPv6Engine.Find(ip)
+			location := engines.IPv6Engine.Find(ip)
 			locationMap := map[string]string{ip: location}
 
 			// 查询ASN信息
-			asnInfo := p.Engines.AsnEngine.FindASN(ip)
+			asnInfo := engines.AsnEngine.FindASN(ip)
 
 			ipv6Chan <- ipv6Result{
 				location: locationMap,
@@ -150,40 +136,40 @@ func (p *IPProcessor) QueryIPInfo(ipv4s []string, ipv6s []string) (*IPDbInfo, er
 }
 
 // QuerySingleIP 查询单个IP的信息
-func (p *IPProcessor) QuerySingleIP(ip string) (string, *asninfo.ASNInfo) {
+func (engines *DBEngines) QuerySingleIP(ip string) (string, *asninfo.ASNInfo) {
 	// 查询位置信息
 	var location string
 	if isIPv4(ip) {
-		location = p.Engines.IPv4Engine.Find(ip)
+		location = engines.IPv4Engine.Find(ip)
 	} else {
-		location = p.Engines.IPv6Engine.Find(ip)
+		location = engines.IPv6Engine.Find(ip)
 	}
 
 	// 查询ASN信息
-	asnInfo := p.Engines.AsnEngine.FindASN(ip)
+	asnInfo := engines.AsnEngine.FindASN(ip)
 
 	return location, asnInfo
 }
 
 // Close 关闭所有数据库连接
-func (p *IPProcessor) Close() error {
+func (engines *DBEngines) Close() error {
 	var lastErr error
 
 	// 关闭ASN数据库
-	if p.Engines.AsnEngine != nil {
-		if err := p.Engines.AsnEngine.Close(); err != nil {
+	if engines.AsnEngine != nil {
+		if err := engines.AsnEngine.Close(); err != nil {
 			lastErr = err
 		}
 	}
 
 	// 关闭IPv4数据库
-	if p.Engines.IPv4Engine != nil {
-		p.Engines.IPv4Engine.Close()
+	if engines.IPv4Engine != nil {
+		engines.IPv4Engine.Close()
 	}
 
 	// 关闭IPv6数据库
-	if p.Engines.IPv6Engine != nil {
-		p.Engines.IPv6Engine.Close()
+	if engines.IPv6Engine != nil {
+		engines.IPv6Engine.Close()
 	}
 
 	return lastErr

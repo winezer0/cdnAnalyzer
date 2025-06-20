@@ -6,6 +6,8 @@ import (
 	"cdnCheck/fileutils"
 	"cdnCheck/input"
 	"cdnCheck/ipinfo/queryip"
+	"cdnCheck/maputils"
+	"cdnCheck/models"
 	"flag"
 	"fmt"
 	"os"
@@ -14,12 +16,17 @@ import (
 
 // Config 存储程序配置
 type Config struct {
-	TargetFile      string
-	OutputFile      string
-	ResolversFile   string
-	ResolversNum    int
-	CityMapFile     string
-	RandCityNum     int
+	TargetFile string
+	OutputFile string
+
+	ResolversFile     string
+	ResolversNum      int
+	CityMapFile       string
+	CityMapNum        int
+	QueryEDNSCNAMES   bool
+	QueryEDNSUseSysNS bool
+	TimeOut           int
+
 	AsnIpv4Db       string
 	AsnIpv6Db       string
 	Ipv4LocateDb    string
@@ -27,17 +34,6 @@ type Config struct {
 	SourceJson      string
 	DNSConcurrency  int
 	EDNSConcurrency int
-	TimeOut         int
-}
-
-// ExtractIpDbConfig 从 Config 中提取出 IpDbConfig
-func (c *Config) ExtractIpDbConfig() *queryip.IpDbConfig {
-	return &queryip.IpDbConfig{
-		AsnIpv4Db:    c.AsnIpv4Db,
-		AsnIpv6Db:    c.AsnIpv6Db,
-		Ipv4LocateDb: c.Ipv4LocateDb,
-		Ipv6LocateDb: c.Ipv6LocateDb,
-	}
 }
 
 // parseFlags 解析命令行参数并返回配置
@@ -50,16 +46,20 @@ func parseFlags() *Config {
 	flag.StringVar(&config.ResolversFile, "resolvers", "asset/resolvers.txt", "DNS解析服务器配置文件路径")
 	flag.IntVar(&config.ResolversNum, "resolvers-num", 5, "选择用于解析的最大DNS服务器数量")
 	flag.StringVar(&config.CityMapFile, "city-map", "asset/city_ip.csv", "EDNS城市IP映射文件路径")
-	flag.IntVar(&config.RandCityNum, "city-num", 5, "随机选择的城市数量")
+	flag.IntVar(&config.CityMapNum, "city-num", 5, "随机选择的城市数量")
+
+	flag.IntVar(&config.DNSConcurrency, "max-dns-concurrency", 5, "DNS Concurrency")
+	flag.IntVar(&config.EDNSConcurrency, "max-edns-concurrency", 5, "EDNS Concurrency")
+	flag.IntVar(&config.TimeOut, "max-timeout-second", 5, "TimeOut Second")
+
+	flag.BoolVar(&config.QueryEDNSCNAMES, "query-edns-cnames", false, "enable query edns cnames")
+	flag.BoolVar(&config.QueryEDNSUseSysNS, "query-edns-use-sys-ns", false, "enable query edns use sys ns")
+
 	flag.StringVar(&config.AsnIpv4Db, "asn-ipv4", "asset/geolite2-asn-ipv4.mmdb", "IPv4 ASN数据库路径")
 	flag.StringVar(&config.AsnIpv6Db, "asn-ipv6", "asset/geolite2-asn-ipv6.mmdb", "IPv6 ASN数据库路径")
 	flag.StringVar(&config.Ipv4LocateDb, "ipv4-db", "asset/qqwry.dat", "IPv4地理位置数据库路径")
 	flag.StringVar(&config.Ipv6LocateDb, "ipv6-db", "asset/zxipv6wry.db", "IPv6地理位置数据库路径")
 	flag.StringVar(&config.SourceJson, "source", "asset/source.json", "CDN源数据配置文件路径")
-
-	flag.IntVar(&config.DNSConcurrency, "max-dns-concurrency", 5, "DNS Concurrency")
-	flag.IntVar(&config.EDNSConcurrency, "max-edns-concurrency", 5, "EDNS Concurrency")
-	flag.IntVar(&config.TimeOut, "max-timeoutsecond", 5, "TimeOut Second")
 
 	// 解析命令行参数
 	flag.Parse()
@@ -97,7 +97,7 @@ func main() {
 	}
 
 	//加载本地EDNS城市IP信息
-	randCities, err := input.LoadCityMap(config.CityMapFile, config.RandCityNum)
+	randCities, err := input.LoadCityMap(config.CityMapFile, config.CityMapNum)
 	if err != nil {
 		os.Exit(1)
 	}
@@ -109,27 +109,46 @@ func main() {
 		Timeout:            time.Second * time.Duration(config.TimeOut),
 		MaxDNSConcurrency:  config.DNSConcurrency,
 		MaxEDNSConcurrency: config.EDNSConcurrency,
-		QueryEDNSCNAMES:    true,
-		QueryEDNSUseSysNS:  false,
+		QueryEDNSCNAMES:    config.QueryEDNSCNAMES,
+		QueryEDNSUseSysNS:  config.QueryEDNSUseSysNS,
 	}
 	// 创建DNS处理器并执行查询
 	dnsProcessor := querydomain.NewDNSProcessor(dnsConfig, &classifier.DomainEntries)
 	dnsResult := dnsProcessor.Process()
-	fmt.Print(dnsResult)
+	fmt.Printf(maputils.AnyToJsonStr(dnsResult))
 
-	//	//存储所有结果
-	//	var checkResults []*models.CheckInfo
-	//// 初始化数据库引擎
-	//engines, err := queryip.InitDBEngines(config.ExtractIpDbConfig())
-	//if err != nil {
-	//	fmt.Printf("初始化数据库失败: %v\n", err)
-	//	os.Exit(1)
-	//}
-	////defer asninfo.Close()
-	//
-	//// 创建IP处理器
-	//ipProcessor := queryip.NewIPProcessor(engines, config.ExtractIpDbConfig())
-	//
+	//将dns查询结果合并到 CheckInfo 中去
+	var checkInfos []*models.CheckInfo
+	for _, domainEntry := range classifier.DomainEntries {
+		var checkInfo *models.CheckInfo
+		//当存在dns查询结果时,补充
+		if result, ok := (*dnsResult)[domainEntry.FMT]; ok && result != nil {
+			checkInfo = querydomain.PopulateDNSResult(domainEntry, result)
+		} else {
+			fmt.Printf("No DNS result for domain: %s\n", domainEntry.FMT)
+			checkInfo = models.NewDomainCheckInfo(domainEntry.RAW, domainEntry.FMT, domainEntry.FromUrl)
+		}
+		checkInfos = append(checkInfos, checkInfo)
+	}
+
+	fmt.Printf(maputils.AnyToJsonStr(checkInfos))
+
+	//将所有IP信息加入到[]checkInfo中
+	ipDbConfig := &queryip.IpDbConfig{
+		AsnIpv4Db:    config.AsnIpv4Db,
+		AsnIpv6Db:    config.AsnIpv6Db,
+		Ipv4LocateDb: config.Ipv4LocateDb,
+		Ipv6LocateDb: config.Ipv6LocateDb,
+	}
+
+	// 初始化IP数据库引擎
+	ipEngines, err := queryip.InitDBEngines(ipDbConfig)
+	if err != nil {
+		fmt.Printf("初始化数据库失败: %v\n", err)
+		os.Exit(1)
+	}
+	defer ipEngines.Close()
+
 	//// 处理IP信息
 	//if err := ipProcessor.ProcessCheckInfos(checkResults); err != nil {
 	//	fmt.Printf("处理IP信息失败: %v\n", err)

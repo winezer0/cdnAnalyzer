@@ -36,8 +36,8 @@ func MergeEDNSMapToDNSMap(dnsMap dnsquery.DomainDNSResultMap, ednsMap ednsquery.
 	return dnsMap
 }
 
-// populateDNSResult 将 DNS 查询结果填充到 CheckInfo 中
-func populateDNSResult(domainEntry classify.TargetEntry, query *dnsquery.DNSResult) *models.CheckInfo {
+// PopulateDNSResult 将 DNS 查询结果填充到 CheckInfo 中
+func PopulateDNSResult(domainEntry classify.TargetEntry, query *dnsquery.DNSResult) *models.CheckInfo {
 	dnsResult := models.NewDomainCheckInfo(domainEntry.RAW, domainEntry.FMT, domainEntry.FromUrl)
 
 	// 逐个复制 DNS 记录

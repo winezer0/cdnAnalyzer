@@ -1,6 +1,7 @@
 package queryip
 
 import (
+	"cdnCheck/maputils"
 	"testing"
 )
 
@@ -19,19 +20,16 @@ func TestQueryIP(t *testing.T) {
 		t.Skipf("跳过测试：无法初始化数据库引擎: %v", err)
 		return
 	}
-
-	// 创建IP处理器
-	processor := NewIPProcessor(engines, config)
-	defer processor.Close()
+	defer engines.Close()
 
 	// 测试单个IP查询
 	t.Run("TestQuerySingleIP", func(t *testing.T) {
 		// 测试IPv4
-		location, asnInfo := processor.QuerySingleIP("1.1.1.1")
+		location, asnInfo := engines.QuerySingleIP("1.1.1.1")
 		t.Logf("IPv4查询结果 - 位置: %s, ASN: %+v", location, asnInfo)
 
 		// 测试IPv6
-		location6, asnInfo6 := processor.QuerySingleIP("2001:4860:4860::8888")
+		location6, asnInfo6 := engines.QuerySingleIP("2001:4860:4860::8888")
 		t.Logf("IPv6查询结果 - 位置: %s, ASN: %+v", location6, asnInfo6)
 	})
 
@@ -40,16 +38,16 @@ func TestQueryIP(t *testing.T) {
 		ipv4s := []string{"8.8.8.8", "1.1.1.1"}
 		ipv6s := []string{"2001:4860:4860::8888", "2606:4700:4700::1111"}
 
-		ipInfo, err := processor.QueryIPInfo(ipv4s, ipv6s)
+		ipInfo, err := engines.QueryIPInfo(ipv4s, ipv6s)
 		if err != nil {
 			t.Errorf("批量查询失败: %v", err)
 			return
 		}
 
-		t.Logf("IPv4位置信息: %+v", ipInfo.IPv4Locations)
-		t.Logf("IPv6位置信息: %+v", ipInfo.IPv6Locations)
-		t.Logf("IPv4 ASN信息: %+v", ipInfo.IPv4AsnInfos)
-		t.Logf("IPv6 ASN信息: %+v", ipInfo.IPv6AsnInfos)
+		t.Logf("IPv4位置信息: %+v", maputils.AnyToJsonStr(ipInfo.IPv4Locations))
+		t.Logf("IPv6位置信息: %+v", maputils.AnyToJsonStr(ipInfo.IPv6Locations))
+		t.Logf("IPv4 ASN信息: %+v", maputils.AnyToJsonStr(ipInfo.IPv4AsnInfos))
+		t.Logf("IPv6 ASN信息: %+v", maputils.AnyToJsonStr(ipInfo.IPv6AsnInfos))
 
 		// 验证结果数量
 		if len(ipInfo.IPv4Locations) != len(ipv4s) {
