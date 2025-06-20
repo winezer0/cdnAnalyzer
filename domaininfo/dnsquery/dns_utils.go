@@ -29,35 +29,28 @@ func NSServersAddPort(nsServers []string) []string {
 	return nsList
 }
 
-// MergeDNSResults 合并去重多个 DNSResult
-func MergeDNSResults(results []DNSResult) DNSResult {
+// mergeResolverResultMap  合并去重多个 ResolverResult
+func mergeResolverResultMap(resultMap ResolverDNSResultMap) DNSResult {
 	merged := DNSResult{}
-	for _, r := range results {
-		merged.A = maputils.UniqueMergeSlices(merged.A, r.A)
-		merged.AAAA = maputils.UniqueMergeSlices(merged.AAAA, r.AAAA)
-		merged.CNAME = maputils.UniqueMergeSlices(merged.CNAME, r.CNAME)
-		merged.NS = maputils.UniqueMergeSlices(merged.NS, r.NS)
-		merged.MX = maputils.UniqueMergeSlices(merged.MX, r.MX)
-		merged.TXT = maputils.UniqueMergeSlices(merged.TXT, r.TXT)
+	for _, dnsResult := range resultMap {
+		merged.A = maputils.UniqueMergeSlices(merged.A, dnsResult.A)
+		merged.AAAA = maputils.UniqueMergeSlices(merged.AAAA, dnsResult.AAAA)
+		merged.CNAME = maputils.UniqueMergeSlices(merged.CNAME, dnsResult.CNAME)
+		merged.NS = maputils.UniqueMergeSlices(merged.NS, dnsResult.NS)
+		merged.MX = maputils.UniqueMergeSlices(merged.MX, dnsResult.MX)
+		merged.TXT = maputils.UniqueMergeSlices(merged.TXT, dnsResult.TXT)
 	}
 	return merged
 }
 
-// isDomain 判断给定字符串是否为域名
-func isDomain(s string) bool {
-	// 去除首尾空格
-	s = strings.TrimSpace(s)
-
-	// 如果是合法的 IP，则不是域名
-	if net.ParseIP(s) != nil {
-		return false
+// MergeDomainResolverResultMap 将 DomainResolverDNSResultMap 合并为 DomainDNSResultMap（去重所有 resolver 的结果）
+func MergeDomainResolverResultMap(resultMap DomainResolverDNSResultMap) DomainDNSResultMap {
+	merged := make(DomainDNSResultMap)
+	for domain, resolverMap := range resultMap {
+		mergedResult := mergeResolverResultMap(resolverMap)
+		merged[domain] = &mergedResult
 	}
-
-	// 更宽松的域名匹配：
-	// 允许字母、数字、点、连字符、下划线、星号（用于通配符）
-	// 放宽对顶级域的要求，不要求一定是 [a-zA-Z]{2,}
-	matched, _ := regexp.MatchString(`^[a-zA-Z0-9\*\-_]+(\.[a-zA-Z0-9\*\-_]+)+\.?$`, s)
-	return matched
+	return merged
 }
 
 // OptimizeDNSResult 将 A 和 AAAA 记录中的域名移动到 CNAME 中，并确保 CNAME 去重
@@ -93,6 +86,23 @@ func OptimizeDNSResult(dnsResult *DNSResult) {
 		}
 	}
 	dnsResult.AAAA = newAAAA
+}
+
+// isDomain 判断给定字符串是否为域名
+func isDomain(s string) bool {
+	// 去除首尾空格
+	s = strings.TrimSpace(s)
+
+	// 如果是合法的 IP，则不是域名
+	if net.ParseIP(s) != nil {
+		return false
+	}
+
+	// 更宽松的域名匹配：
+	// 允许字母、数字、点、连字符、下划线、星号（用于通配符）
+	// 放宽对顶级域的要求，不要求一定是 [a-zA-Z]{2,}
+	matched, _ := regexp.MatchString(`^[a-zA-Z0-9\*\-_]+(\.[a-zA-Z0-9\*\-_]+)+\.?$`, s)
+	return matched
 }
 
 // LookupNSServers 递归查找最上级可用NS服务器

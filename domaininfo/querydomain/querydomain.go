@@ -4,129 +4,163 @@ import (
 	"cdnCheck/classify"
 	"cdnCheck/domaininfo/dnsquery"
 	"cdnCheck/domaininfo/ednsquery"
-	"cdnCheck/models"
-	"encoding/json"
 	"fmt"
-	"os"
-	"sync"
 	"time"
 )
 
-// QueryConfig 存储DNS查询配置
-type QueryConfig struct {
-	Resolvers  []string
-	RandCities []map[string]string
-	Timeout    time.Duration
-}
-
-// QueryResult 存储DNS查询结果
-type QueryResult struct {
-	DomainEntry classify.TargetEntry
-	DNSResult   *dnsquery.DNSResult
+// DNSQueryConfig 存储DNS查询配置
+type DNSQueryConfig struct {
+	Resolvers          []string
+	CityMap            []map[string]string
+	Timeout            time.Duration
+	MaxDNSConcurrency  int
+	MaxEDNSConcurrency int
 }
 
 // DNSProcessor DNS查询处理器
 type DNSProcessor struct {
-	Config     *QueryConfig
-	Classifier *classify.TargetClassifier
+	DNSQueryConfig *DNSQueryConfig
+	DomainEntries  *[]classify.TargetEntry
 }
 
 // NewDNSProcessor 创建新的DNS处理器
-func NewDNSProcessor(config *QueryConfig, classifier *classify.TargetClassifier) *DNSProcessor {
+func NewDNSProcessor(dnsQueryConfig *DNSQueryConfig, domainEntry *[]classify.TargetEntry) *DNSProcessor {
 	return &DNSProcessor{
-		Config:     config,
-		Classifier: classifier,
+		DNSQueryConfig: dnsQueryConfig,
+		DomainEntries:  domainEntry,
 	}
+}
+
+// DNSQueryResult 存储DNS查询结果
+type DNSQueryResult struct {
+	DomainEntry *classify.TargetEntry
+	DNSResult   *dnsquery.DNSResult
 }
 
 // Process 执行DNS查询并收集结果
-func (p *DNSProcessor) Process() []*models.CheckInfo {
-	var checkResults []*models.CheckInfo
-	var wg sync.WaitGroup
-	dnsResultChan := make(chan *models.CheckInfo, len(p.Classifier.Domains))
+func (pro *DNSProcessor) Process() *dnsquery.DomainDNSResultMap {
+	// 1. 收集所有域名
+	domains := classify.ExtractFMTsPtr(pro.DomainEntries)
 
-	// 启动并发查询
-	for _, domainEntry := range p.Classifier.Domains {
-		wg.Add(1)
-		go processDomain(domainEntry, p.Config, dnsResultChan, &wg)
+	// 2. 批量常规DNS查询
+	dnsResultMap := dnsquery.ResolveDNSWithResolversMulti(
+		domains,
+		nil, // recordTypes, nil表示默认类型
+		pro.DNSQueryConfig.Resolvers,
+		pro.DNSQueryConfig.Timeout,
+		pro.DNSQueryConfig.MaxDNSConcurrency,
+	)
+	// 合并为每域名一个DNSResult DomainDNSResultMap
+	domainDNSResultMap := dnsquery.MergeDomainResolverResultMap(dnsResultMap)
+
+	// 3. 批量EDNS查询
+	ednsResultMap := ednsquery.ResolveEDNSWithCities(
+		domains,
+		pro.DNSQueryConfig.CityMap,
+		pro.DNSQueryConfig.Timeout,
+		pro.DNSQueryConfig.MaxEDNSConcurrency,
+		true, // queryCNAMES
+		true, // useSysNSQueryCNAMES
+	)
+	// 合并为每域名一个EDNSResult
+	domainEDNSResultMap := ednsquery.MergeDomainCityEDNSResultMap(ednsResultMap)
+
+	//合并 domainDNSResultMap 和 domainEDNSResultMap
+	domainDNSResultMap = MergeEDNSMapToDNSMap(domainDNSResultMap, domainEDNSResultMap)
+	return &domainDNSResultMap
+}
+
+// FastProcess 并行执行DNS和EDNS查询，并允许分别指定并发线程数
+func (pro *DNSProcessor) FastProcess() *dnsquery.DomainDNSResultMap {
+	// 1. 获取所有域名（不重复）
+	domains := classify.ExtractFMTsPtr(pro.DomainEntries)
+
+	fmt.Printf("domains: %v\n", domains)
+	fmt.Printf("resolvers: %v\n", pro.DNSQueryConfig.Resolvers)
+	fmt.Printf("cityMap: %v\n", pro.DNSQueryConfig.CityMap)
+
+	type dnsResult struct {
+		domainDNSResultMap dnsquery.DomainDNSResultMap
+	}
+	type ednsResult struct {
+		domainEDNSResultMap ednsquery.DomainEDNSResultMap
 	}
 
-	// 启动一个 goroutine 等待所有任务完成，并关闭 channel
+	dnsChan := make(chan dnsResult, 1)
+	ednsChan := make(chan ednsResult, 1)
+
 	go func() {
-		wg.Wait()
-		close(dnsResultChan)
+		defer close(dnsChan)
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("DNS goroutine panic:", r)
+				dnsChan <- dnsResult{domainDNSResultMap: make(dnsquery.DomainDNSResultMap)}
+			}
+		}()
+		dnsResultMap := dnsquery.ResolveDNSWithResolversMulti(
+			domains,
+			nil,
+			pro.DNSQueryConfig.Resolvers,
+			pro.DNSQueryConfig.Timeout,
+			pro.DNSQueryConfig.MaxDNSConcurrency,
+		)
+		fmt.Printf("dnsResultMap len: %d  -> %v\n", len(dnsResultMap), dnsResultMap)
+		merged := dnsquery.MergeDomainResolverResultMap(dnsResultMap)
+		fmt.Printf("merged DNSResultMap len: %d  -> %v\n", len(merged), merged)
+		dnsChan <- dnsResult{domainDNSResultMap: merged}
 	}()
 
-	// 接收DNS查询结果，实时输出，并保存到列表中
-	for dnsResult := range dnsResultChan {
-		checkResults = append(checkResults, dnsResult)
-		finalInfo, _ := json.MarshalIndent(dnsResult, "", "  ")
-		fmt.Println(string(finalInfo))
+	go func() {
+		defer close(ednsChan)
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("EDNS goroutine panic:", r)
+				ednsChan <- ednsResult{domainEDNSResultMap: make(ednsquery.DomainEDNSResultMap)}
+			}
+		}()
+		ednsResultMap := ednsquery.ResolveEDNSWithCities(
+			domains,
+			pro.DNSQueryConfig.CityMap,
+			pro.DNSQueryConfig.Timeout,
+			pro.DNSQueryConfig.MaxEDNSConcurrency,
+			true,
+			true,
+		)
+		fmt.Printf("ednsResultMap len: %d -> %v\n", len(ednsResultMap), ednsResultMap)
+		merged := ednsquery.MergeDomainCityEDNSResultMap(ednsResultMap)
+		fmt.Printf("merged EDNSResultMap len: %d -> %v\n", len(merged), merged)
+		ednsChan <- ednsResult{domainEDNSResultMap: merged}
+	}()
+
+	var finalDNSMap dnsquery.DomainDNSResultMap
+	var finalEDNSMap ednsquery.DomainEDNSResultMap
+
+	gotDNS := false
+	gotEDNS := false
+	for !(gotDNS && gotEDNS) {
+		select {
+		case dnsRes, ok := <-dnsChan:
+			if ok {
+				finalDNSMap = dnsRes.domainDNSResultMap
+				fmt.Printf("main: finalDNSMap after assign: %d -> %v\n", len(finalDNSMap), finalDNSMap)
+			}
+			gotDNS = true
+		case ednsRes, ok := <-ednsChan:
+			if ok {
+				finalEDNSMap = ednsRes.domainEDNSResultMap
+				fmt.Printf("main: finalEDNSMap after assign: %d -> %v\n", len(finalEDNSMap), finalEDNSMap)
+			}
+			gotEDNS = true
+		}
 	}
 
-	return checkResults
-}
-
-// queryDNS 执行DNS和EDNS查询
-func queryDNS(domainEntry classify.TargetEntry, config *QueryConfig) (*QueryResult, error) {
-	domain := domainEntry.Fmt
-
-	// 常规 DNS 查询
-	dnsResults := dnsquery.ResolveDNSWithResolvers(domain, config.Resolvers, config.Timeout, maxConcurrency)
-	dnsQueryResult := dnsquery.MergeDNSResults(dnsResults)
-
-	// EDNS 查询
-	eDNSQueryResults := ednsquery.ResolveEDNSWithCities(domain, config.Timeout, config.RandCities, false)
-	if len(eDNSQueryResults) == 0 {
-		fmt.Fprintf(os.Stderr, "EDNS 查询结果为空: %s\n", domain)
-	} else {
-		eDNSQueryResult := MergeEDNSResults(eDNSQueryResults)
-		dnsQueryResult = MergeEDNSToDNS(eDNSQueryResult, dnsQueryResult)
+	if len(finalDNSMap) == 0 {
+		fmt.Println("No DNS results found")
+	}
+	if len(finalEDNSMap) == 0 {
+		fmt.Println("No EDNS results found")
 	}
 
-	// 优化DNS查询结果
-	dnsquery.OptimizeDNSResult(&dnsQueryResult)
-
-	return &QueryResult{
-		DomainEntry: domainEntry,
-		DNSResult:   &dnsQueryResult,
-	}, nil
-}
-
-// processDomain 处理单个域名查询任务
-func processDomain(
-	domainEntry classify.TargetEntry,
-	config *QueryConfig,
-	resultChan chan<- *models.CheckInfo,
-	wg *sync.WaitGroup,
-) {
-	defer wg.Done()
-
-	// 执行DNS查询
-	queryResult, err := queryDNS(domainEntry, config)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "DNS查询失败 [%s]: %v\n", domainEntry.Fmt, err)
-		return
-	}
-
-	// 填充结果
-	dnsResult := populateDNSResult(queryResult.DomainEntry, queryResult.DNSResult)
-
-	// 发送结果到 channel
-	resultChan <- dnsResult
-}
-
-// populateDNSResult 将 DNS 查询结果填充到 CheckInfo 中
-func populateDNSResult(domainEntry classify.TargetEntry, query *dnsquery.DNSResult) *models.CheckInfo {
-	result := models.NewDomainCheckInfo(domainEntry.Raw, domainEntry.Fmt, domainEntry.FromUrl)
-
-	// 逐个复制 DNS 记录
-	result.A = append(result.A, query.A...)
-	result.AAAA = append(result.AAAA, query.AAAA...)
-	result.CNAME = append(result.CNAME, query.CNAME...)
-	result.NS = append(result.NS, query.NS...)
-	result.MX = append(result.MX, query.MX...)
-	result.TXT = append(result.TXT, query.TXT...)
-
-	return result
+	MergeEDNSMapToDNSMap(finalDNSMap, finalEDNSMap)
+	return &finalDNSMap
 }

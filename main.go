@@ -82,7 +82,7 @@ func main() {
 	if err != nil {
 		os.Exit(1)
 	}
-	//分类输入数据为 IP Domain Invalid
+	//分类输入数据为 IP Domain InvalidEntries
 	classifier := classify.ClassifyTargets(targets)
 	//存储所有结果
 	var checkResults []*models.CheckInfo
@@ -100,13 +100,13 @@ func main() {
 	}
 
 	// 配置DNS查询参数
-	dnsConfig := &querydomain.QueryConfig{
-		Resolvers:  resolvers,
-		RandCities: randCities,
-		Timeout:    5 * time.Second,
+	dnsConfig := &querydomain.DNSQueryConfig{
+		Resolvers: resolvers,
+		CityMap:   randCities,
+		Timeout:   5 * time.Second,
 	}
 	// 创建DNS处理器并执行查询
-	dnsProcessor := querydomain.NewDNSProcessor(dnsConfig, classifier)
+	dnsProcessor := querydomain.NewDNSProcessor(dnsConfig, &classifier.DomainEntries)
 	checkResults = dnsProcessor.Process()
 
 	// 初始化数据库引擎

@@ -44,7 +44,7 @@ func IsValidIP(target string) (bool, string) {
 func classifyTarget(target string) (string, string, string, bool, bool) {
 	target = strings.TrimSpace(target)
 	if target == "" {
-		return "Invalid", "", "", false, false
+		return "InvalidEntries", "", "", false, false
 	}
 
 	// 先尝试作为 URL 解析
@@ -92,5 +92,14 @@ func classifyTarget(target string) (string, string, string, bool, bool) {
 		return "Domain", target, target, false, false
 	}
 
-	return "Invalid", target, "", false, false
+	return "InvalidEntries", target, "", false, false
+}
+
+// ExtractFMTsPtr 从 TargetEntry 切片中提取所有 FMT 字段，返回字符串切片
+func ExtractFMTsPtr(entries *[]TargetEntry) []string {
+	fmtList := make([]string, 0, len(*entries))
+	for _, entry := range *entries {
+		fmtList = append(fmtList, entry.FMT)
+	}
+	return fmtList
 }

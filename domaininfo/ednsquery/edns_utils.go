@@ -2,9 +2,19 @@ package ednsquery
 
 import "fmt"
 
-func MergeEDNSResultMap(locationResults map[string]EDNSResult) EDNSResult {
+func mergeCityEDNSResultMap(cityEDNSResultMap CityEDNSResultMap) *EDNSResult {
+	if len(cityEDNSResultMap) == 0 {
+		return &EDNSResult{}
+	}
+
 	mr := EDNSResult{
-		Locations: make([]string, 0, len(locationResults)),
+		Locations:   make([]string, 0, len(cityEDNSResultMap)),
+		A:           nil,
+		AAAA:        nil,
+		CNAME:       nil,
+		NameServers: nil,
+		CNAMEChains: nil,
+		Errors:      nil,
 	}
 
 	aSet := make(map[string]struct{})
@@ -13,13 +23,14 @@ func MergeEDNSResultMap(locationResults map[string]EDNSResult) EDNSResult {
 	nsSet := make(map[string]struct{})
 	cnamesChainSet := make(map[string]struct{})
 	errorSet := make(map[string]struct{})
+	locationSet := make(map[string]struct{})
 
-	first := true
+	var first = true
+	for location, res := range cityEDNSResultMap {
+		// 记录 location
+		locationSet[location] = struct{}{}
 
-	for location, res := range locationResults {
-		// 收集 location
-		mr.Locations = append(mr.Locations, location)
-
+		// 设置 Domain 和 FinalDomain（只取第一个）
 		if first {
 			mr.Domain = res.Domain
 			mr.FinalDomain = res.FinalDomain
@@ -27,44 +38,20 @@ func MergeEDNSResultMap(locationResults map[string]EDNSResult) EDNSResult {
 		}
 
 		// 合并 NameServers
-		for _, ns := range res.NameServers {
-			nsSet[ns] = struct{}{}
-		}
+		addStringsToSet(res.NameServers, nsSet)
 
-		// 合并 CNAMEChains 链
-		for _, cname := range res.CNAMEChains {
-			cnamesChainSet[cname] = struct{}{}
-		}
+		// 合并 CNAME 链条
+		addStringsToSet(res.CNAMEChains, cnamesChainSet)
 
-		// 合并 A 记录
-		for _, a := range res.A {
-			aSet[a] = struct{}{}
-		}
-
-		// 合并 AAAA 记录
-		for _, aaaa := range res.AAAA {
-			aaaaSet[aaaa] = struct{}{}
-		}
-
-		// 合并 CNAME 记录
-		for _, cname := range res.CNAME {
-			cnameSet[cname] = struct{}{}
-		}
-
-		// 合并错误信息
-		for _, err := range res.Errors {
-			errorSet[err] = struct{}{}
-		}
+		// 合并 A/AAAA/CNAME/错误
+		addStringsToSet(res.A, aSet)
+		addStringsToSet(res.AAAA, aaaaSet)
+		addStringsToSet(res.CNAME, cnameSet)
+		addStringsToSet(res.Errors, errorSet)
 	}
 
-	// 对 Locations 去重（可选）
-	locationMap := make(map[string]struct{})
-	for _, loc := range mr.Locations {
-		locationMap[loc] = struct{}{}
-	}
-	mr.Locations = keys(locationMap)
-
-	// 合并其他字段
+	// 转换 set 到 slice
+	mr.Locations = keys(locationSet)
 	mr.NameServers = keys(nsSet)
 	mr.CNAMEChains = keys(cnamesChainSet)
 	mr.A = keys(aSet)
@@ -72,17 +59,15 @@ func MergeEDNSResultMap(locationResults map[string]EDNSResult) EDNSResult {
 	mr.CNAME = keys(cnameSet)
 	mr.Errors = keys(errorSet)
 
-	return mr
+	return &mr
 }
 
-// MergeEDNSResultsMap 合并每个域名下的所有地理位置的 EDNS 查询结果
-func MergeEDNSResultsMap(results map[string]map[string]EDNSResult) map[string]EDNSResult {
-	mergedResults := make(map[string]EDNSResult)
-
+// MergeDomainCityEDNSResultMap 合并每个域名下的所有地理位置的 EDNS 查询结果
+func MergeDomainCityEDNSResultMap(results DomainCityEDNSResultMap) DomainEDNSResultMap {
+	mergedResults := make(DomainEDNSResultMap)
 	for domain, ednsMap := range results {
-		mergedResults[domain] = MergeEDNSResultMap(ednsMap)
+		mergedResults[domain] = mergeCityEDNSResultMap(ednsMap)
 	}
-
 	return mergedResults
 }
 
@@ -95,9 +80,16 @@ func keys(m map[string]struct{}) []string {
 	return list
 }
 
-func printEDNSResultMap(mergedAll map[string]EDNSResult) {
+// addStringsToSet 将字符串切片加入 map
+func addStringsToSet(items []string, set map[string]struct{}) {
+	for _, item := range items {
+		set[item] = struct{}{}
+	}
+}
+
+func printEDNSResultMap(mergedAll map[string]*EDNSResult) {
 	for domain, merged := range mergedAll {
-		fmt.Printf("=== Merged Result for %s ===\n", domain)
+		fmt.Printf("=== Merged DNSResult for %s ===\n", domain)
 		fmt.Printf("basic Domain: %s\n", merged.Domain)
 		fmt.Printf("Final Domain: %s\n", merged.FinalDomain)
 		fmt.Printf("Used Locations: %v\n", merged.Locations)

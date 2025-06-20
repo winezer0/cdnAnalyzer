@@ -24,6 +24,10 @@ type EDNSResult struct {
 	Locations   []string // 所有参与查询的 location（如 Beijing@8.8.8.8）
 }
 
+type DomainCityEDNSResultMap = map[string]map[string]*EDNSResult
+type CityEDNSResultMap = map[string]*EDNSResult
+type DomainEDNSResultMap = map[string]*EDNSResult
+
 // eDNSMessage 创建并返回一个包含 EDNS（扩展 DNS）选项的 DNS 查询消息
 func eDNSMessage(domain, EDNSAddr string) *dns.Msg {
 	e := new(dns.EDNS0_SUBNET) // EDNS
@@ -91,7 +95,7 @@ func ResolveEDNSWithCities(
 	maxConcurrency int,
 	queryCNAMES bool,
 	useSysNSQueryCNAMES bool,
-) map[string]map[string]EDNSResult {
+) DomainCityEDNSResultMap {
 
 	// Step 1: 异步并发预查所有域名的 CNAME / NS
 	ctx := context.Background()
@@ -110,7 +114,7 @@ func ResolveEDNSWithCities(
 	}
 	defer pool.Release()
 
-	resultMap := make(map[string]map[string]EDNSResult)
+	resultMap := make(DomainCityEDNSResultMap)
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
@@ -161,9 +165,9 @@ func ResolveEDNSWithCities(
 						// 写入结果
 						mu.Lock()
 						if _, exists := resultMap[pr.Domain]; !exists {
-							resultMap[pr.Domain] = make(map[string]EDNSResult)
+							resultMap[pr.Domain] = make(CityEDNSResultMap)
 						}
-						resultMap[pr.Domain][key] = ednsRes
+						resultMap[pr.Domain][key] = &ednsRes
 						mu.Unlock()
 
 						resultsChan <- struct{}{}

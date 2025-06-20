@@ -1,7 +1,7 @@
 package dnsquery
 
 import (
-	"context"
+	"cdnCheck/maputils"
 	"fmt"
 	"strings"
 	"sync"
@@ -11,22 +11,36 @@ import (
 	"github.com/panjf2000/ants/v2"
 )
 
-// DNSResult 统一返回结构
+// DNSResult 表示一个解析器对某个域名的查询结果（按 recordType 分类）
 type DNSResult struct {
-	A     []string          `json:"A"`
-	AAAA  []string          `json:"AAAA"`
-	CNAME []string          `json:"CNAME"`
-	NS    []string          `json:"NS"`
-	MX    []string          `json:"MX"`
-	TXT   []string          `json:"TXT"`
-	Error map[string]string `json:"error,omitempty"`
+	A     []string          `json:"A,omitempty"`
+	AAAA  []string          `json:"AAAA,omitempty"`
+	CNAME []string          `json:"CNAME,omitempty"`
+	MX    []string          `json:"MX,omitempty"`
+	NS    []string          `json:"NS,omitempty"`
+	TXT   []string          `json:"TXT,omitempty"`
+	Error map[string]string `json:"Error,omitempty"` // key: record type, value: error message
 }
 
-// ResolverResult 表示单个解析器的完整结果
-type ResolverResult struct {
-	Resolver string    `json:"resolver"`
-	Result   DNSResult `json:"result,omitempty"`
+// NewEmptyDNSQueryResult 返回一个空的 DNS 查询结果对象
+func NewEmptyDNSQueryResult() *DNSResult {
+	return &DNSResult{
+		A:     nil,
+		AAAA:  nil,
+		CNAME: nil,
+		MX:    nil,
+		NS:    nil,
+		TXT:   nil,
+		Error: make(map[string]string),
+	}
 }
+
+var DefaultRecordTypesSlice = []string{"A", "AAAA", "CNAME", "NS", "MX", "TXT"}
+
+// DomainResolverDNSResultMap 是最终返回的结构：domain -> resolver -> 查询结果（使用指针避免拷贝）
+type DomainResolverDNSResultMap = map[string]map[string]*DNSResult
+type ResolverDNSResultMap = map[string]*DNSResult
+type DomainDNSResultMap = map[string]*DNSResult
 
 // ResolveDNS 查询指定类型的DNS记录，支持超时
 func ResolveDNS(domain, dnsServer, queryType string, timeout time.Duration) ([]string, error) {
@@ -63,131 +77,41 @@ func parseRecord(resp *dns.Msg) []string {
 }
 
 // setRecord 将结果写入对应的字段
-func setRecord(res *DNSResult, qType string, records []string) {
+func setRecord(result *DNSResult, qType string, recs []string) {
 	switch qType {
 	case "A":
-		res.A = records
+		result.A = maputils.UniqueMergeSlices(result.A, recs)
 	case "AAAA":
-		res.AAAA = records
+		result.AAAA = maputils.UniqueMergeSlices(result.AAAA, recs)
 	case "CNAME":
-		res.CNAME = records
-	case "NS":
-		res.NS = records
+		result.CNAME = maputils.UniqueMergeSlices(result.CNAME, recs)
 	case "MX":
-		res.MX = records
+		result.MX = maputils.UniqueMergeSlices(result.MX, recs)
+	case "NS":
+		result.NS = maputils.UniqueMergeSlices(result.NS, recs)
 	case "TXT":
-		res.TXT = records
+		result.TXT = maputils.UniqueMergeSlices(result.TXT, recs)
 	}
 }
 
-var DefaultRecordTypesSlice = []string{"A", "AAAA", "CNAME", "NS", "MX", "TXT"}
-
-// ResolveDNSWithResolvers 并发查询多个 DNS 解析器的指定记录类型（默认全部）
-func ResolveDNSWithResolvers(
-	ctx context.Context,
-	domain string,
+// ResolveDNSWithResolversMulti 支持多个 domain，并发控制，返回结构化结果（使用指针优化 map 操作）
+func ResolveDNSWithResolversMulti(
+	domains []string,
 	recordTypes []string,
 	resolvers []string,
 	timeout time.Duration,
 	maxConcurrency int,
-) []ResolverResult {
-
-	if recordTypes == nil || len(recordTypes) == 0 {
-		recordTypes = DefaultRecordTypesSlice
-	}
-
-	results := make([]ResolverResult, len(resolvers))
-	var mu sync.Mutex
-	var wg sync.WaitGroup
-
-	// 创建 ants 线程池
-	pool, err := ants.NewPool(maxConcurrency, ants.WithOptions(ants.Options{
-		Nonblocking: true, // 提交失败不阻塞主线程
-	}))
-	if err != nil {
-		panic(err)
-	}
-	defer pool.Release()
-
-	// 为每个 resolver 提交一个任务
-	for i, resolver := range resolvers {
-		i, resolver := i, resolver
-		wg.Add(1)
-
-		_ = pool.Submit(func() {
-			defer wg.Done()
-
-			result := DNSResult{Error: make(map[string]string)}
-
-			for _, qType := range recordTypes {
-				select {
-				case <-ctx.Done():
-					mu.Lock()
-					result.Error[qType] = ctx.Err().Error()
-					mu.Unlock()
-					return
-				default:
-				}
-
-				recs, err := ResolveDNS(domain, resolver, qType, timeout)
-				mu.Lock()
-				if err != nil {
-					result.Error[qType] = err.Error()
-				} else {
-					setRecord(&result, qType, recs)
-				}
-				mu.Unlock()
-			}
-
-			mu.Lock()
-			results[i] = ResolverResult{
-				Resolver: resolver,
-				Result:   result,
-			}
-			mu.Unlock()
-		})
-	}
-
-	// 等待所有任务完成
-	wg.Wait()
-	return results
-}
-
-type DNSResultForTask struct {
-	Resolver string
-	QType    string
-	Records  []string
-	Error    error
-}
-
-// ResolveDNSWithResolversAtom 更加原子性的查询操作  没有实现上下文处理
-func ResolveDNSWithResolversAtom(
-	domain string,
-	recordTypes []string,
-	resolvers []string,
-	timeout time.Duration,
-	maxConcurrency int,
-) []ResolverResult {
+) DomainResolverDNSResultMap {
 
 	if len(recordTypes) == 0 {
 		recordTypes = DefaultRecordTypesSlice
 	}
 
-	// 最终结果数组
-	results := make([]ResolverResult, len(resolvers))
-	resolverMap := make(map[string]int) // resolver -> index
-	for i, r := range resolvers {
-		resolverMap[r] = i
-		results[i] = ResolverResult{
-			Resolver: r,
-			Result:   DNSResult{Error: make(map[string]string)},
-		}
-	}
-
-	var wg sync.WaitGroup
+	results := make(map[string]map[string]*DNSResult)
 	var mu sync.Mutex
+	var wgAll sync.WaitGroup
 
-	// 创建线程池
+	// 创建 goroutine 池
 	pool, err := ants.NewPool(maxConcurrency, ants.WithOptions(ants.Options{
 		Nonblocking: true,
 	}))
@@ -196,51 +120,61 @@ func ResolveDNSWithResolversAtom(
 	}
 	defer pool.Release()
 
-	// 为每个 resolver 的每个 recordType 提交任务
-	for _, resolver := range resolvers {
-		for _, qType := range recordTypes {
-			wg.Add(1)
-
-			// 捕获变量
+	// 初始化每个 domain 的结果容器
+	for _, domain := range domains {
+		domain := domain
+		results[domain] = make(map[string]*DNSResult)
+		for _, resolver := range resolvers {
 			resolver := resolver
-			qType := qType
+			results[domain][resolver] = NewEmptyDNSQueryResult()
+		}
+	}
 
-			err := pool.Submit(func() {
-				defer wg.Done()
+	// 提交并发任务
+	for _, domain := range domains {
+		domain := domain
+		for _, resolver := range resolvers {
+			resolver := resolver
+			for _, qType := range recordTypes {
+				qType := qType
+				wgAll.Add(1)
 
-				recs, err := ResolveDNS(domain, resolver, qType, timeout)
-
-				mu.Lock()
-				idx := resolverMap[resolver]
-				if err != nil {
-					results[idx].Result.Error[qType] = err.Error()
-				} else {
-					setRecord(&results[idx].Result, qType, recs)
-				}
-				mu.Unlock()
-			})
-
-			if err != nil {
-				// 回退：同步执行
-				go func() {
-					defer wg.Done()
+				err := pool.Submit(func() {
+					defer wgAll.Done()
 
 					recs, err := ResolveDNS(domain, resolver, qType, timeout)
 
 					mu.Lock()
-					idx := resolverMap[resolver]
 					if err != nil {
-						results[idx].Result.Error[qType] = err.Error()
+						results[domain][resolver].Error[qType] = err.Error()
 					} else {
-						setRecord(&results[idx].Result, qType, recs)
+						setRecord(results[domain][resolver], qType, recs)
 					}
 					mu.Unlock()
-				}()
+				})
+
+				if err != nil {
+					// 回退到同步执行
+					go func() {
+						defer wgAll.Done()
+
+						recs, err := ResolveDNS(domain, resolver, qType, timeout)
+
+						mu.Lock()
+						if err != nil {
+							results[domain][resolver].Error[qType] = err.Error()
+						} else {
+							setRecord(results[domain][resolver], qType, recs)
+						}
+						mu.Unlock()
+					}()
+				}
 			}
 		}
 	}
 
 	// 等待所有任务完成
-	wg.Wait()
+	wgAll.Wait()
+
 	return results
 }

@@ -36,10 +36,10 @@ func TestResolveEDNSDomainsWithCities(t *testing.T) {
 	// === 第一次调用：启用 EDNS ===
 	t.Log("Running with EDNS enabled...")
 	start := time.Now()
-	resultsWithEDNS := ResolveEDNSWithCities(domains, cities, 5*time.Second, maxConcurrency, true, true)
+	resultsWithEDNS := ResolveEDNSWithCities(domains, cities, 5*time.Second, maxConcurrency, true, false)
 	durationWithEDNS := time.Since(start)
+	printEDNSResultMap(MergeDomainCityEDNSResultMap(resultsWithEDNS))
 	fmt.Printf("✅ Time taken EDNS with cnames: %v\n\n", durationWithEDNS)
-	printEDNSResultMap(MergeEDNSResultsMap(resultsWithEDNS))
 
 	// 执行批量查询
 	// === 第二次调用：禁用 EDNS ===
@@ -47,7 +47,6 @@ func TestResolveEDNSDomainsWithCities(t *testing.T) {
 	start = time.Now()
 	ednsEesultsNoCNMAES := ResolveEDNSWithCities(domains, cities, 3*time.Second, maxConcurrency, false, false)
 	ednsDurationNoCNMAES := time.Since(start)
+	printEDNSResultMap(MergeDomainCityEDNSResultMap(ednsEesultsNoCNMAES))
 	fmt.Printf("✅ Time taken EDNS without cnames:  %v\n\n", ednsDurationNoCNMAES)
-
-	printEDNSResultMap(MergeEDNSResultsMap(ednsEesultsNoCNMAES))
 }
