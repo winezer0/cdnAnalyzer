@@ -1,7 +1,6 @@
-package queryip
+package cdncheck
 
 import (
-	"cdnCheck/cdncheck"
 	"cdnCheck/ipinfo/asninfo"
 	"cdnCheck/maputils"
 	"cdnCheck/models"
@@ -32,12 +31,12 @@ func (p *CDNProcessor) ProcessCDNInfo(checkInfo *models.CheckInfo, sourceData *m
 		maputils.GetMapsValuesUnique(checkInfo.Ipv6Locate),
 	)
 
-	checkInfo.IpSizeIsCdn, checkInfo.IpSize = cdncheck.IpsSizeIsCdn(ipList, 3)
+	checkInfo.IpSizeIsCdn, checkInfo.IpSize = IpsSizeIsCdn(ipList, 3)
 
 	// 检查结果中的 CDN | WAF | CLOUD 情况
-	checkInfo.IsCdn, checkInfo.CdnCompany = cdncheck.CheckCategory(sourceData.CDN, ipList, asnList, cnameList, ipLocateList)
-	checkInfo.IsWaf, checkInfo.WafCompany = cdncheck.CheckCategory(sourceData.WAF, ipList, asnList, cnameList, ipLocateList)
-	checkInfo.IsCloud, checkInfo.CloudCompany = cdncheck.CheckCategory(sourceData.CLOUD, ipList, asnList, cnameList, ipLocateList)
+	checkInfo.IsCdn, checkInfo.CdnCompany = CheckCategory(sourceData.CDN, ipList, asnList, cnameList, ipLocateList)
+	checkInfo.IsWaf, checkInfo.WafCompany = CheckCategory(sourceData.WAF, ipList, asnList, cnameList, ipLocateList)
+	checkInfo.IsCloud, checkInfo.CloudCompany = CheckCategory(sourceData.CLOUD, ipList, asnList, cnameList, ipLocateList)
 
 	return nil
 }
