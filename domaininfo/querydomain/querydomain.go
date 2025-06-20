@@ -11,13 +11,13 @@ import (
 
 // DNSQueryConfig 存储DNS查询配置
 type DNSQueryConfig struct {
-	Resolvers           []string
-	CityMap             []map[string]string
-	Timeout             time.Duration
-	MaxDNSConcurrency   int
-	MaxEDNSConcurrency  int
-	QueryEDNSCNAMES     bool
-	UseSysNSQueryCNAMES bool
+	Resolvers          []string
+	CityMap            []map[string]string
+	Timeout            time.Duration
+	MaxDNSConcurrency  int
+	MaxEDNSConcurrency int
+	QueryEDNSCNAMES    bool
+	QueryEDNSUseSysNS  bool
 }
 
 // DNSProcessor DNS查询处理器
@@ -63,7 +63,7 @@ func (pro *DNSProcessor) Process() *dnsquery.DomainDNSResultMap {
 		pro.DNSQueryConfig.Timeout,
 		pro.DNSQueryConfig.MaxEDNSConcurrency,
 		pro.DNSQueryConfig.QueryEDNSCNAMES,
-		pro.DNSQueryConfig.UseSysNSQueryCNAMES,
+		pro.DNSQueryConfig.QueryEDNSUseSysNS,
 	)
 	// 合并为每域名一个EDNSResult
 	domainEDNSResultMap := ednsquery.MergeDomainCityEDNSResultMap(ednsResultMap)
@@ -123,7 +123,7 @@ func (pro *DNSProcessor) FastProcess() *dnsquery.DomainDNSResultMap {
 			pro.DNSQueryConfig.Timeout,
 			pro.DNSQueryConfig.MaxEDNSConcurrency,
 			pro.DNSQueryConfig.QueryEDNSCNAMES,
-			pro.DNSQueryConfig.UseSysNSQueryCNAMES,
+			pro.DNSQueryConfig.QueryEDNSUseSysNS,
 		)
 		merged := ednsquery.MergeDomainCityEDNSResultMap(resultMap)
 		ednsChan <- merged
