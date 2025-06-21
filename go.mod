@@ -5,6 +5,7 @@ go 1.23.0
 toolchain go1.23.9
 
 require (
+	github.com/jessevdk/go-flags v1.6.1
 	github.com/miekg/dns v1.1.66
 	github.com/oschwald/maxminddb-golang v1.12.0
 	github.com/panjf2000/ants/v2 v2.11.3

@@ -5,73 +5,63 @@ import (
 	"cdnCheck/classify"
 	"cdnCheck/domaininfo/querydomain"
 	"cdnCheck/fileutils"
-	"cdnCheck/input"
 	"cdnCheck/ipinfo/queryip"
+	"cdnCheck/maputils"
 	"cdnCheck/models"
-	"flag"
 	"fmt"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/jessevdk/go-flags"
 )
 
-// Config 存储程序配置
+// Config 存储程序配置，使用结构体标签定义命令行参数
 type Config struct {
-	TargetFile string
-	OutputFile string
+	// 基本参数
+	Target string `short:"t" long:"target" description:"目标文件路径或直接输入的目标(多个目标用逗号分隔)"`
 
-	ResolversFile     string
-	ResolversNum      int
-	CityMapFile       string
-	CityMapNum        int
-	QueryEDNSCNAMES   bool
-	QueryEDNSUseSysNS bool
-	TimeOut           int
+	// DNS配置参数
+	ResolversFile     string `short:"r" long:"resolvers" description:"DNS解析服务器配置文件路径" default:"asset/resolvers.txt"`
+	ResolversNum      int    `short:"n" long:"resolvers-num" description:"选择用于解析的最大DNS服务器数量" default:"5"`
+	CityMapFile       string `short:"c" long:"city-map" description:"EDNS城市IP映射文件路径" default:"asset/city_ip.csv"`
+	CityMapNum        int    `short:"m" long:"city-num" description:"随机选择的城市数量" default:"5"`
+	DNSConcurrency    int    `short:"d" long:"dns-concurrency" description:"DNS并发数" default:"5"`
+	EDNSConcurrency   int    `short:"e" long:"edns-concurrency" description:"EDNS并发数" default:"5"`
+	TimeOut           int    `short:"w" long:"timeout" description:"超时时间(秒)" default:"5"`
+	QueryEDNSCNAMES   bool   `short:"C" long:"query-edns-cnames" description:"启用EDNS CNAME查询"`
+	QueryEDNSUseSysNS bool   `short:"S" long:"query-edns-use-sys-ns" description:"启用EDNS系统NS查询"`
 
-	AsnIpv4Db       string
-	AsnIpv6Db       string
-	Ipv4LocateDb    string
-	Ipv6LocateDb    string
-	SourceJson      string
-	DNSConcurrency  int
-	EDNSConcurrency int
+	// 数据库配置参数
+	AsnIpv4Db    string `short:"a" long:"asn-ipv4" description:"IPv4 ASN数据库路径" default:"asset/geolite2-asn-ipv4.mmdb"`
+	AsnIpv6Db    string `short:"A" long:"asn-ipv6" description:"IPv6 ASN数据库路径" default:"asset/geolite2-asn-ipv6.mmdb"`
+	Ipv4LocateDb string `short:"4" long:"ipv4-db" description:"IPv4地理位置数据库路径" default:"asset/qqwry.dat"`
+	Ipv6LocateDb string `short:"6" long:"ipv6-db" description:"IPv6地理位置数据库路径" default:"asset/zxipv6wry.db"`
+	SourceJson   string `short:"s" long:"source" description:"CDN源数据配置文件路径" default:"asset/source.json"`
 
-	OutputType  string // "CSV" "JSON" "TXT" "SYSOUT"
-	OutputLevel string // "default" "quiet" "detail"
+	// 输出配置参数
+	OutputFile  string `short:"o" long:"output-file" description:"输出结果文件路径"  default:""`
+	OutputType  string `short:"y" long:"output-type" description:"输出文件类型: csv/json/txt/sys" default:"sys" choice:"csv" choice:"json" choice:"txt" choice:"sys"`
+	OutputLevel string `short:"l" long:"output-level" description:"输出详细程度: default/quiet/detail" default:"default" choice:"default" choice:"quiet" choice:"detail"`
 }
 
-// parseFlags 解析命令行参数并返回配置
-func parseFlags() *Config {
-	config := &Config{}
+func LoadResolvers(resolversFile string, resolversNum int) ([]string, error) {
+	resolvers, err := fileutils.ReadTextToList(resolversFile)
+	if err != nil {
+		return nil, fmt.Errorf("加载DNS服务器失败: %w", err)
+	}
+	resolvers = maputils.PickRandList(resolvers, resolversNum)
+	return resolvers, nil
+}
 
-	// 定义命令行参数
-	flag.StringVar(&config.TargetFile, "target", "", "目标文件路径或直接输入的目标(多个目标用逗号分隔)")
-	flag.StringVar(&config.OutputFile, "output", "", "输出结果文件路径")
-	flag.StringVar(&config.ResolversFile, "resolvers", "asset/resolvers.txt", "DNS解析服务器配置文件路径")
-	flag.IntVar(&config.ResolversNum, "resolvers-num", 5, "选择用于解析的最大DNS服务器数量")
-	flag.StringVar(&config.CityMapFile, "city-map", "asset/city_ip.csv", "EDNS城市IP映射文件路径")
-	flag.IntVar(&config.CityMapNum, "city-num", 5, "随机选择的城市数量")
-
-	flag.IntVar(&config.DNSConcurrency, "max-dns-concurrency", 5, "DNS Concurrency")
-	flag.IntVar(&config.EDNSConcurrency, "max-edns-concurrency", 5, "EDNS Concurrency")
-	flag.IntVar(&config.TimeOut, "max-timeout-second", 5, "TimeOut Second")
-
-	flag.BoolVar(&config.QueryEDNSCNAMES, "query-edns-cnames", false, "enable query edns cnames")
-	flag.BoolVar(&config.QueryEDNSUseSysNS, "query-edns-use-sys-ns", false, "enable query edns use sys ns")
-
-	flag.StringVar(&config.AsnIpv4Db, "asn-ipv4", "asset/geolite2-asn-ipv4.mmdb", "IPv4 ASN数据库路径")
-	flag.StringVar(&config.AsnIpv6Db, "asn-ipv6", "asset/geolite2-asn-ipv6.mmdb", "IPv6 ASN数据库路径")
-	flag.StringVar(&config.Ipv4LocateDb, "ipv4-db", "asset/qqwry.dat", "IPv4地理位置数据库路径")
-	flag.StringVar(&config.Ipv6LocateDb, "ipv6-db", "asset/zxipv6wry.db", "IPv6地理位置数据库路径")
-	flag.StringVar(&config.SourceJson, "source", "asset/source.json", "CDN源数据配置文件路径")
-
-	flag.StringVar(&config.OutputLevel, "output-level", "quiet", "输出详细程度: default/quiet/detail")
-	flag.StringVar(&config.OutputType, "output-type", "csv", "输出文件类型: csv/json/txt/sys")
-
-	// 解析命令行参数
-	flag.Parse()
-
-	return config
+func LoadCityMap(cityMapFile string, randCityNum int) ([]map[string]string, error) {
+	cityMap, err := fileutils.ReadCSVToMap(cityMapFile)
+	if err != nil {
+		return nil, fmt.Errorf("读取城市IP映射失败: %w", err)
+	}
+	selectedCityMap := maputils.PickRandMaps(cityMap, randCityNum)
+	//fmt.Printf("selectedCityMap: %v\n", selectedCityMap)
+	return selectedCityMap, nil
 }
 
 // queryDomainInfo 进行域名信息解析
@@ -125,30 +115,45 @@ func queryIPInfo(ipDbConfig *queryip.IpDbConfig, checkInfos []*models.CheckInfo)
 }
 
 func main() {
+	// 定义配置并解析命令行参数
+	var config Config
+
+	// 使用 PassDoubleDash 选项强制使用 - 前缀
+	parser := flags.NewParser(&config, flags.Default)
+	parser.Name = "cdncheck"
+	parser.Usage = "[OPTIONS]"
+
+	// 添加描述信息
+	parser.ShortDescription = "CDN检查工具"
+	parser.LongDescription = "CDN检查工具，用于检查域名是否使用了CDN、WAF、云服务等"
+
 	// 解析命令行参数
-	config := parseFlags()
+	if _, err := parser.Parse(); err != nil {
+		fmt.Errorf("flags parse error: %v", err)
+		os.Exit(1)
+	}
+
+	// 检查必要参数
+	if config.Target == "" {
+		fmt.Println("错误: 必须指定目标(-t, --target)")
+		parser.WriteHelp(os.Stderr)
+		os.Exit(1)
+	}
 
 	var targets []string
 	var err error
 
-	// 检查 target 参数是否为空
-	if config.TargetFile == "" {
-		fmt.Println("错误: 必须指定目标(-target)")
-		flag.Usage()
-		os.Exit(1)
-	}
-
 	// 判断 target 是文件路径还是直接输入的目标
-	if fileutils.IsFileExists(config.TargetFile) {
+	if fileutils.IsFileExists(config.Target) {
 		// 是文件路径，从文件加载目标
-		targets, err = input.LoadTargets(config.TargetFile)
+		targets, err = fileutils.ReadTextToList(config.Target)
 		if err != nil {
 			fmt.Printf("加载目标文件失败: %v\n", err)
 			os.Exit(1)
 		}
 	} else {
 		// 不是文件路径，视为直接输入的目标 支持 按逗号分隔
-		targets = strings.Split(config.TargetFile, ",")
+		targets = strings.Split(config.Target, ",")
 		for i, target := range targets {
 			targets[i] = strings.TrimSpace(target)
 		}
@@ -158,13 +163,13 @@ func main() {
 	classifier := classify.ClassifyTargets(targets)
 
 	//加载dns解析服务器配置文件，用于dns解析调用
-	resolvers, err := input.LoadResolvers(config.ResolversFile, config.ResolversNum)
+	resolvers, err := LoadResolvers(config.ResolversFile, config.ResolversNum)
 	if err != nil {
 		os.Exit(1)
 	}
 
 	//加载本地EDNS城市IP信息
-	randCities, err := input.LoadCityMap(config.CityMapFile, config.CityMapNum)
+	randCities, err := LoadCityMap(config.CityMapFile, config.CityMapNum)
 	if err != nil {
 		os.Exit(1)
 	}
@@ -179,6 +184,7 @@ func main() {
 		QueryEDNSCNAMES:    config.QueryEDNSCNAMES,
 		QueryEDNSUseSysNS:  config.QueryEDNSUseSysNS,
 	}
+
 	// 进行DNS解析
 	checkInfos := queryDomainInfo(dnsConfig, classifier.DomainEntries)
 

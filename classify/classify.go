@@ -71,6 +71,5 @@ func (tc *TargetClassifier) ShowSummary() {
 func ClassifyTargets(targets []string) *TargetClassifier {
 	classifier := NewTargetClassifier()
 	classifier.Classify(targets)
-	classifier.ShowSummary()
 	return classifier
 }
