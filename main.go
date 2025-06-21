@@ -65,8 +65,8 @@ func parseFlags() *Config {
 	flag.StringVar(&config.Ipv6LocateDb, "ipv6-db", "asset/zxipv6wry.db", "IPv6地理位置数据库路径")
 	flag.StringVar(&config.SourceJson, "source", "asset/source.json", "CDN源数据配置文件路径")
 
-	flag.StringVar(&config.OutputLevel, "WriteOutputToFile-level", "quiet", "输出详细程度: default/quiet/detail")
-	flag.StringVar(&config.OutputType, "WriteOutputToFile-type", "csv", "输出文件类型: csv/json/txt/sys")
+	flag.StringVar(&config.OutputLevel, "output-level", "quiet", "输出详细程度: default/quiet/detail")
+	flag.StringVar(&config.OutputType, "output-type", "csv", "输出文件类型: csv/json/txt/sys")
 
 	// 解析命令行参数
 	flag.Parse()
