@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cdnCheck/cdncheck"
 	"cdnCheck/classify"
 	"cdnCheck/domaininfo/querydomain"
 	"cdnCheck/fileutils"
@@ -115,7 +116,6 @@ func main() {
 	// 创建DNS处理器并执行查询
 	dnsProcessor := querydomain.NewDNSProcessor(dnsConfig, &classifier.DomainEntries)
 	dnsResult := dnsProcessor.Process()
-	fmt.Printf(maputils.AnyToJsonStr(dnsResult))
 
 	//将dns查询结果合并到 CheckInfo 中去
 	var checkInfos []*models.CheckInfo
@@ -131,9 +131,13 @@ func main() {
 		checkInfos = append(checkInfos, checkInfo)
 	}
 
-	fmt.Printf(maputils.AnyToJsonStr(checkInfos))
+	//将所有IP信息加入到 checkInfos 中
+	for _, ipEntries := range classifier.IPEntries {
+		checkInfo := models.NewIPCheckInfo(ipEntries.RAW, ipEntries.FMT, ipEntries.IsIPv4, ipEntries.FromUrl)
+		checkInfos = append(checkInfos, checkInfo)
+	}
 
-	//将所有IP信息加入到[]checkInfo中
+	//对 checkInfos 中的IP数据进行分析
 	ipDbConfig := &queryip.IpDbConfig{
 		AsnIpv4Db:    config.AsnIpv4Db,
 		AsnIpv6Db:    config.AsnIpv6Db,
@@ -149,32 +153,28 @@ func main() {
 	}
 	defer ipEngines.Close()
 
-	//// 处理IP信息
-	//if err := ipProcessor.ProcessCheckInfos(checkResults); err != nil {
-	//	fmt.Printf("处理IP信息失败: %v\n", err)
-	//}
-	//
-	//// 加载source.json配置文件
-	//sourceData := models.NewEmptyCDNDataPointer()
-	//if err := fileutils.ReadJsonToStruct(config.SourceJson, sourceData); err != nil {
-	//	fmt.Printf("加载CDN源数据失败: %v\n", err)
-	//	os.Exit(1)
-	//}
-	//
-	//// 处理CDN信息
-	//if err := ipProcessor.ProcessCDNInfos(checkResults, sourceData); err != nil {
-	//	fmt.Printf("处理CDN信息失败: %v\n", err)
-	//}
-	//
-	//// Step 8: 将结果写入文件
-	//err = os.WriteFile(config.OutputFile, maputils.AnyToJsonBytes(checkResults), 0644)
-	////将结果写入到CSV
-	//sliceToMaps, err := maputils.ConvertStructSliceToMaps(checkResults)
-	//if err == nil {
-	//	fmt.Printf("%v", maputils.AnyToJsonStr(checkResults))
-	//	csvOutputFile := config.OutputFile + ".csv"
-	//	fileutils.WriteCSV(csvOutputFile, sliceToMaps, true)
-	//} else {
-	//	fmt.Errorf("Convert Struct Slice To Maps error: %v\n", err)
-	//}
+	//对 checkInfos 中的A/AAAA记录进行IP信息查询，并赋值回去
+	for _, checkInfo := range checkInfos {
+		if len(checkInfo.A) > 0 || len(checkInfo.AAAA) > 0 {
+			ipInfo, err := ipEngines.QueryIPInfo(checkInfo.A, checkInfo.AAAA)
+			if err != nil {
+				fmt.Printf("查询IP信息失败: %v\n", err)
+			} else {
+				checkInfo.Ipv4Locate = ipInfo.IPv4Locations
+				checkInfo.Ipv4Asn = ipInfo.IPv4AsnInfos
+				checkInfo.Ipv6Locate = ipInfo.IPv6Locations
+				checkInfo.Ipv6Asn = ipInfo.IPv6AsnInfos
+			}
+		}
+	}
+
+	// 加载source.json配置文件
+	cdnData := cdncheck.NewEmptyCDNData()
+	err = fileutils.ReadJsonToStruct(config.SourceJson, cdnData)
+	if err != nil {
+		fmt.Printf("加载CDN源数据失败: %v\n", err)
+		os.Exit(1)
+	}
+
+	checkResults, err := cdncheck.CheckCDNBatch(cdnData, checkInfos)
 }

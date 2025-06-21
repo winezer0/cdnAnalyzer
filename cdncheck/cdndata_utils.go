@@ -1,4 +1,4 @@
-package models
+package cdncheck
 
 import (
 	"cdnCheck/maputils"

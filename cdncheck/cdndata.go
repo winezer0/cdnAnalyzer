@@ -1,4 +1,4 @@
-package models
+package cdncheck
 
 type CDNData struct {
 	CDN   Category `json:"cdn"`
@@ -22,7 +22,7 @@ func newEmptyCategory() Category {
 	}
 }
 
-func NewEmptyCDNDataPointer() *CDNData {
+func NewEmptyCDNData() *CDNData {
 	return &CDNData{
 		CDN:   newEmptyCategory(),
 		WAF:   newEmptyCategory(),

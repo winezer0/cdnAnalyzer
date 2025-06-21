@@ -1,15 +1,15 @@
 package generate
 
 import (
+	"cdnCheck/cdncheck"
 	"cdnCheck/fileutils"
-	"cdnCheck/models"
 	"testing"
 )
 
 func TestAddDataToCdnCategory(t *testing.T) {
 	// 1.加载数据源
 	sourceJson := "C:\\Users\\WINDOWS\\Downloads\\sources.json"
-	sourceData := models.NewEmptyCDNDataPointer()
+	sourceData := cdncheck.NewEmptyCDNData()
 	if err := fileutils.ReadJsonToStruct(sourceJson, sourceData); err != nil {
 		panic(err)
 	}
@@ -20,7 +20,7 @@ func TestAddDataToCdnCategory(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	err = models.AddDataToCdnDataCategory(sourceData, models.CategoryCDN, models.FieldASN, "UNKNOWN", asnList)
+	err = cdncheck.AddDataToCdnDataCategory(sourceData, cdncheck.CategoryCDN, cdncheck.FieldASN, "UNKNOWN", asnList)
 	if err != nil {
 		panic(err)
 	}
@@ -31,7 +31,7 @@ func TestAddDataToCdnCategory(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	err = models.AddDataToCdnDataCategory(sourceData, models.CategoryCDN, models.FieldIP, "UNKNOWN", ipsList)
+	err = cdncheck.AddDataToCdnDataCategory(sourceData, cdncheck.CategoryCDN, cdncheck.FieldIP, "UNKNOWN", ipsList)
 	if err != nil {
 		panic(err)
 	}
@@ -41,7 +41,7 @@ func TestAddDataToCdnCategory(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	err = models.AddDataToCdnDataCategory(sourceData, models.CategoryCDN, models.FieldCNAME, "UNKNOWN", cnameList)
+	err = cdncheck.AddDataToCdnDataCategory(sourceData, cdncheck.CategoryCDN, cdncheck.FieldCNAME, "UNKNOWN", cnameList)
 	if err != nil {
 		panic(err)
 	}
@@ -75,6 +75,6 @@ func TestMergeSameData(t *testing.T) {
 	//fileutils.WriteJsonFromStruct("sourceChina.json", sourceChina)
 
 	// 合并写入文件
-	sourceMerge, _ := models.CdnDataMergeSafe(*sourceData, *sourceChina, *cdnYamlTransData, *cloudYamlTransData)
+	sourceMerge, _ := cdncheck.CdnDataMergeSafe(*sourceData, *sourceChina, *cdnYamlTransData, *cloudYamlTransData)
 	fileutils.WriteJsonFromStruct("source.json", sourceMerge)
 }

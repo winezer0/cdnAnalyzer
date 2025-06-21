@@ -6,8 +6,8 @@ import (
 
 // CheckInfo 用于保存资产结果时间的类型
 type CheckInfo struct {
-	Raw     string `json:"raw"`               // 存储原始输入信息
-	Fmt     string `json:"fmt,omitempty"`     // 存储格式化后的输入信息（可选）
+	RAW     string `json:"raw"`               // 存储原始输入信息
+	FMT     string `json:"fmt,omitempty"`     // 存储格式化后的输入信息（可选）
 	IsIpv4  bool   `json:"isIpv4,omitempty"`  // 存储格式化后的输入信息（可选）
 	FromUrl bool   `json:"fromUrl,omitempty"` // 存储格式化后的输入信息（可选）
 
@@ -40,8 +40,8 @@ type CheckInfo struct {
 // NewDomainCheckInfo 初始化一个新的 CheckInfo 实例
 func NewDomainCheckInfo(raw, fmt string, fromUrl bool) *CheckInfo {
 	return &CheckInfo{
-		Raw:     raw,
-		Fmt:     fmt,
+		RAW:     raw,
+		FMT:     fmt,
 		FromUrl: fromUrl,
 	}
 }
@@ -49,8 +49,8 @@ func NewDomainCheckInfo(raw, fmt string, fromUrl bool) *CheckInfo {
 // NewIPCheckInfo 初始化一个新的 CheckInfo 实例
 func NewIPCheckInfo(raw, fmt string, isIpv4 bool, fromUrl bool) *CheckInfo {
 	result := &CheckInfo{
-		Raw:     raw,
-		Fmt:     fmt,
+		RAW:     raw,
+		FMT:     fmt,
 		IsIpv4:  isIpv4,
 		FromUrl: fromUrl,
 	}

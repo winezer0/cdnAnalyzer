@@ -1,14 +1,14 @@
 package generate
 
 import (
+	"cdnCheck/cdncheck"
 	"cdnCheck/fileutils"
 	"cdnCheck/maputils"
-	"cdnCheck/models"
 	"fmt"
 )
 
 // TransferNaliCdnYaml  实现nali cdn.yml到json的转换
-func TransferNaliCdnYaml(path string) *models.CDNData {
+func TransferNaliCdnYaml(path string) *cdncheck.CDNData {
 	// 数据来源 https://github.com/4ft35t/cdn/blob/master/src/cdn.yml
 	// CloudKeysData 是整个 YAML 文件的结构
 	type naliCdnData map[string]struct {
@@ -24,7 +24,7 @@ func TransferNaliCdnYaml(path string) *models.CDNData {
 
 	// 2. 构建 cname map[string][]string 并赋值给 cdnData.CDN.CNAME
 	// 初始化 CDNData 结构
-	cdnData := models.NewEmptyCDNDataPointer()
+	cdnData := cdncheck.NewEmptyCDNData()
 	for domain, info := range yamlData {
 		cdnData.CDN.CNAME[info.Name] = append(cdnData.CDN.CNAME[info.Name], domain)
 	}
@@ -33,7 +33,7 @@ func TransferNaliCdnYaml(path string) *models.CDNData {
 }
 
 // TransferPDCdnCheckJson 实现cdn check json 数据源的转换
-func TransferPDCdnCheckJson(path string) *models.CDNData {
+func TransferPDCdnCheckJson(path string) *cdncheck.CDNData {
 	// PDCdnCheckData 表示整个配置结构
 	type PDCdnCheckData struct {
 		CDN    map[string][]string `json:"cdn"`
@@ -50,7 +50,7 @@ func TransferPDCdnCheckJson(path string) *models.CDNData {
 	}
 
 	// 将 cdn/waf/cloud 的值作为 IP 数据填充到对应字段
-	cdnData := models.NewEmptyCDNDataPointer()
+	cdnData := cdncheck.NewEmptyCDNData()
 	cdnData.CDN.IP = maputils.CopyMap(pdCdnCheckData.CDN)
 	cdnData.WAF.IP = maputils.CopyMap(pdCdnCheckData.WAF)
 	cdnData.CLOUD.IP = maputils.CopyMap(pdCdnCheckData.Cloud)
@@ -63,7 +63,7 @@ func TransferPDCdnCheckJson(path string) *models.CDNData {
 }
 
 // TransferCloudKeysYaml  实现 cloud keys yml到json的转换
-func TransferCloudKeysYaml(path string) *models.CDNData {
+func TransferCloudKeysYaml(path string) *cdncheck.CDNData {
 	// 数据来源 用户自己数据到cloud_keys.yml中
 	// 是整个 YAML 文件的结构
 	var cloudKeysYaml map[string]struct {
@@ -79,7 +79,7 @@ func TransferCloudKeysYaml(path string) *models.CDNData {
 	//
 	// 2. 构建 cname map[string][]string 并赋值给 cdnData.CDN.CNAME
 	// 初始化 CDNData 结构
-	cdnData := models.NewEmptyCDNDataPointer()
+	cdnData := cdncheck.NewEmptyCDNData()
 	for cloudName, yamEntry := range cloudKeysYaml {
 		cdnData.CLOUD.KEYS[cloudName] = yamEntry.Keys
 	}
