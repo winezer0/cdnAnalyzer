@@ -5,31 +5,52 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"strings"
+	"strconv"
+	"time"
 )
 
-// WriteCSV 将 []map[string]string 写入 CSV 文件
-func WriteCSV(filename string, data []map[string]string, forceQuote bool) error {
-	if len(data) == 0 {
+// WriteCSV 将 []map[string]interface{} 或 []map[string]string 写入 CSV 文件
+// 支持各种基本类型的自动转换为字符串
+func WriteCSV(filename string, data interface{}, forceQuote bool) error {
+	// 检查数据类型并转换
+	var mapData []map[string]interface{}
+
+	switch typedData := data.(type) {
+	case []map[string]string:
+		// 将 []map[string]string 转换为 []map[string]interface{}
+		mapData = make([]map[string]interface{}, len(typedData))
+		for i, row := range typedData {
+			mapData[i] = make(map[string]interface{})
+			for k, v := range row {
+				mapData[i][k] = v
+			}
+		}
+	case []map[string]interface{}:
+		mapData = typedData
+	default:
+		return fmt.Errorf("unsupported data type: %T, expected []map[string]string or []map[string]interface{}", data)
+	}
+
+	if len(mapData) == 0 {
 		return fmt.Errorf("data is empty")
 	}
 
-	// Collect all unique headers (keys)
+	// 收集所有唯一的表头（键）
 	headersMap := make(map[string]struct{})
-	for _, row := range data {
+	for _, row := range mapData {
 		for key := range row {
 			headersMap[key] = struct{}{}
 		}
 	}
 
-	// Convert headers map to a sorted slice
+	// 将表头映射转换为排序后的切片
 	headers := make([]string, 0, len(headersMap))
 	for key := range headersMap {
 		headers = append(headers, key)
 	}
-	sort.Strings(headers) // Optional: Sort headers alphabetically
+	sort.Strings(headers) // 可选：按字母顺序排序表头
 
-	// Create the CSV file
+	// 创建 CSV 文件
 	file, err := os.Create(filename)
 	if err != nil {
 		return err
@@ -43,11 +64,16 @@ func WriteCSV(filename string, data []map[string]string, forceQuote bool) error 
 		return err
 	}
 
-	// Write rows
-	for _, rowMap := range data {
+	// 写入行
+	for _, rowMap := range mapData {
 		record := make([]string, len(headers))
 		for i, header := range headers {
-			record[i] = quoteIfNeeded(rowMap[header], forceQuote)
+			value, exists := rowMap[header]
+			if !exists {
+				record[i] = ""
+				continue
+			}
+			record[i] = quoteIfNeeded(anyToString(value), forceQuote)
 		}
 		if err := writer.Write(record); err != nil {
 			return err
@@ -56,96 +82,34 @@ func WriteCSV(filename string, data []map[string]string, forceQuote bool) error 
 	return nil
 }
 
-// quoteIfNeeded 确保如果字符串中包含逗号、双引号或换行符，则对其进行引号包围。
+// anyToString 将任意类型转换为字符串
+func anyToString(value interface{}) string {
+	if value == nil {
+		return ""
+	}
+
+	switch v := value.(type) {
+	case string:
+		return v
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return fmt.Sprintf("%d", v)
+	case float32, float64:
+		return fmt.Sprintf("%g", v)
+	case bool:
+		return strconv.FormatBool(v)
+	case time.Time:
+		return v.Format(time.RFC3339)
+	case []byte:
+		return string(v)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
+// quoteIfNeeded 在需要时为字符串添加引号
 func quoteIfNeeded(s string, forceQuote bool) string {
-	if !forceQuote {
-		return s
-	}
-
-	if len(s) == 0 {
-		return `""`
-	}
-
-	needsQuotes := false
-	for _, r := range s {
-		switch r {
-		case '"', ',', '\n', '\r':
-			needsQuotes = true
-		}
-		if needsQuotes {
-			break
-		}
-	}
-	if needsQuotes {
-		// Escape any existing double quotes and wrap the string in double quotes.
-		s = `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
+	if forceQuote {
+		return `"` + s + `"`
 	}
 	return s
-}
-
-// WriteCSV2 将 []map[string]string 写入 CSV 文件，可选择强制使用引号以及写入模式。
-func WriteCSV2(filename string, data []map[string]string, forceQuote bool, writeMode string, optionalHeadersO []string) error {
-	if len(data) == 0 {
-		return fmt.Errorf("data is empty")
-	}
-
-	// Collect all unique optionalHeadersO (keys)
-	headersMap := make(map[string]struct{})
-	for _, row := range data {
-		for key := range row {
-			headersMap[key] = struct{}{}
-		}
-	}
-
-	// Convert optionalHeadersO map to a sorted slice
-	if optionalHeadersO != nil || len(optionalHeadersO) == 0 {
-		headers := make([]string, 0, len(headersMap))
-		for key := range headersMap {
-			headers = append(headers, key)
-		}
-		sort.Strings(headers) // Optional: Sort optionalHeadersO alphabetically
-	}
-
-	// Define the file open mode based on the input parameter
-	var flag int
-	switch strings.ToLower(writeMode) {
-	case "w":
-		flag = os.O_WRONLY | os.O_CREATE | os.O_TRUNC
-	case "a":
-		flag = os.O_WRONLY | os.O_CREATE | os.O_APPEND
-	case "a+":
-		flag = os.O_RDWR | os.O_CREATE | os.O_APPEND
-	default:
-		//默认使用w+模式
-		flag = os.O_RDWR | os.O_CREATE | os.O_TRUNC
-	}
-
-	// Create or open the CSV file
-	file, err := os.OpenFile(filename, flag, 0644)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
-
-	// If the file is being overwritten (not appending), write the optionalHeadersO
-	if IsEmptyFile(filename) || writeMode == "w" || writeMode == "w+" {
-		if err := writer.Write(optionalHeadersO); err != nil {
-			return err
-		}
-	}
-
-	// Write rows
-	for _, rowMap := range data {
-		record := make([]string, len(optionalHeadersO))
-		for i, header := range optionalHeadersO {
-			record[i] = quoteIfNeeded(rowMap[header], forceQuote)
-		}
-		if err := writer.Write(record); err != nil {
-			return err
-		}
-	}
-	return nil
 }

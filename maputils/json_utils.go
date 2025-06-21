@@ -32,8 +32,7 @@ func ParseJSON(data string) (map[string]interface{}, error) {
 
 // AnyToJsonStr 将任意 map 转换为格式化的 JSON 字符串（用于输出）
 func AnyToJsonStr(v interface{}) string {
-	data, _ := json.MarshalIndent(v, "", "  ")
-	return string(data)
+	return string(AnyToJsonBytes(v))
 }
 
 // AnyToJsonBytes  将任意 map 转换为格式化的 JSON 字符串（用于输出）

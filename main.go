@@ -12,6 +12,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -35,6 +36,9 @@ type Config struct {
 	SourceJson      string
 	DNSConcurrency  int
 	EDNSConcurrency int
+
+	OutputType  string // "CSV" "JSON" "TXT" "SYSOUT"
+	OutputLevel string // "default" "quiet" "detail"
 }
 
 // parseFlags 解析命令行参数并返回配置
@@ -62,6 +66,9 @@ func parseFlags() *Config {
 	flag.StringVar(&config.Ipv6LocateDb, "ipv6-db", "asset/zxipv6wry.db", "IPv6地理位置数据库路径")
 	flag.StringVar(&config.SourceJson, "source", "asset/source.json", "CDN源数据配置文件路径")
 
+	flag.StringVar(&config.OutputLevel, "detail-level", "default", "输出详细程度: default/quiet/detail")
+	flag.StringVar(&config.OutputType, "output-type", "JSON", "输出文件类型: csv/json/txt/sys")
+
 	// 解析命令行参数
 	flag.Parse()
 
@@ -71,6 +78,34 @@ func parseFlags() *Config {
 	}
 
 	return config
+}
+
+// QueryIPInfo 进行IP信息查询
+func QueryIPInfo(ipDbConfig *queryip.IpDbConfig, checkInfos []*models.CheckInfo) []*models.CheckInfo {
+	// 初始化IP数据库引擎
+	ipEngines, err := queryip.InitDBEngines(ipDbConfig)
+	if err != nil {
+		fmt.Printf("初始化数据库失败: %v\n", err)
+		os.Exit(1)
+	}
+	defer ipEngines.Close()
+
+	//对 checkInfos 中的A/AAAA记录进行IP信息查询，并赋值回去
+	for _, checkInfo := range checkInfos {
+		if len(checkInfo.A) > 0 || len(checkInfo.AAAA) > 0 {
+			ipInfo, err := ipEngines.QueryIPInfo(checkInfo.A, checkInfo.AAAA)
+			if err != nil {
+				fmt.Printf("查询IP信息失败: %v\n", err)
+			} else {
+				checkInfo.Ipv4Locate = ipInfo.IPv4Locations
+				checkInfo.Ipv4Asn = ipInfo.IPv4AsnInfos
+				checkInfo.Ipv6Locate = ipInfo.IPv6Locations
+				checkInfo.Ipv6Asn = ipInfo.IPv6AsnInfos
+			}
+		}
+	}
+
+	return checkInfos
 }
 
 func main() {
@@ -144,29 +179,7 @@ func main() {
 		Ipv4LocateDb: config.Ipv4LocateDb,
 		Ipv6LocateDb: config.Ipv6LocateDb,
 	}
-
-	// 初始化IP数据库引擎
-	ipEngines, err := queryip.InitDBEngines(ipDbConfig)
-	if err != nil {
-		fmt.Printf("初始化数据库失败: %v\n", err)
-		os.Exit(1)
-	}
-	defer ipEngines.Close()
-
-	//对 checkInfos 中的A/AAAA记录进行IP信息查询，并赋值回去
-	for _, checkInfo := range checkInfos {
-		if len(checkInfo.A) > 0 || len(checkInfo.AAAA) > 0 {
-			ipInfo, err := ipEngines.QueryIPInfo(checkInfo.A, checkInfo.AAAA)
-			if err != nil {
-				fmt.Printf("查询IP信息失败: %v\n", err)
-			} else {
-				checkInfo.Ipv4Locate = ipInfo.IPv4Locations
-				checkInfo.Ipv4Asn = ipInfo.IPv4AsnInfos
-				checkInfo.Ipv6Locate = ipInfo.IPv6Locations
-				checkInfo.Ipv6Asn = ipInfo.IPv6AsnInfos
-			}
-		}
-	}
+	checkInfos = QueryIPInfo(ipDbConfig, checkInfos)
 
 	// 加载source.json配置文件
 	cdnData := cdncheck.NewEmptyCDNData()
@@ -176,5 +189,54 @@ func main() {
 		os.Exit(1)
 	}
 
+	//进行CDN CLOUD WAF 信息分析
 	checkResults, err := cdncheck.CheckCDNBatch(cdnData, checkInfos)
+	if err != nil {
+		fmt.Printf("CDN分析失败: %v\n", err)
+		os.Exit(1)
+	}
+
+	// 处理输出详细程度
+	var outputData interface{}
+	switch strings.ToLower(config.OutputLevel) {
+	case "quiet":
+		// 仅输出不是CDN的fmt内容
+		outputData = cdncheck.GetNoCDNs(checkResults)
+	case "detail":
+		// 合并 checkResults 到 checkInfos
+		outputData = cdncheck.MergeCheckResultsToCheckInfos(checkInfos, checkResults)
+	default:
+		// default: 输出 checkResults
+		outputData = checkResults
+	}
+
+	// 处理输出类型
+	switch strings.ToLower(config.OutputType) {
+	case "csv":
+		sliceToMaps, err := maputils.ConvertStructsToMaps(outputData)
+		if err != nil {
+			fmt.Printf("Struct 转换为 map 失败: %v\n", err)
+			os.Exit(1)
+		}
+		if err := fileutils.WriteCSV(config.OutputFile, sliceToMaps, true); err != nil {
+			fmt.Printf("写入CSV失败: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("结果已写入: %s\n", config.OutputFile)
+	case "json":
+		jsonBytes := maputils.AnyToJsonBytes(outputData)
+		if err := os.WriteFile(config.OutputFile, jsonBytes, 0644); err != nil {
+			fmt.Printf("写入JSON失败: %v\n", err)
+		}
+		fmt.Printf("结果已写入: %s\n", config.OutputFile)
+	case "txt":
+		txtOutputFile := config.OutputFile + ".txt"
+		txt := maputils.AnyToTxtStr(outputData)
+		if err := os.WriteFile(txtOutputFile, []byte(txt), 0644); err != nil {
+			fmt.Printf("写入TXT失败: %v\n", err)
+		}
+		fmt.Printf("结果已写入: %s\n", txtOutputFile)
+	default:
+		fmt.Println(maputils.AnyToTxtStr(outputData))
+	}
 }
