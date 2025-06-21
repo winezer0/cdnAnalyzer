@@ -45,8 +45,8 @@ func parseFlags() *Config {
 	config := &Config{}
 
 	// 定义命令行参数
-	flag.StringVar(&config.TargetFile, "target", "targets.txt", "目标文件路径")
-	flag.StringVar(&config.OutputFile, "WriteOutputToFile", "", "输出结果文件路径（默认为目标文件名.results.json）")
+	flag.StringVar(&config.TargetFile, "target", "", "目标文件路径或直接输入的目标(多个目标用逗号分隔)")
+	flag.StringVar(&config.OutputFile, "output", "", "输出结果文件路径")
 	flag.StringVar(&config.ResolversFile, "resolvers", "asset/resolvers.txt", "DNS解析服务器配置文件路径")
 	flag.IntVar(&config.ResolversNum, "resolvers-num", 5, "选择用于解析的最大DNS服务器数量")
 	flag.StringVar(&config.CityMapFile, "city-map", "asset/city_ip.csv", "EDNS城市IP映射文件路径")
@@ -128,19 +128,33 @@ func main() {
 	// 解析命令行参数
 	config := parseFlags()
 
-	// 检查目标文件是否存在
-	targetFile := config.TargetFile
-	if !fileutils.IsFileExists(targetFile) {
-		fmt.Printf("目标文件 [%v] 不存在\n", targetFile)
+	var targets []string
+	var err error
+
+	// 检查 target 参数是否为空
+	if config.TargetFile == "" {
+		fmt.Println("错误: 必须指定目标(-target)")
+		flag.Usage()
 		os.Exit(1)
 	}
 
-	//加载输入目标
-	targets, err := input.LoadTargets(targetFile)
-	if err != nil {
-		os.Exit(1)
+	// 判断 target 是文件路径还是直接输入的目标
+	if fileutils.IsFileExists(config.TargetFile) {
+		// 是文件路径，从文件加载目标
+		targets, err = input.LoadTargets(config.TargetFile)
+		if err != nil {
+			fmt.Printf("加载目标文件失败: %v\n", err)
+			os.Exit(1)
+		}
+	} else {
+		// 不是文件路径，视为直接输入的目标 支持 按逗号分隔
+		targets = strings.Split(config.TargetFile, ",")
+		for i, target := range targets {
+			targets[i] = strings.TrimSpace(target)
+		}
 	}
-	//分类输入数据为 IP Domain InvalidEntries
+
+	// 分类输入数据为 IP Domain InvalidEntries
 	classifier := classify.ClassifyTargets(targets)
 
 	//加载dns解析服务器配置文件，用于dns解析调用
@@ -213,5 +227,5 @@ func main() {
 	}
 
 	// 处理输出类型
-	fileutils.WriteOutputToFile(outputData, config.OutputType, config.OutputFile, targetFile)
+	fileutils.WriteOutputToFile(outputData, config.OutputType, config.OutputFile)
 }
