@@ -7,7 +7,6 @@ import (
 	"cdnCheck/fileutils"
 	"cdnCheck/input"
 	"cdnCheck/ipinfo/queryip"
-	"cdnCheck/maputils"
 	"cdnCheck/models"
 	"flag"
 	"fmt"
@@ -47,7 +46,7 @@ func parseFlags() *Config {
 
 	// 定义命令行参数
 	flag.StringVar(&config.TargetFile, "target", "targets.txt", "目标文件路径")
-	flag.StringVar(&config.OutputFile, "output", "", "输出结果文件路径（默认为目标文件名.results.json）")
+	flag.StringVar(&config.OutputFile, "WriteOutputToFile", "", "输出结果文件路径（默认为目标文件名.results.json）")
 	flag.StringVar(&config.ResolversFile, "resolvers", "asset/resolvers.txt", "DNS解析服务器配置文件路径")
 	flag.IntVar(&config.ResolversNum, "resolvers-num", 5, "选择用于解析的最大DNS服务器数量")
 	flag.StringVar(&config.CityMapFile, "city-map", "asset/city_ip.csv", "EDNS城市IP映射文件路径")
@@ -66,22 +65,39 @@ func parseFlags() *Config {
 	flag.StringVar(&config.Ipv6LocateDb, "ipv6-db", "asset/zxipv6wry.db", "IPv6地理位置数据库路径")
 	flag.StringVar(&config.SourceJson, "source", "asset/source.json", "CDN源数据配置文件路径")
 
-	flag.StringVar(&config.OutputLevel, "detail-level", "default", "输出详细程度: default/quiet/detail")
-	flag.StringVar(&config.OutputType, "output-type", "JSON", "输出文件类型: csv/json/txt/sys")
+	flag.StringVar(&config.OutputLevel, "WriteOutputToFile-level", "quiet", "输出详细程度: default/quiet/detail")
+	flag.StringVar(&config.OutputType, "WriteOutputToFile-type", "csv", "输出文件类型: csv/json/txt/sys")
 
 	// 解析命令行参数
 	flag.Parse()
 
-	// 设置默认输出文件路径
-	if config.OutputFile == "" {
-		config.OutputFile = config.TargetFile + ".results.json"
-	}
-
 	return config
 }
 
-// QueryIPInfo 进行IP信息查询
-func QueryIPInfo(ipDbConfig *queryip.IpDbConfig, checkInfos []*models.CheckInfo) []*models.CheckInfo {
+// queryDomainInfo 进行域名信息解析
+func queryDomainInfo(dnsConfig *querydomain.DNSQueryConfig, domainEntries []classify.TargetEntry) []*models.CheckInfo {
+	// 创建DNS处理器并执行查询
+	dnsProcessor := querydomain.NewDNSProcessor(dnsConfig, &domainEntries)
+	dnsResult := dnsProcessor.Process()
+
+	//将dns查询结果合并到 CheckInfo 中去
+	var checkInfos []*models.CheckInfo
+	for _, domainEntry := range domainEntries {
+		var checkInfo *models.CheckInfo
+		//当存在dns查询结果时,补充
+		if result, ok := (*dnsResult)[domainEntry.FMT]; ok && result != nil {
+			checkInfo = querydomain.PopulateDNSResult(domainEntry, result)
+		} else {
+			fmt.Printf("No DNS result for domain: %s\n", domainEntry.FMT)
+			checkInfo = models.NewDomainCheckInfo(domainEntry.RAW, domainEntry.FMT, domainEntry.FromUrl)
+		}
+		checkInfos = append(checkInfos, checkInfo)
+	}
+	return checkInfos
+}
+
+// queryIPInfo 进行IP信息查询
+func queryIPInfo(ipDbConfig *queryip.IpDbConfig, checkInfos []*models.CheckInfo) []*models.CheckInfo {
 	// 初始化IP数据库引擎
 	ipEngines, err := queryip.InitDBEngines(ipDbConfig)
 	if err != nil {
@@ -113,13 +129,14 @@ func main() {
 	config := parseFlags()
 
 	// 检查目标文件是否存在
-	if !fileutils.IsFileExists(config.TargetFile) {
-		fmt.Printf("目标文件 [%v] 不存在\n", config.TargetFile)
+	targetFile := config.TargetFile
+	if !fileutils.IsFileExists(targetFile) {
+		fmt.Printf("目标文件 [%v] 不存在\n", targetFile)
 		os.Exit(1)
 	}
 
 	//加载输入目标
-	targets, err := input.LoadTargets(config.TargetFile)
+	targets, err := input.LoadTargets(targetFile)
 	if err != nil {
 		os.Exit(1)
 	}
@@ -148,23 +165,8 @@ func main() {
 		QueryEDNSCNAMES:    config.QueryEDNSCNAMES,
 		QueryEDNSUseSysNS:  config.QueryEDNSUseSysNS,
 	}
-	// 创建DNS处理器并执行查询
-	dnsProcessor := querydomain.NewDNSProcessor(dnsConfig, &classifier.DomainEntries)
-	dnsResult := dnsProcessor.Process()
-
-	//将dns查询结果合并到 CheckInfo 中去
-	var checkInfos []*models.CheckInfo
-	for _, domainEntry := range classifier.DomainEntries {
-		var checkInfo *models.CheckInfo
-		//当存在dns查询结果时,补充
-		if result, ok := (*dnsResult)[domainEntry.FMT]; ok && result != nil {
-			checkInfo = querydomain.PopulateDNSResult(domainEntry, result)
-		} else {
-			fmt.Printf("No DNS result for domain: %s\n", domainEntry.FMT)
-			checkInfo = models.NewDomainCheckInfo(domainEntry.RAW, domainEntry.FMT, domainEntry.FromUrl)
-		}
-		checkInfos = append(checkInfos, checkInfo)
-	}
+	// 进行DNS解析
+	checkInfos := queryDomainInfo(dnsConfig, classifier.DomainEntries)
 
 	//将所有IP信息加入到 checkInfos 中
 	for _, ipEntries := range classifier.IPEntries {
@@ -179,7 +181,7 @@ func main() {
 		Ipv4LocateDb: config.Ipv4LocateDb,
 		Ipv6LocateDb: config.Ipv6LocateDb,
 	}
-	checkInfos = QueryIPInfo(ipDbConfig, checkInfos)
+	checkInfos = queryIPInfo(ipDbConfig, checkInfos)
 
 	// 加载source.json配置文件
 	cdnData := cdncheck.NewEmptyCDNData()
@@ -211,32 +213,5 @@ func main() {
 	}
 
 	// 处理输出类型
-	switch strings.ToLower(config.OutputType) {
-	case "csv":
-		sliceToMaps, err := maputils.ConvertStructsToMaps(outputData)
-		if err != nil {
-			fmt.Printf("Struct 转换为 map 失败: %v\n", err)
-			os.Exit(1)
-		}
-		if err := fileutils.WriteCSV(config.OutputFile, sliceToMaps, true); err != nil {
-			fmt.Printf("写入CSV失败: %v\n", err)
-			os.Exit(1)
-		}
-		fmt.Printf("结果已写入: %s\n", config.OutputFile)
-	case "json":
-		jsonBytes := maputils.AnyToJsonBytes(outputData)
-		if err := os.WriteFile(config.OutputFile, jsonBytes, 0644); err != nil {
-			fmt.Printf("写入JSON失败: %v\n", err)
-		}
-		fmt.Printf("结果已写入: %s\n", config.OutputFile)
-	case "txt":
-		txtOutputFile := config.OutputFile + ".txt"
-		txt := maputils.AnyToTxtStr(outputData)
-		if err := os.WriteFile(txtOutputFile, []byte(txt), 0644); err != nil {
-			fmt.Printf("写入TXT失败: %v\n", err)
-		}
-		fmt.Printf("结果已写入: %s\n", txtOutputFile)
-	default:
-		fmt.Println(maputils.AnyToTxtStr(outputData))
-	}
+	fileutils.WriteOutputToFile(outputData, config.OutputType, config.OutputFile, targetFile)
 }

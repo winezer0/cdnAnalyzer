@@ -31,8 +31,8 @@ func WriteTextFromList(filename string, data []string) error {
 	return nil
 }
 
-// WriteTextFromStruct 将任意数据写入文本文件
-func WriteTextFromStruct(filePath string, data interface{}) error {
+// WriteText 将任意数据写入文本文件
+func WriteText(filePath string, data interface{}) error {
 	// 将任意数据转换为字符串形式
 	content := fmt.Sprintf("%v", data)
 
