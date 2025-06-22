@@ -1,53 +1,53 @@
 package generate
 
 import (
-	"cdnCheck/cdncheck"
-	"cdnCheck/fileutils"
+	cdncheck2 "cdnCheck/pkg/cdncheck"
+	fileutils2 "cdnCheck/pkg/fileutils"
 	"testing"
 )
 
 func TestAddDataToCdnCategory(t *testing.T) {
 	// 1.加载数据源
 	sourceJson := "C:\\Users\\WINDOWS\\Downloads\\sources.json"
-	sourceData := cdncheck.NewEmptyCDNData()
-	if err := fileutils.ReadJsonToStruct(sourceJson, sourceData); err != nil {
+	sourceData := cdncheck2.NewEmptyCDNData()
+	if err := fileutils2.ReadJsonToStruct(sourceJson, sourceData); err != nil {
 		panic(err)
 	}
 
 	// 2.读取 ASN 文本文件内容
 	asnFile := "cdn_asn.txt"
-	asnList, err := fileutils.ReadTextToList(asnFile)
+	asnList, err := fileutils2.ReadTextToList(asnFile)
 	if err != nil {
 		panic(err)
 	}
-	err = cdncheck.AddDataToCdnDataCategory(sourceData, cdncheck.CategoryCDN, cdncheck.FieldASN, "UNKNOWN", asnList)
+	err = cdncheck2.AddDataToCdnDataCategory(sourceData, cdncheck2.CategoryCDN, cdncheck2.FieldASN, "UNKNOWN", asnList)
 	if err != nil {
 		panic(err)
 	}
 
 	// 3.读取 IP 文本文件内容
 	ipsFile := "cdn_ips.txt"
-	ipsList, err := fileutils.ReadTextToList(ipsFile)
+	ipsList, err := fileutils2.ReadTextToList(ipsFile)
 	if err != nil {
 		panic(err)
 	}
-	err = cdncheck.AddDataToCdnDataCategory(sourceData, cdncheck.CategoryCDN, cdncheck.FieldIP, "UNKNOWN", ipsList)
+	err = cdncheck2.AddDataToCdnDataCategory(sourceData, cdncheck2.CategoryCDN, cdncheck2.FieldIP, "UNKNOWN", ipsList)
 	if err != nil {
 		panic(err)
 	}
 	// 4.读取 CNAME 文本文件内容
 	cnameFile := "cdn_ips.txt"
-	cnameList, err := fileutils.ReadTextToList(cnameFile)
+	cnameList, err := fileutils2.ReadTextToList(cnameFile)
 	if err != nil {
 		panic(err)
 	}
-	err = cdncheck.AddDataToCdnDataCategory(sourceData, cdncheck.CategoryCDN, cdncheck.FieldCNAME, "UNKNOWN", cnameList)
+	err = cdncheck2.AddDataToCdnDataCategory(sourceData, cdncheck2.CategoryCDN, cdncheck2.FieldCNAME, "UNKNOWN", cnameList)
 	if err != nil {
 		panic(err)
 	}
 	// 5. 写入文件
 	outFile := sourceJson + ".update.json"
-	fileutils.WriteJsonFromStruct(outFile, *sourceData)
+	fileutils2.WriteJsonFromStruct(outFile, *sourceData)
 }
 
 func TestMergeSameData(t *testing.T) {
@@ -75,6 +75,6 @@ func TestMergeSameData(t *testing.T) {
 	//fileutils.WriteJsonFromStruct("sourceChina.json", sourceChina)
 
 	// 合并写入文件
-	sourceMerge, _ := cdncheck.CdnDataMergeSafe(*sourceData, *sourceChina, *cdnYamlTransData, *cloudYamlTransData)
-	fileutils.WriteJsonFromStruct("source.json", sourceMerge)
+	sourceMerge, _ := cdncheck2.CdnDataMergeSafe(*sourceData, *sourceChina, *cdnYamlTransData, *cloudYamlTransData)
+	fileutils2.WriteJsonFromStruct("source.json", sourceMerge)
 }

@@ -1,0 +1,125 @@
+package cdncheck
+
+import (
+	maputils2 "cdnCheck/pkg/maputils"
+	"fmt"
+	"strings"
+)
+
+const (
+	FieldIP    = "ip"
+	FieldASN   = "asn"
+	FieldCNAME = "cname"
+	FieldKEYS  = "keys"
+)
+
+const (
+	CategoryCDN   = "cdn"
+	CategoryWAF   = "waf"
+	CategoryCloud = "cloud"
+)
+
+// normalizeASN 清洗 ASN 字符串
+func normalizeASN(asn string) string {
+	asn = strings.TrimSpace(asn)
+	asn = strings.ToUpper(asn)
+	if strings.HasPrefix(asn, "AS") {
+		asn = strings.TrimPrefix(asn, "AS")
+	}
+	return asn
+}
+
+// CdnDataMergeSafe 实现多个cdnData数据的合并
+func CdnDataMergeSafe(cdnDatas ...CDNData) (map[string]interface{}, error) {
+	var mergedMap map[string]interface{}
+	for _, cdnData := range cdnDatas {
+		//转换为Json对象后进行通用合并操作
+		cdnDataString := maputils2.AnyToJsonStr(cdnData)
+		cdnDataMap, err := maputils2.ParseJSON(cdnDataString)
+		if err != nil {
+			return nil, err
+		}
+
+		if mergedMap == nil {
+			mergedMap = cdnDataMap
+		} else {
+			mergedMap = maputils2.DeepMerge(mergedMap, cdnDataMap)
+		}
+	}
+	return mergedMap, nil
+}
+
+// AddDataToCdnDataCategory 将 dataList 中的数据添加到 CDNData 的指定 Category 和字段中
+func AddDataToCdnDataCategory(cdnData *CDNData, categoryName string, fieldName string, providerKey string, dataList []string) error {
+	// 获取对应 Category 的 map[string][]string 字段
+	targetMap := GetCategoryField(cdnData, categoryName, fieldName)
+	if targetMap == nil {
+		return fmt.Errorf("failed to get target map for category: %s, field: %s", categoryName, fieldName)
+	}
+
+	//是否需要格式化处理
+	shouldNormalize := fieldName == FieldASN
+
+	// 遍历 dataList 添加数据（去重后插入）
+	for _, item := range dataList {
+		modifiedItem := item
+		if shouldNormalize {
+			modifiedItem = normalizeASN(item)
+		}
+
+		found := false
+		for _, existingList := range targetMap {
+			for _, existing := range existingList {
+				comparison := existing
+				if shouldNormalize {
+					comparison = normalizeASN(existing)
+				}
+				if comparison == modifiedItem {
+					found = true
+					break
+				}
+			}
+			if found {
+				break
+			}
+		}
+
+		if !found {
+			if targetMap[providerKey] == nil {
+				targetMap[providerKey] = make([]string, 0)
+			}
+			targetMap[providerKey] = append(targetMap[providerKey], item)
+		}
+	}
+
+	return nil
+}
+
+// GetCategoryField 根据 categoryName 和 fieldName 返回对应的 map[string][]string
+func GetCategoryField(cdnData *CDNData, categoryName, fieldName string) map[string][]string {
+	var category *Category
+
+	switch categoryName {
+	case "cdn":
+		category = &cdnData.CDN
+	case "waf":
+		category = &cdnData.WAF
+	case "cloud":
+		category = &cdnData.CLOUD
+	default:
+		return nil
+	}
+
+	switch fieldName {
+	case "ip":
+		return category.IP
+	case "asn":
+		return category.ASN
+	case "cname":
+		return category.CNAME
+	case "keys":
+		return category.KEYS
+	default:
+		return nil
+	}
+}
