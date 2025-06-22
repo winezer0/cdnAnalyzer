@@ -1,11 +1,19 @@
 # CDNCheck
 CDN Check On Golang
 
-## TODO 
-1. 实现命令行参数|配置文件 格式化输入
-2. 实现格式化输出
-3. 代码逻辑优化
-4. 自动化资源更新
+GO编写的CDN信息分析检查工具 用于检查(URL|Domain|IP)等格式目标所使用的(域名解析|IP分析|CDN|WAF|Cloud)等信息.
+
+
+## 功能介绍
+- 自定义多个DNS服务器进行解析
+- 自定义城市IP地址进行EDNS分析
+- 支持通过ASN, qqwry, ipv6数 据库识别IP归属信息
+- 通过数据源对资产信息进行CDN|WAF|CLoud信息分析
+- 输出CSV、JSON、TXT、SYS日志格式
+
+## TODO
+- 实现自动化依赖资源更新，目前可以通过transfer_test.go手动更新资源库.
+
 
 ### MIND
 ```

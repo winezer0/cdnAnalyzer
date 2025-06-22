@@ -8,6 +8,7 @@ import (
 	"cdnCheck/pkg/ipinfo/queryip"
 	"cdnCheck/pkg/maputils"
 	"cdnCheck/pkg/models"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -124,19 +125,22 @@ func main() {
 	parser.Usage = "[OPTIONS]"
 
 	// 添加描述信息
-	parser.ShortDescription = "CDN检查工具"
-	parser.LongDescription = "CDN检查工具，用于检查域名是否使用了CDN、WAF、云服务等"
+	parser.ShortDescription = "CDN信息分析检查工具"
+	parser.LongDescription = "CDN信息分析检查工具, 用于检查(URL|Domain|IP)等格式目标所使用的(域名解析|IP分析|CDN|WAF|Cloud)等信息."
 
 	// 解析命令行参数
 	if _, err := parser.Parse(); err != nil {
-		fmt.Printf("flags parse error: %v\n", err)
+		var flagsErr *flags.Error
+		if errors.As(err, &flagsErr) && errors.Is(flagsErr.Type, flags.ErrHelp) {
+			os.Exit(0)
+		}
+		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
 
 	// 检查必要参数
 	if config.Target == "" {
 		fmt.Println("错误: 必须指定目标(-t, --target)")
-		parser.WriteHelp(os.Stderr)
 		os.Exit(1)
 	}
 
