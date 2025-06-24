@@ -3,7 +3,6 @@ CDN Check On Golang
 
 GO编写的CDN信息分析检查工具 用于检查(URL|Domain|IP)等格式目标所使用的(域名解析|IP分析|CDN|WAF|Cloud)等信息.
 
-
 ## 功能介绍
 - 自定义多个DNS服务器进行解析
 - 自定义城市IP地址进行EDNS分析
@@ -11,8 +10,48 @@ GO编写的CDN信息分析检查工具 用于检查(URL|Domain|IP)等格式目�
 - 通过数据源对资产信息进行CDN|WAF|CLoud信息分析
 - 输出CSV、JSON、TXT、SYS日志格式
 
+
 ## TODO
 - 实现自动化依赖资源更新，目前可以通过transfer_test.go手动更新资源库.
+
+
+## 安装方式
+安装可执行程序后, 还需要补充数据文件.
+
+### 源码安装
+```
+git clone --depth 1 https://github.com/winezer0/cdncheck
+go build -ldflags="-s -w" -o cdncheck.exe ./cmd/docheck/main.go
+```
+
+### release安装
+```
+通过workflow编译的程序将自动发布到release中:
+https://github.com/winezer0/cdncheck/releases
+```
+
+### 依赖数据库文件下载和更新(暂未实现自动更新)
+```
+DNS服务器 (基本无需更新)
+   https://github.com/winezer0/cdncheck/blob/main/asset/resolvers.txt
+   
+城市对应IP示例 (基本无需更新)
+   https://github.com/winezer0/cdncheck/blob/main/asset/city_ip.csv
+      
+CDN|WAF|云数据库 (后续实现自动更新)
+   https://github.com/winezer0/cdncheck/blob/main/asset/source.json
+
+ASN信息数据库 (依赖于其他项目)
+   ipv4: https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv4.mmdb
+   ipv6: https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv6.mmdb 
+
+IP定位数据库 (建议周期性更新)
+   ipv4: https://github.com/metowolf/qqwry.dat/releases/latest 
+   ipv6: https://github.com/winezer0/cdncheck/blob/main/asset/zxipv6wry.db   (库文件停止更新)
+
+提示: 目前需要将数据库文件存放在程序目录的asset文件夹中.
+```
+
 
 
 ### MIND
@@ -52,30 +91,6 @@ GO编写的CDN信息分析检查工具 用于检查(URL|Domain|IP)等格式目�
    - cdncheck  source_china.json
    - other custom keys
 
-### 其他思路：
+### 其他思路(未实现)：
 CDN API查询【参考 [YouChenJun/CheckCdn](https://github.com/YouChenJun/CheckCdn)】
-
-
-### DNS记录类型支持情况
-```
-[OK]A记录 域名对应的ip地址 指示域名和ip地址的对应关系
-[OK]AAAA 域名对应的IPv6解析地址
-[OK]CNAME 别名记录 其实就是让一个服务器有多个域名
-
-[OK]NS记录 域名服务器记录 指定该域名由哪个DNS服务器来进行解析
-[OK]MX记录 邮件交换记录 说明哪台服务器是当前区域的邮件服务器
-[OK]TXT记录 在DNS中存储任意的文本信息 常用于 域名验证 SPF记录 DMARC 等
-
-[NO]SOA记录 起始授权记录 用于指示解析这个区域的主dns服务器
-[NO]PRT记录 IP逆向查询记录 从ip地址中查询域名。
-
-PS:
-  不需要对任意域名都查询 PTR / SOA记录，尤其是子域名
-  PTR 是对 IP 地址的反向查询（如 115.46.235.103.in-addr.arpa）。
-  SOA 应对 主域名（如 baidu.com、shifen.com）进行查询，而不是子域名。
-```
-
-
-	
-
 
