@@ -20,7 +20,8 @@ import (
 // Config 存储程序配置，使用结构体标签定义命令行参数
 type Config struct {
 	// 基本参数
-	Target string `short:"t" long:"target" description:"目标文件路径或直接输入的目标(多个目标用逗号分隔)"`
+	Target     string `short:"t" long:"target" description:"目标文件路径|目标字符串列表(逗号分隔)"`
+	TargetType string `short:"T" long:"target-type" description:"目标数据类型: string/file/sys" default:"string" choice:"string" choice:"file" choice:"sys"`
 
 	// DNS配置参数
 	ResolversFile     string `short:"r" long:"resolvers" description:"DNS解析服务器配置文件路径" default:"asset/resolvers.txt"`
@@ -139,28 +140,61 @@ func main() {
 	}
 
 	// 检查必要参数
-	if config.Target == "" {
-		fmt.Println("错误: 必须指定目标(-t, --target)")
+	targetType := strings.ToLower(config.TargetType)
+	if config.Target == "" && targetType != "sys" {
+		fmt.Println("错误: 必须指定目标(-t, --target)，除非使用 --target-type sys")
 		os.Exit(1)
 	}
 
 	var targets []string
 	var err error
 
-	// 判断 target 是文件路径还是直接输入的目标
-	if fileutils2.IsFileExists(config.Target) {
-		// 是文件路径，从文件加载目标
+	// 根据 target-type 参数决定如何处理输入
+	switch targetType {
+	case "string":
+		// 直接输入的目标字符串，按逗号分隔
+		if config.Target == "" {
+			fmt.Println("错误: 使用 --target-type string 时必须指定 --target")
+			os.Exit(1)
+		}
+		targets = strings.Split(config.Target, ",")
+
+	case "file":
+		// 从文件读取目标
+		if config.Target == "" {
+			fmt.Println("错误: 使用 --target-type file 时必须指定 --target")
+			os.Exit(1)
+		}
 		targets, err = fileutils2.ReadTextToList(config.Target)
 		if err != nil {
 			fmt.Printf("加载目标文件失败: %v\n", err)
 			os.Exit(1)
 		}
-	} else {
-		// 不是文件路径，视为直接输入的目标 支持 按逗号分隔
-		targets = strings.Split(config.Target, ",")
-		for i, target := range targets {
-			targets[i] = strings.TrimSpace(target)
+
+	case "sys":
+		// 从标准输入读取目标
+		targets, err = fileutils2.ReadPipeToList()
+		if err != nil {
+			fmt.Printf("从标准输入读取目标失败: %v\n", err)
+			os.Exit(1)
 		}
+	default:
+		fmt.Printf("错误: 不支持的 target-type: %s\n", targetType)
+		os.Exit(1)
+	}
+
+	// 过滤空目标
+	var filteredTargets []string
+	for _, target := range targets {
+		if strings.TrimSpace(target) != "" {
+			filteredTargets = append(filteredTargets, strings.TrimSpace(target))
+		}
+	}
+	targets = filteredTargets
+
+	if len(targets) == 0 {
+		fmt.Println("错误: 没有有效的目标")
+		os.Exit(1)
 	}
 
 	// 分类输入数据为 IP Domain InvalidEntries
