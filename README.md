@@ -80,7 +80,7 @@ IP定位数据库 (建议周期性更新)
 1. 实现 域名 DNS 解析 查询 CNAME|A|AAAA 记录
 2. 实现 域名 EDNS 解析 查询 A|AAAA 记录
 3. 实现 IPv4 归属地查询
-   - 纯真IP库 https://github.com/xiaoqidun/qqwry
+   - 纯真IP库 https://github.com/zu1k/nali
 4. 实现 IPv6 归属地查询
    - ipv6wry https://github.com/zu1k/nali
 5. 实现 IPv4/IPv6 ASN号|ASN组织查询
@@ -91,6 +91,95 @@ IP定位数据库 (建议周期性更新)
    - cdncheck  source_china.json
    - other custom keys
 
+
+### 使用示例
+提示: 在window下使用-t /t 是相同的,只是会自动根据操作系统来显示参数标志符.
+```
+λ cdncheck.exe -h
+Usage:
+  cdncheck [OPTIONS]
+
+CDN信息分析检查工具, 用于检查(URL|Domain|IP)等格式目标所使用的(域名解析|IP分析|CDN|WAF|Cloud)等信息.
+Application Options:
+  /t, /target:                              目标文件路径|目标字符串列表(逗号分隔)
+  /T, /target-type:[string|file|sys]        目标数据类型: string/file/sys (default: string)
+  /r, /resolvers:                           DNS解析服务器配置文件路径 (default: asset/resolvers.txt)
+  /n, /resolvers-num:                       选择用于解析的最大DNS服务器数量 (default: 5)
+  /c, /city-map:                            EDNS城市IP映射文件路径 (default: asset/city_ip.csv)
+  /m, /city-num:                            随机选择的城市数量 (default: 5)
+  /d, /dns-concurrency:                     DNS并发数 (default: 5)
+  /e, /edns-concurrency:                    EDNS并发数 (default: 5)
+  /w, /timeout:                             超时时间(秒) (default: 5)
+  /C, /query-edns-cnames                    启用EDNS CNAME查询
+  /S, /query-edns-use-sys-ns                启用EDNS系统NS查询
+  /a, /asn-ipv4:                            IPv4 ASN数据库路径 (default: asset/geolite2-asn-ipv4.mmdb)
+  /A, /asn-ipv6:                            IPv6 ASN数据库路径 (default: asset/geolite2-asn-ipv6.mmdb)
+  /4, /ipv4-db:                             IPv4地理位置数据库路径 (default: asset/qqwry.dat)
+  /6, /ipv6-db:                             IPv6地理位置数据库路径 (default: asset/zxipv6wry.db)
+  /s, /source:                              CDN源数据配置文件路径 (default: asset/source.json)
+  /o, /output-file:                         输出结果文件路径
+  /y, /output-type:[csv|json|txt|sys]       输出文件类型: csv/json/txt/sys (default: sys)
+  /l, /output-level:[default|quiet|detail]  输出详细程度: default/quiet/detail (default: default)
+
+Help Options:
+  /?                                        Show this help message
+  /h, /help                                 Show this help message
+
+```
+### 使用管道符传入
+```
+λ echo www.baidu.com | cdncheck.exe -T sys
+[
+  {
+    "raw": "www.baidu.com",
+    "fmt": "www.baidu.com",
+    "is_cdn": true,
+    "cdn_company": "百度旗下业务地域负载均衡系统",
+    "is_waf": false,
+    "waf_company": "",
+    "is_cloud": false,
+    "cloud_company": "",
+    "ip_size_is_cdn": true,
+    "ip_size": 10
+  }
+]
+
+```
+### 传入目标字符串
+```
+λ cdncheck.exe -t www.baidu.com,www.google.com
+[
+  {
+    "raw": "www.baidu.com",
+    "fmt": "www.baidu.com",
+    "is_cdn": true,
+    "cdn_company": "百度旗下业务地域负载均衡系统",
+    "is_waf": false,
+    "waf_company": "",
+    "is_cloud": false,
+    "cloud_company": "",
+    "ip_size_is_cdn": true,
+    "ip_size": 10
+  },
+  {
+    "raw": "www.google.com",
+    "fmt": "www.google.com",
+    "is_cdn": false,
+    "cdn_company": "",
+    "is_waf": false,
+    "waf_company": "",
+    "is_cloud": false,
+    "cloud_company": "",
+    "ip_size_is_cdn": true,
+    "ip_size": 10
+  }
+]
+```
+
 ### 其他思路(未实现)：
 CDN API查询【参考 [YouChenJun/CheckCdn](https://github.com/YouChenJun/CheckCdn)】
+
+
+### 开发或数据库参考
+cdncheck  | nali | nemo_go | ip-location-db
 
