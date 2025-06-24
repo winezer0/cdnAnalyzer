@@ -1,5 +1,7 @@
 package maputils
 
+import "strings"
+
 // UniqueMergeSlices 将任意数量的 []string 字符串切片合并成一个结果切片，并去除重复项。
 func UniqueMergeSlices(slices ...[]string) []string {
 	unique := make(map[string]struct{})
@@ -45,4 +47,22 @@ func UniqueMergeAnySlices[T comparable](slices ...[]T) []T {
 		result = append(result, v)
 	}
 	return result
+}
+
+// StripStrings 去除每个字符串两端的空白字符
+func StripStrings(targets []string) []string {
+	seen := make(map[string]struct{}, len(targets))
+	var filteredTargets []string
+
+	for _, target := range targets {
+		trimmed := strings.TrimSpace(target)
+		if trimmed != "" {
+			if _, exists := seen[trimmed]; !exists {
+				seen[trimmed] = struct{}{}
+				filteredTargets = append(filteredTargets, trimmed)
+			}
+		}
+	}
+
+	return filteredTargets
 }
