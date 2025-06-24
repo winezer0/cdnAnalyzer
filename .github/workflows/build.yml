@@ -62,12 +62,20 @@ jobs:
     needs: build
     runs-on: windows-latest
     if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
     
     steps:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
         path: ./artifacts
+
+    - name: List downloaded files
+      run: |
+        echo "Current directory: $(pwd)"
+        echo "Artifacts directory contents:"
+        Get-ChildItem -Path "./artifacts" -Recurse | Format-Table Name, FullName
 
     - name: Generate version
       id: version
@@ -93,8 +101,8 @@ jobs:
           - Windows (AMD64): `cdncheck-windows-amd64.exe`
           - Linux (AMD64): `cdncheck-linux-amd64`
         files: |
-          ./artifacts/cdncheck-windows-amd64.exe
-          ./artifacts/cdncheck-linux-amd64
+          ./artifacts/cdncheck-windows-amd64.exe/cdncheck-windows-amd64.exe
+          ./artifacts/cdncheck-linux-amd64/cdncheck-linux-amd64
         draft: false
         prerelease: false
       env:
