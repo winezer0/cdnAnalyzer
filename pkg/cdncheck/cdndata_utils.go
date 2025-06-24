@@ -1,7 +1,7 @@
 package cdncheck
 
 import (
-	maputils2 "cdnCheck/pkg/maputils"
+	"cdnCheck/pkg/maputils"
 	"fmt"
 	"strings"
 )
@@ -34,8 +34,8 @@ func CdnDataMergeSafe(cdnDatas ...CDNData) (map[string]interface{}, error) {
 	var mergedMap map[string]interface{}
 	for _, cdnData := range cdnDatas {
 		//转换为Json对象后进行通用合并操作
-		cdnDataString := maputils2.AnyToJsonStr(cdnData)
-		cdnDataMap, err := maputils2.ParseJSON(cdnDataString)
+		cdnDataString := maputils.AnyToJsonStr(cdnData)
+		cdnDataMap, err := maputils.ParseJSON(cdnDataString)
 		if err != nil {
 			return nil, err
 		}
@@ -43,7 +43,7 @@ func CdnDataMergeSafe(cdnDatas ...CDNData) (map[string]interface{}, error) {
 		if mergedMap == nil {
 			mergedMap = cdnDataMap
 		} else {
-			mergedMap = maputils2.DeepMerge(mergedMap, cdnDataMap)
+			mergedMap = maputils.DeepMerge(mergedMap, cdnDataMap)
 		}
 	}
 	return mergedMap, nil

@@ -1,10 +1,10 @@
 package main
 
 import (
-	cdncheck2 "cdnCheck/pkg/cdncheck"
+	"cdnCheck/pkg/cdncheck"
 	"cdnCheck/pkg/classify"
-	querydomain2 "cdnCheck/pkg/domaininfo/querydomain"
-	fileutils2 "cdnCheck/pkg/fileutils"
+	"cdnCheck/pkg/domaininfo/querydomain"
+	"cdnCheck/pkg/fileutils"
 	"cdnCheck/pkg/ipinfo/queryip"
 	"cdnCheck/pkg/maputils"
 	"cdnCheck/pkg/models"
@@ -48,7 +48,7 @@ type Config struct {
 }
 
 func LoadResolvers(resolversFile string, resolversNum int) ([]string, error) {
-	resolvers, err := fileutils2.ReadTextToList(resolversFile)
+	resolvers, err := fileutils.ReadTextToList(resolversFile)
 	if err != nil {
 		return nil, fmt.Errorf("加载DNS服务器失败: %w", err)
 	}
@@ -57,7 +57,7 @@ func LoadResolvers(resolversFile string, resolversNum int) ([]string, error) {
 }
 
 func LoadCityMap(cityMapFile string, randCityNum int) ([]map[string]string, error) {
-	cityMap, err := fileutils2.ReadCSVToMap(cityMapFile)
+	cityMap, err := fileutils.ReadCSVToMap(cityMapFile)
 	if err != nil {
 		return nil, fmt.Errorf("读取城市IP映射失败: %w", err)
 	}
@@ -67,9 +67,9 @@ func LoadCityMap(cityMapFile string, randCityNum int) ([]map[string]string, erro
 }
 
 // queryDomainInfo 进行域名信息解析
-func queryDomainInfo(dnsConfig *querydomain2.DNSQueryConfig, domainEntries []classify.TargetEntry) []*models.CheckInfo {
+func queryDomainInfo(dnsConfig *querydomain.DNSQueryConfig, domainEntries []classify.TargetEntry) []*models.CheckInfo {
 	// 创建DNS处理器并执行查询
-	dnsProcessor := querydomain2.NewDNSProcessor(dnsConfig, &domainEntries)
+	dnsProcessor := querydomain.NewDNSProcessor(dnsConfig, &domainEntries)
 	dnsResult := dnsProcessor.Process()
 
 	//将dns查询结果合并到 CheckInfo 中去
@@ -78,7 +78,7 @@ func queryDomainInfo(dnsConfig *querydomain2.DNSQueryConfig, domainEntries []cla
 		var checkInfo *models.CheckInfo
 		//当存在dns查询结果时,补充
 		if result, ok := (*dnsResult)[domainEntry.FMT]; ok && result != nil {
-			checkInfo = querydomain2.PopulateDNSResult(domainEntry, result)
+			checkInfo = querydomain.PopulateDNSResult(domainEntry, result)
 		} else {
 			fmt.Printf("No DNS result for domain: %s\n", domainEntry.FMT)
 			checkInfo = models.NewDomainCheckInfo(domainEntry.RAW, domainEntry.FMT, domainEntry.FromUrl)
@@ -165,7 +165,7 @@ func main() {
 			fmt.Println("错误: 使用 --target-type file 时必须指定 --target")
 			os.Exit(1)
 		}
-		targets, err = fileutils2.ReadTextToList(config.Target)
+		targets, err = fileutils.ReadTextToList(config.Target)
 		if err != nil {
 			fmt.Printf("加载目标文件失败: %v\n", err)
 			os.Exit(1)
@@ -173,7 +173,7 @@ func main() {
 
 	case "sys":
 		// 从标准输入读取目标
-		targets, err = fileutils2.ReadPipeToList()
+		targets, err = fileutils.ReadPipeToList()
 		if err != nil {
 			fmt.Printf("从标准输入读取目标失败: %v\n", err)
 			os.Exit(1)
@@ -213,7 +213,7 @@ func main() {
 	}
 
 	// 配置DNS查询参数
-	dnsConfig := &querydomain2.DNSQueryConfig{
+	dnsConfig := &querydomain.DNSQueryConfig{
 		Resolvers:          resolvers,
 		CityMap:            randCities,
 		Timeout:            time.Second * time.Duration(config.TimeOut),
@@ -242,15 +242,15 @@ func main() {
 	checkInfos = queryIPInfo(ipDbConfig, checkInfos)
 
 	// 加载source.json配置文件
-	cdnData := cdncheck2.NewEmptyCDNData()
-	err = fileutils2.ReadJsonToStruct(config.SourceJson, cdnData)
+	cdnData := cdncheck.NewEmptyCDNData()
+	err = fileutils.ReadJsonToStruct(config.SourceJson, cdnData)
 	if err != nil {
 		fmt.Printf("加载CDN源数据失败: %v\n", err)
 		os.Exit(1)
 	}
 
 	//进行CDN CLOUD WAF 信息分析
-	checkResults, err := cdncheck2.CheckCDNBatch(cdnData, checkInfos)
+	checkResults, err := cdncheck.CheckCDNBatch(cdnData, checkInfos)
 	if err != nil {
 		fmt.Printf("CDN分析失败: %v\n", err)
 		os.Exit(1)
@@ -261,15 +261,15 @@ func main() {
 	switch strings.ToLower(config.OutputLevel) {
 	case "quiet":
 		// 仅输出不是CDN的fmt内容
-		outputData = cdncheck2.GetNoCDNs(checkResults)
+		outputData = cdncheck.GetNoCDNs(checkResults)
 	case "detail":
 		// 合并 checkResults 到 checkInfos
-		outputData = cdncheck2.MergeCheckResultsToCheckInfos(checkInfos, checkResults)
+		outputData = cdncheck.MergeCheckResultsToCheckInfos(checkInfos, checkResults)
 	default:
 		// default: 输出 checkResults
 		outputData = checkResults
 	}
 
 	// 处理输出类型
-	fileutils2.WriteOutputToFile(outputData, config.OutputType, config.OutputFile)
+	fileutils.WriteOutputToFile(outputData, config.OutputType, config.OutputFile)
 }

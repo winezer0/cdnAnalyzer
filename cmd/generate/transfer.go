@@ -2,7 +2,7 @@ package generate
 
 import (
 	"cdnCheck/pkg/cdncheck"
-	fileutils2 "cdnCheck/pkg/fileutils"
+	"cdnCheck/pkg/fileutils"
 	"cdnCheck/pkg/maputils"
 	"fmt"
 )
@@ -17,7 +17,7 @@ func TransferNaliCdnYaml(path string) *cdncheck.CDNData {
 	}
 	// 1. 读取 YAML 到 CloudKeysData
 	var yamlData naliCdnData
-	err := fileutils2.ReadYamlToStruct(path, &yamlData)
+	err := fileutils.ReadYamlToStruct(path, &yamlData)
 	if err != nil {
 		panic(err)
 	}
@@ -44,7 +44,7 @@ func TransferPDCdnCheckJson(path string) *cdncheck.CDNData {
 
 	// 加载cdn check json数据源
 	var pdCdnCheckData PDCdnCheckData
-	err := fileutils2.ReadJsonToStruct(path, &pdCdnCheckData)
+	err := fileutils.ReadJsonToStruct(path, &pdCdnCheckData)
 	if err != nil {
 		panic(err)
 	}
@@ -71,7 +71,7 @@ func TransferCloudKeysYaml(path string) *cdncheck.CDNData {
 	}
 
 	// 1. 读取 YAML 到 CloudKeysData
-	err := fileutils2.ReadYamlToStruct(path, &cloudKeysYaml)
+	err := fileutils.ReadYamlToStruct(path, &cloudKeysYaml)
 	if err != nil {
 		panic(err)
 	}

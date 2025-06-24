@@ -2,7 +2,7 @@ package cdncheck
 
 import (
 	"cdnCheck/pkg/ipinfo/asninfo"
-	maputils2 "cdnCheck/pkg/maputils"
+	"cdnCheck/pkg/maputils"
 	"cdnCheck/pkg/models"
 	"github.com/yl2chen/cidranger"
 	"net"
@@ -142,14 +142,14 @@ func checkCDN(cdnData *CDNData, checkInfo *models.CheckInfo) (CheckResult, error
 	}
 
 	cnameList := checkInfo.CNAME
-	ipList := maputils2.UniqueMergeSlices(checkInfo.A, checkInfo.AAAA)
-	asnList := maputils2.UniqueMergeAnySlices(
+	ipList := maputils.UniqueMergeSlices(checkInfo.A, checkInfo.AAAA)
+	asnList := maputils.UniqueMergeAnySlices(
 		asninfo.GetUniqueOrgNumbers(checkInfo.Ipv4Asn),
 		asninfo.GetUniqueOrgNumbers(checkInfo.Ipv6Asn),
 	)
-	ipLocateList := maputils2.UniqueMergeSlices(
-		maputils2.GetMapsValuesUnique(checkInfo.Ipv4Locate),
-		maputils2.GetMapsValuesUnique(checkInfo.Ipv6Locate),
+	ipLocateList := maputils.UniqueMergeSlices(
+		maputils.GetMapsValuesUnique(checkInfo.Ipv4Locate),
+		maputils.GetMapsValuesUnique(checkInfo.Ipv6Locate),
 	)
 
 	// 判断 IP 数量是否符合 CDN 特征
