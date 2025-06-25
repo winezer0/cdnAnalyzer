@@ -1,4 +1,4 @@
-package cdncheck
+package analyzer
 
 type CDNData struct {
 	CDN   Category `json:"cdn"`

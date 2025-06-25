@@ -6,7 +6,7 @@ import (
 
 func TestIpv4Location_Find(t *testing.T) {
 	// 集成测试：测试完整的查询流程
-	db, err := NewIPv4Location("C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\qqwry.dat")
+	db, err := NewIPv4Location("C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\asset\\qqwry.dat")
 	if err != nil {
 		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
 	}
@@ -34,7 +34,7 @@ func TestIpv4Location_Find(t *testing.T) {
 }
 
 func TestIpv4Location_BatchFind(t *testing.T) {
-	db, err := NewIPv4Location("C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\qqwry.dat")
+	db, err := NewIPv4Location("C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\asset\\qqwry.dat")
 	if err != nil {
 		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
 	}
@@ -60,7 +60,7 @@ func TestIpv4Location_BatchFind(t *testing.T) {
 }
 
 func TestIpv4Location_GetDatabaseInfo(t *testing.T) {
-	db, err := NewIPv4Location("C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\qqwry.dat")
+	db, err := NewIPv4Location("C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\asset\\qqwry.dat")
 	if err != nil {
 		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
 	}

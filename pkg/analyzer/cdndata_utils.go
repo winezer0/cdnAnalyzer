@@ -1,7 +1,7 @@
-package cdncheck
+package analyzer
 
 import (
-	"cdnCheck/pkg/maputils"
+	"cdnAnalyzer/pkg/maputils"
 	"fmt"
 	"strings"
 )

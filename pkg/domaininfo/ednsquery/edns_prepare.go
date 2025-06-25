@@ -1,7 +1,7 @@
 package ednsquery
 
 import (
-	"cdnCheck/pkg/domaininfo/dnsquery"
+	"cdnAnalyzer/pkg/domaininfo/dnsquery"
 	"context"
 	"fmt"
 	"github.com/panjf2000/ants/v2"

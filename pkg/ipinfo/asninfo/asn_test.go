@@ -8,8 +8,8 @@ import (
 func TestMMDBManager_FindASN(t *testing.T) {
 	// 创建配置
 	config := &MMDBConfig{
-		IPv4Path:             "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv4.mmdb",
-		IPv6Path:             "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv6.mmdb",
+		IPv4Path:             "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\asset\\geolite2-asn-ipv4.mmdb",
+		IPv6Path:             "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\asset\\geolite2-asn-ipv6.mmdb",
 		MaxConcurrentQueries: 100,
 	}
 
@@ -68,8 +68,8 @@ func TestMMDBManager_FindASN(t *testing.T) {
 func TestMMDBManager_ASNToIPRanges(t *testing.T) {
 	// 创建配置
 	config := &MMDBConfig{
-		IPv4Path:             "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv4.mmdb",
-		IPv6Path:             "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv6.mmdb",
+		IPv4Path:             "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\asset\\geolite2-asn-ipv4.mmdb",
+		IPv6Path:             "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\asset\\geolite2-asn-ipv6.mmdb",
 		MaxConcurrentQueries: 100,
 	}
 
@@ -98,8 +98,8 @@ func TestMMDBManager_ASNToIPRanges(t *testing.T) {
 
 func TestMMDBManager_BatchFindASN(t *testing.T) {
 	config := &MMDBConfig{
-		IPv4Path:             "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv4.mmdb",
-		IPv6Path:             "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\asset\\geolite2-asn-ipv6.mmdb",
+		IPv4Path:             "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\asset\\geolite2-asn-ipv4.mmdb",
+		IPv6Path:             "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\asset\\geolite2-asn-ipv6.mmdb",
 		MaxConcurrentQueries: 100,
 	}
 

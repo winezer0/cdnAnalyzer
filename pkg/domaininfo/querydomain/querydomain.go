@@ -1,9 +1,9 @@
 package querydomain
 
 import (
-	classify2 "cdnCheck/pkg/classify"
-	dnsquery2 "cdnCheck/pkg/domaininfo/dnsquery"
-	ednsquery2 "cdnCheck/pkg/domaininfo/ednsquery"
+	classify2 "cdnAnalyzer/pkg/classify"
+	dnsquery2 "cdnAnalyzer/pkg/domaininfo/dnsquery"
+	ednsquery2 "cdnAnalyzer/pkg/domaininfo/ednsquery"
 	"fmt"
 	"sync"
 	"time"

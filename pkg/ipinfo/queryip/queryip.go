@@ -1,9 +1,9 @@
 package queryip
 
 import (
-	"cdnCheck/pkg/ipinfo/asninfo"
-	"cdnCheck/pkg/ipinfo/ipv4info"
-	"cdnCheck/pkg/ipinfo/ipv6info"
+	"cdnAnalyzer/pkg/ipinfo/asninfo"
+	"cdnAnalyzer/pkg/ipinfo/ipv4info"
+	"cdnAnalyzer/pkg/ipinfo/ipv6info"
 	"fmt"
 	"net"
 )

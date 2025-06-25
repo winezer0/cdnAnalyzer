@@ -1,7 +1,7 @@
 package ipv4info
 
 import (
-	"cdnCheck/pkg/fileutils"
+	"cdnAnalyzer/pkg/fileutils"
 	"encoding/binary"
 	"errors"
 	"fmt"

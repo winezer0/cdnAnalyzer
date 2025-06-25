@@ -1,7 +1,7 @@
 package querydomain
 
 import (
-	"cdnCheck/pkg/classify"
+	"cdnAnalyzer/pkg/classify"
 	"testing"
 	"time"
 )

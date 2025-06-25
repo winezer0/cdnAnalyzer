@@ -1,11 +1,11 @@
 package querydomain
 
 import (
-	"cdnCheck/pkg/classify"
-	dnsquery2 "cdnCheck/pkg/domaininfo/dnsquery"
-	"cdnCheck/pkg/domaininfo/ednsquery"
-	"cdnCheck/pkg/maputils"
-	"cdnCheck/pkg/models"
+	"cdnAnalyzer/pkg/classify"
+	dnsquery2 "cdnAnalyzer/pkg/domaininfo/dnsquery"
+	"cdnAnalyzer/pkg/domaininfo/ednsquery"
+	"cdnAnalyzer/pkg/maputils"
+	"cdnAnalyzer/pkg/models"
 	"fmt"
 )
 

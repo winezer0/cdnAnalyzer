@@ -1,7 +1,7 @@
 package models
 
 import (
-	"cdnCheck/pkg/ipinfo/asninfo"
+	"cdnAnalyzer/pkg/ipinfo/asninfo"
 )
 
 // CheckInfo 用于保存资产结果时间的类型

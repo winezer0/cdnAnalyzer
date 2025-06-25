@@ -1,7 +1,7 @@
-package cdncheck
+package analyzer
 
 import (
-	"cdnCheck/pkg/models"
+	"cdnAnalyzer/pkg/models"
 )
 
 // GetNoCDNs 获取NoCDN的fmt数据

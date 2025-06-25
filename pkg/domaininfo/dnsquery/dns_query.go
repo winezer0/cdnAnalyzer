@@ -1,7 +1,7 @@
 package dnsquery
 
 import (
-	"cdnCheck/pkg/maputils"
+	"cdnAnalyzer/pkg/maputils"
 	"fmt"
 	"strings"
 	"sync"

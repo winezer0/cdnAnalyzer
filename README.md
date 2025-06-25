@@ -1,4 +1,4 @@
-# CDNCheck
+# cdnAnalyzer
 CDN Check On Golang
 
 GO编写的CDN信息分析检查工具 用于检查(URL|Domain|IP)等格式目标所使用的(域名解析|IP分析|CDN|WAF|Cloud)等信息.
@@ -20,26 +20,26 @@ GO编写的CDN信息分析检查工具 用于检查(URL|Domain|IP)等格式目�
 
 ### 源码安装
 ```
-git clone --depth 1 https://github.com/winezer0/cdncheck
-go build -ldflags="-s -w" -o cdncheck.exe ./cmd/docheck/main.go
+git clone --depth 1 https://github.com/winezer0/cdnAnalyzer
+go build -ldflags="-s -w" -o cdnAnalyzer.exe ./cmd/docheck/main.go
 ```
 
 ### release安装
 ```
 通过workflow编译的程序将自动发布到release中:
-https://github.com/winezer0/cdncheck/releases
+https://github.com/winezer0/cdnAnalyzer/releases
 ```
 
 ### 依赖数据库文件下载和更新(暂未实现自动更新)
 ```
 DNS服务器 (基本无需更新)
-   https://github.com/winezer0/cdncheck/blob/main/asset/resolvers.txt
+   https://github.com/winezer0/cdnAnalyzer/blob/main/asset/resolvers.txt
    
 城市对应IP示例 (基本无需更新)
-   https://github.com/winezer0/cdncheck/blob/main/asset/city_ip.csv
+   https://github.com/winezer0/cdnAnalyzer/blob/main/asset/city_ip.csv
       
 CDN|WAF|云数据库 (后续实现自动更新)
-   https://github.com/winezer0/cdncheck/blob/main/asset/source.json
+   https://github.com/winezer0/cdnAnalyzer/blob/main/asset/source.json
 
 ASN信息数据库 (依赖于其他项目)
    ipv4: https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv4.mmdb
@@ -47,7 +47,7 @@ ASN信息数据库 (依赖于其他项目)
 
 IP定位数据库 (建议周期性更新)
    ipv4: https://github.com/metowolf/qqwry.dat/releases/latest 
-   ipv6: https://github.com/winezer0/cdncheck/blob/main/asset/zxipv6wry.db   (库文件停止更新)
+   ipv6: https://github.com/winezer0/cdnAnalyzer/blob/main/asset/zxipv6wry.db   (库文件停止更新)
 
 提示: 目前需要将数据库文件存放在程序目录的asset文件夹中.
 ```
@@ -95,9 +95,9 @@ IP定位数据库 (建议周期性更新)
 ### 使用示例
 提示: 在window下使用-t /t 是相同的,只是会自动根据操作系统来显示参数标志符.
 ```
-λ cdncheck.exe -h
+λ cdnAnalyzer.exe -h
 Usage:
-  cdncheck [OPTIONS]
+  cdnAnalyzer [OPTIONS]
 
 CDN信息分析检查工具, 用于检查(URL|Domain|IP)等格式目标所使用的(域名解析|IP分析|CDN|WAF|Cloud)等信息.
 Application Options:
@@ -128,7 +128,7 @@ Help Options:
 ```
 ### 使用管道符传入
 ```
-λ echo www.baidu.com | cdncheck.exe -T sys
+λ echo www.baidu.com | cdnAnalyzer.exe -T sys
 [
   {
     "raw": "www.baidu.com",
@@ -147,7 +147,7 @@ Help Options:
 ```
 ### 传入目标字符串
 ```
-λ cdncheck.exe -t www.baidu.com,www.google.com
+λ cdnAnalyzer.exe -t www.baidu.com,www.google.com
 [
   {
     "raw": "www.baidu.com",

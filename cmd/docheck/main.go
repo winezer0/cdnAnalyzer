@@ -1,13 +1,13 @@
 package main
 
 import (
-	"cdnCheck/pkg/cdncheck"
-	"cdnCheck/pkg/classify"
-	"cdnCheck/pkg/domaininfo/querydomain"
-	"cdnCheck/pkg/fileutils"
-	"cdnCheck/pkg/ipinfo/queryip"
-	"cdnCheck/pkg/maputils"
-	"cdnCheck/pkg/models"
+	"cdnAnalyzer/pkg/analyzer"
+	"cdnAnalyzer/pkg/classify"
+	"cdnAnalyzer/pkg/domaininfo/querydomain"
+	"cdnAnalyzer/pkg/fileutils"
+	"cdnAnalyzer/pkg/ipinfo/queryip"
+	"cdnAnalyzer/pkg/maputils"
+	"cdnAnalyzer/pkg/models"
 	"errors"
 	"fmt"
 	"os"
@@ -122,7 +122,7 @@ func main() {
 
 	// 使用 PassDoubleDash 选项强制使用 - 前缀
 	parser := flags.NewParser(&config, flags.Default)
-	parser.Name = "cdncheck"
+	parser.Name = "cdnAnalyzer"
 	parser.Usage = "[OPTIONS]"
 
 	// 添加描述信息
@@ -242,7 +242,7 @@ func main() {
 	checkInfos = queryIPInfo(ipDbConfig, checkInfos)
 
 	// 加载source.json配置文件
-	cdnData := cdncheck.NewEmptyCDNData()
+	cdnData := analyzer.NewEmptyCDNData()
 	err = fileutils.ReadJsonToStruct(config.SourceJson, cdnData)
 	if err != nil {
 		fmt.Printf("加载CDN源数据失败: %v\n", err)
@@ -250,7 +250,7 @@ func main() {
 	}
 
 	//进行CDN CLOUD WAF 信息分析
-	checkResults, err := cdncheck.CheckCDNBatch(cdnData, checkInfos)
+	checkResults, err := analyzer.CheckCDNBatch(cdnData, checkInfos)
 	if err != nil {
 		fmt.Printf("CDN分析失败: %v\n", err)
 		os.Exit(1)
@@ -261,10 +261,10 @@ func main() {
 	switch strings.ToLower(config.OutputLevel) {
 	case "quiet":
 		// 仅输出不是CDN的fmt内容
-		outputData = cdncheck.GetNoCDNs(checkResults)
+		outputData = analyzer.GetNoCDNs(checkResults)
 	case "detail":
 		// 合并 checkResults 到 checkInfos
-		outputData = cdncheck.MergeCheckResultsToCheckInfos(checkInfos, checkResults)
+		outputData = analyzer.MergeCheckResultsToCheckInfos(checkInfos, checkResults)
 	default:
 		// default: 输出 checkResults
 		outputData = checkResults

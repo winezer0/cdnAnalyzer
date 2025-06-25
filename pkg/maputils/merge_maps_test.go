@@ -1,7 +1,7 @@
 package maputils
 
 import (
-	fileutils2 "cdnCheck/pkg/fileutils"
+	fileutils2 "cdnAnalyzer/pkg/fileutils"
 	"fmt"
 	"testing"
 )

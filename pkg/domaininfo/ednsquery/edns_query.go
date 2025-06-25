@@ -1,7 +1,7 @@
 package ednsquery
 
 import (
-	maputils2 "cdnCheck/pkg/maputils"
+	maputils2 "cdnAnalyzer/pkg/maputils"
 	"context"
 	"fmt"
 	"github.com/miekg/dns"

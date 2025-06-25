@@ -1,4 +1,4 @@
-module cdnCheck
+module cdnAnalyzer
 
 go 1.23.0
 

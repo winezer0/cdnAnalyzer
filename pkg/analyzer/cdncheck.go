@@ -1,9 +1,9 @@
-package cdncheck
+package analyzer
 
 import (
-	"cdnCheck/pkg/ipinfo/asninfo"
-	"cdnCheck/pkg/maputils"
-	"cdnCheck/pkg/models"
+	"cdnAnalyzer/pkg/ipinfo/asninfo"
+	"cdnAnalyzer/pkg/maputils"
+	"cdnAnalyzer/pkg/models"
 	"github.com/yl2chen/cidranger"
 	"net"
 	"strconv"
