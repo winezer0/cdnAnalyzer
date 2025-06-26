@@ -1,0 +1,67 @@
+databases:
+  - name: qqwry
+    file: qqwry.dat
+    download-urls:
+      - https://github.com/metowolf/qqwry.dat/releases/latest/download/qqwry.dat
+    keep-updated: true
+
+  - name: zxipv6wry
+    file: zxipv6wry.db
+    download-urls:
+      - https://github.com/winezer0/cdnAnalyzer/blob/main/asset/zxipv6wry.db
+    keep-updated: false
+
+  - name: geolite2-asn-ipv4
+    file: geolite2-asn-ipv4.mmdb
+    download-urls:
+      - https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv4.mmdb
+    keep-updated: true
+
+  - name: geolite2-asn-ipv6
+    file: geolite2-asn-ipv6.mmdb
+    download-urls:
+      - https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv6.mmdb
+    keep-updated: true
+
+  - name: cdn
+    file: cdn.yml
+    download-urls:
+      - https://raw.githubusercontent.com/4ft35t/cdn/master/src/cdn.yml
+      - https://cdn.jsdelivr.net/gh/4ft35t/cdn/src/cdn.yml
+    keep-updated: false
+
+  - name: dns-resolvers
+    file: city_ip.csv
+    download-urls:
+      - https://github.com/winezer0/cdnAnalyzer/blob/main/asset/resolvers.txt
+    keep-updated: false
+
+  - name: edns-city-ip
+    file: city_ip.csv
+    download-urls:
+      - https://github.com/winezer0/cdnAnalyzer/blob/main/asset/city_ip.csv
+    keep-updated: false
+
+  - name: cdn-keys
+    file: cloud_keys.yml
+    download-urls:
+      - https://github.com/winezer0/cdnAnalyzer/blob/main/asset/cloud_keys.yml
+    keep-updated: false
+
+  - name: cdn-sources_china
+    file: sources_china.json
+    download-urls:
+      - https://github.com/hanbufei/isCdn/blob/main/client/data/sources_china.json
+    keep-updated: false
+
+  - name: cdn-sources-foreign
+    file: sources_foreign.json
+    download-urls:
+      - https://github.com/projectdiscovery/cdncheck/blob/main/sources_data.json
+    keep-updated: true
+
+  - name: cdn-sources
+    file: sources.json
+    download-urls:
+      - https://github.com/winezer0/cdnAnalyzer/blob/main/asset/sources.json
+    keep-updated: true
