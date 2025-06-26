@@ -1,9 +1,12 @@
 # cdnAnalyzer
 CDN Check On Golang
 
-GO编写的CDN信息分析检查工具 用于检查(URL|Domain|IP)等格式目标所使用的(域名解析|IP分析|CDN|WAF|Cloud)等信息.
+目前最完善的CDN分析工具 便于快速筛选CDN资产信息 基于IP|ASN|CNAME|IPlocate等多种方案
 
 ## 功能介绍
+- 使用GO编写
+- 支持输入(URL|Domain|IP)等多种格式目标
+- 会进行(域名解析|IP分析|CDN|WAF|Cloud)等信息分析.
 - 自定义多个DNS服务器进行解析
 - 自定义城市IP地址进行EDNS分析
 - 支持通过ASN, qqwry, ipv6数 据库识别IP归属信息
