@@ -32,6 +32,10 @@ type AppConfig struct {
 	SourceJson    string `yaml:"source-json"`
 
 	// 下载配置
+	ProxyURL      string              `yaml:"proxy-url"`
+	StoreDir      string              `yaml:"store-dir"`
+	UpdateDB      bool                `yaml:"update-db"`
+	UpdateDBForce bool                `yaml:"update-db-force"`
 	DownloadItems []downfile.DownItem `yaml:"download-items"`
 }
 

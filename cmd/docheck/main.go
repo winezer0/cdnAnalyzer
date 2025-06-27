@@ -32,19 +32,19 @@ type CmdConfig struct {
 
 	// 数据库更新配置
 	ProxyURL      string `short:"p" long:"proxy" description:"代理URL（支持http://和socks5://）" default:""`
-	StoreDir      string `short:"d" long:"store-dir" description:"数据库文件保存目录" default:""`
+	StoreDir      string `short:"d" long:"store-dir" description:"数据库文件保存目录" default:"assets"`
 	UpdateDB      bool   `short:"u" long:"update" description:"强制更新数据库文件，忽略缓存"`
 	UpdateDBForce bool   `short:"U" long:"update-force" description:"强制更新数据库文件，忽略缓存"`
 }
 
 func main() {
 	// 定义配置并解析命令行参数
-	var cmdConfig CmdConfig
-	var appConfig docheck.AppConfig
+	var cmdConfig = &CmdConfig{}
+	var appConfig = &docheck.AppConfig{}
 	var downloadItems []downfile.DownItem
 
 	// 使用 PassDoubleDash 选项强制使用 - 前缀
-	parser := flags.NewParser(&cmdConfig, flags.Default)
+	parser := flags.NewParser(cmdConfig, flags.Default)
 	parser.Name = "cdnAnalyzer"
 	parser.Usage = "[OPTIONS]"
 
@@ -63,33 +63,33 @@ func main() {
 	}
 
 	// 1. 先加载配置文件
-	if cmdConfig.ConfigFile != "" {
-		loadedConfig, err := docheck.LoadAppConfigFile(cmdConfig.ConfigFile)
-		if err != nil {
-			fmt.Printf("加载配置文件失败: %v\n", err)
-			os.Exit(1)
-		}
+	configFile := cmdConfig.ConfigFile
+	if !fileutils.IsFileExists(configFile) {
+		fmt.Printf("指定配置文件不存在: %v\n", configFile)
+		os.Exit(1)
+	}
 
-		if loadedConfig != nil {
-			appConfig = *loadedConfig
-			downloadItems = appConfig.DownloadItems
-		}
+	appConfig, err := docheck.LoadAppConfigFile(configFile)
+	if err != nil || appConfig == nil {
+		fmt.Printf("加载配置文件失败: %v\n", err)
+		os.Exit(1)
 	}
 
 	// 2. 用命令行中的其他参数覆盖配置文件中的值
-	mergeConfigFromCmd(&appConfig, &cmdConfig)
+	downloadItems = appConfig.DownloadItems
+	mergeConfigFromCmd(appConfig, cmdConfig)
 
 	// 3. 获取并检查数据库文件路径
-	dbPaths := docheck.GetDBPathsFromConfig(&appConfig)
+	dbPaths := docheck.GetDBPathsFromConfig(appConfig)
 	missedDB := docheck.DBFilesIsExists(dbPaths)
-	if len(missedDB) > 0 || cmdConfig.UpdateDB || cmdConfig.UpdateDBForce {
+	if len(missedDB) > 0 || appConfig.UpdateDB || appConfig.UpdateDBForce {
 		// 更新数据库配置
 		downfile.CleanupExpiredCache()
 		// 创建HTTP客户端配置
 		clientConfig := &downfile.ClientConfig{
 			ConnectTimeout: 30,
 			IdleTimeout:    30,
-			ProxyURL:       cmdConfig.ProxyURL,
+			ProxyURL:       appConfig.ProxyURL,
 		}
 		// 创建HTTP客户端
 		httpClient, err := downfile.CreateHTTPClient(clientConfig)
@@ -100,7 +100,7 @@ func main() {
 		// 处理所有配置组
 		fmt.Printf("开始下载数据库文件: %s\n")
 		totalItems := len(downloadItems)
-		successItems := downfile.ProcessDownItems(httpClient, downloadItems, cmdConfig.StoreDir, cmdConfig.UpdateDBForce, true, 3)
+		successItems := downfile.ProcessDownItems(httpClient, downloadItems, appConfig.StoreDir, appConfig.UpdateDBForce, true, 3)
 		fmt.Printf("\n数据库依赖下载任务完成: 成功 %d/%d\n", successItems, totalItems)
 	}
 
@@ -112,7 +112,6 @@ func main() {
 	}
 
 	var targets []string
-	var err error
 
 	// 根据 target-type 参数决定如何处理输入
 	switch targetType {
@@ -279,5 +278,21 @@ func mergeConfigFromCmd(yamlConfig *docheck.AppConfig, cmdConfig *CmdConfig) {
 
 	if cmdConfig.OutputLevel != "" {
 		yamlConfig.OutputLevel = cmdConfig.OutputLevel
+	}
+
+	if cmdConfig.ProxyURL != "" {
+		yamlConfig.ProxyURL = cmdConfig.ProxyURL
+	}
+
+	if cmdConfig.StoreDir != "" {
+		yamlConfig.StoreDir = cmdConfig.StoreDir
+	}
+
+	if cmdConfig.UpdateDB || !yamlConfig.UpdateDB {
+		yamlConfig.UpdateDB = cmdConfig.UpdateDB
+	}
+
+	if cmdConfig.UpdateDBForce || !yamlConfig.UpdateDB {
+		yamlConfig.UpdateDB = cmdConfig.UpdateDBForce
 	}
 }

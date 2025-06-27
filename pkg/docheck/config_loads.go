@@ -1,6 +1,7 @@
 package docheck
 
 import (
+	"cdnAnalyzer/pkg/downfile"
 	"cdnAnalyzer/pkg/fileutils"
 	"cdnAnalyzer/pkg/maputils"
 	"fmt"
@@ -34,27 +35,27 @@ func GetDBPathsFromConfig(appConfig *AppConfig) DBFilePaths {
 		return paths
 	}
 
-	// 遍历下载配置，根据m odule 名称查找对应的文件路径
+	// 遍历下载配置，根据 module 名称查找对应的文件路径
+	storeDir := appConfig.StoreDir
 	for _, item := range appConfig.DownloadItems {
 		module := item.Module
-		filepath := item.FileName
-
+		storePath := downfile.GetItemFilePath(item, storeDir)
 		// 根据module名称匹配数据库类型
 		switch module {
 		case ModuleDNSResolvers:
-			paths.ResolversFile = filepath
+			paths.ResolversFile = storePath
 		case ModuleEDNSCityIP:
-			paths.CityMapFile = filepath
+			paths.CityMapFile = storePath
 		case ModuleAsnIPv4:
-			paths.AsnIpv4Db = filepath
+			paths.AsnIpv4Db = storePath
 		case ModuleAsnIPv6:
-			paths.AsnIpv6Db = filepath
+			paths.AsnIpv6Db = storePath
 		case ModuleIPv4Locate:
-			paths.Ipv4LocateDb = filepath
+			paths.Ipv4LocateDb = storePath
 		case ModuleIPv6Locate:
-			paths.Ipv6LocateDb = filepath
+			paths.Ipv6LocateDb = storePath
 		case ModuleCDNSource:
-			paths.SourceJson = filepath
+			paths.SourceJson = storePath
 		}
 	}
 	return paths
