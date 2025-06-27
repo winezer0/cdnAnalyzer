@@ -1,10 +1,12 @@
 name: Build and Release
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号 (例如: 0.2.0)'
+        required: true
+        default: '0.2.0'
 
 jobs:
   build:
@@ -48,7 +50,7 @@ jobs:
         GOARCH: ${{ matrix.goarch }}
         CGO_ENABLED: 0
       run: |
-        go build -ldflags="-s -w" -o ${{ matrix.artifact-name }} ./cmd/docheck/main.go
+        go build -ldflags="-s -w -X main.Version=${{ github.event.inputs.version }}" -o ${{ matrix.artifact-name }} ./cmd/docheck/main.go
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -75,23 +77,24 @@ jobs:
         echo "Artifacts directory contents:"
         Get-ChildItem -Path "./artifacts" -Recurse | Format-Table Name, FullName
 
-    - name: Generate version
-      id: version
+    - name: Get current date
+      id: date
       run: |
-        $timestamp = Get-Date -Format "yyyy.MM.dd-HHmmss"
-        echo "version=$timestamp" >> $env:GITHUB_OUTPUT
-        echo "Generated version: $timestamp"
+        $buildDate = Get-Date -Format "yyyy.MM.dd"
+        echo "builddate=$buildDate" >> $env:GITHUB_OUTPUT
+        echo "Build date: $buildDate"
 
     - name: Create release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: v${{ steps.version.outputs.version }}
-        name: Release v${{ steps.version.outputs.version }}
+        tag_name: v${{ github.event.inputs.version }}
+        name: Release v${{ github.event.inputs.version }}
         body: |
-          ## cdnAnalyzer v${{ steps.version.outputs.version }}
+          ## cdnAnalyzer v${{ github.event.inputs.version }}
           
           ### 构建信息
-          - 构建时间: ${{ steps.version.outputs.version }}
+          - 版本号: ${{ github.event.inputs.version }}
+          - 构建日期: ${{ steps.date.outputs.builddate }}
           - 构建平台: Windows & Linux
           - Go版本: 1.22.x & 1.23.x
           

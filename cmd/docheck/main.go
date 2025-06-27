@@ -5,7 +5,6 @@ import (
 	"cdnAnalyzer/pkg/classify"
 	"cdnAnalyzer/pkg/docheck"
 	"cdnAnalyzer/pkg/domaininfo/querydomain"
-	"cdnAnalyzer/pkg/downfile"
 	"cdnAnalyzer/pkg/fileutils"
 	"cdnAnalyzer/pkg/ipinfo/queryip"
 	"errors"
@@ -15,7 +14,11 @@ import (
 	"time"
 
 	"github.com/jessevdk/go-flags"
+	"github.com/winezer0/downtools/downfile"
 )
+
+// 版本号变量，在构建时通过ldflags注入
+var Version = "dev"
 
 // CmdConfig 存储程序配置，使用结构体标签定义命令行参数
 type CmdConfig struct {
@@ -36,6 +39,9 @@ type CmdConfig struct {
 	ProxyURL      string `short:"p" long:"proxy" description:"使用代理URL更新 (http|socks5)" default:""`
 	UpdateDB      bool   `short:"u" long:"update" description:"自动更新数据库文件 (检查更新间隔)"`
 	UpdateDBForce bool   `short:"U" long:"update-force" description:"强制更新数据库文件 (忽略更新间隔)"`
+
+	// 版本信息
+	ShowVersion bool `short:"v" long:"version" description:"显示版本信息"`
 }
 
 func main() {
@@ -60,6 +66,12 @@ func main() {
 		}
 		fmt.Println("Error:", err)
 		os.Exit(1)
+	}
+
+	// 显示版本信息
+	if cmdConfig.ShowVersion {
+		fmt.Printf("cdnAnalyzer 版本: %s\n", Version)
+		os.Exit(0)
 	}
 
 	// 1. 先加载配置文件

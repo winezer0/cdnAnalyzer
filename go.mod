@@ -10,6 +10,7 @@ require (
 	github.com/oschwald/maxminddb-golang v1.12.0
 	github.com/panjf2000/ants/v2 v2.11.3
 	github.com/stretchr/testify v1.10.0
+	github.com/winezer0/downtools v0.0.4
 	github.com/yl2chen/cidranger v1.0.2
 	github.com/zu1k/nali v0.8.1
 	gopkg.in/yaml.v3 v3.0.1
