@@ -28,16 +28,15 @@ func LoadAppConfigFile(configFile string) (*AppConfig, error) {
 }
 
 // GetDBPathsFromConfig 从YAMLConfig和下载配置中获取数据库文件路径
-func GetDBPathsFromConfig(appConfig *AppConfig) DBFilePaths {
+func GetDBPathsFromConfig(downloadItems []downfile.DownItem, storeDir string) DBFilePaths {
 	// 初始化空路径
 	paths := DBFilePaths{}
-	if appConfig == nil || appConfig.DownloadItems == nil {
+	if downloadItems == nil || len(downloadItems) == 0 {
 		return paths
 	}
 
 	// 遍历下载配置，根据 module 名称查找对应的文件路径
-	storeDir := appConfig.StoreDir
-	for _, item := range appConfig.DownloadItems {
+	for _, item := range downloadItems {
 		module := item.Module
 		storePath := downfile.GetItemFilePath(item, storeDir)
 		// 根据module名称匹配数据库类型

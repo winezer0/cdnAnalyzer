@@ -24,24 +24,24 @@ type CmdConfig struct {
 
 	// 基本参数 覆盖app Config中的配置
 	Target     string `short:"t" long:"target" description:"目标文件路径|目标字符串列表(逗号分隔)"`
-	TargetType string `short:"T" long:"target-type" description:"目标数据类型: string/file/sys" choice:"string" choice:"file" choice:"sys"`
+	TargetType string `short:"T" long:"target-type" description:"目标数据类型: string/file/sys" default:"string" choice:"string" choice:"file" choice:"sys"`
+
 	// 输出配置参数 覆盖app Config中的配置
-	OutputFile  string `short:"o" long:"output-file" description:"输出结果文件路径"`
-	OutputType  string `short:"y" long:"output-type" description:"输出文件类型: csv/json/txt/sys" choice:"csv" choice:"json" choice:"txt" choice:"sys"`
-	OutputLevel string `short:"l" long:"output-level" description:"输出详细程度: default/quiet/detail" choice:"default" choice:"quiet" choice:"detail"`
+	OutputFile  string `short:"o" long:"output-file" description:"输出结果文件路径" default:"analyser_output.json"`
+	OutputType  string `short:"y" long:"output-type" description:"输出文件类型: csv/json/txt/sys" default:"sys" choice:"csv" choice:"json" choice:"txt" choice:"sys"`
+	OutputLevel string `short:"l" long:"output-level" description:"输出详细程度: default/quiet/detail" default:"default" choice:"default" choice:"quiet" choice:"detail"`
 
 	// 数据库更新配置
-	ProxyURL      string `short:"p" long:"proxy" description:"代理URL（支持http://和socks5://）" default:""`
-	StoreDir      string `short:"d" long:"store-dir" description:"数据库文件保存目录" default:"assets"`
-	UpdateDB      bool   `short:"u" long:"update" description:"强制更新数据库文件，忽略缓存"`
-	UpdateDBForce bool   `short:"U" long:"update-force" description:"强制更新数据库文件，忽略缓存"`
+	StoreDir      string `short:"d" long:"store-dir" description:"配置文件存储目录" default:"assets"`
+	ProxyURL      string `short:"p" long:"proxy" description:"使用代理URL更新 (http|socks5)" default:""`
+	UpdateDB      bool   `short:"u" long:"update" description:"自动更新数据库文件 (检查更新间隔)"`
+	UpdateDBForce bool   `short:"U" long:"update-force" description:"强制更新数据库文件 (忽略更新间隔)"`
 }
 
 func main() {
 	// 定义配置并解析命令行参数
 	var cmdConfig = &CmdConfig{}
 	var appConfig = &docheck.AppConfig{}
-	var downloadItems []downfile.DownItem
 
 	// 使用 PassDoubleDash 选项强制使用 - 前缀
 	parser := flags.NewParser(cmdConfig, flags.Default)
@@ -75,21 +75,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 2. 用命令行中的其他参数覆盖配置文件中的值
-	downloadItems = appConfig.DownloadItems
-	mergeConfigFromCmd(appConfig, cmdConfig)
-
 	// 3. 获取并检查数据库文件路径
-	dbPaths := docheck.GetDBPathsFromConfig(appConfig)
+	dbPaths := docheck.GetDBPathsFromConfig(appConfig.DownloadItems, cmdConfig.StoreDir)
 	missedDB := docheck.DBFilesIsExists(dbPaths)
-	if len(missedDB) > 0 || appConfig.UpdateDB || appConfig.UpdateDBForce {
+	if len(missedDB) > 0 || cmdConfig.UpdateDB || cmdConfig.UpdateDBForce {
 		// 更新数据库配置
 		downfile.CleanupExpiredCache()
 		// 创建HTTP客户端配置
 		clientConfig := &downfile.ClientConfig{
 			ConnectTimeout: 30,
 			IdleTimeout:    30,
-			ProxyURL:       appConfig.ProxyURL,
+			ProxyURL:       cmdConfig.ProxyURL,
 		}
 		// 创建HTTP客户端
 		httpClient, err := downfile.CreateHTTPClient(clientConfig)
@@ -98,66 +94,16 @@ func main() {
 			return
 		}
 		// 处理所有配置组
-		fmt.Printf("开始下载数据库文件: %s\n")
-		totalItems := len(downloadItems)
-		successItems := downfile.ProcessDownItems(httpClient, downloadItems, appConfig.StoreDir, appConfig.UpdateDBForce, true, 3)
+		fmt.Printf("开始下载IP数据库文件...\n")
+		totalItems := len(appConfig.DownloadItems)
+		successItems := downfile.ProcessDownItems(httpClient, appConfig.DownloadItems, cmdConfig.StoreDir, cmdConfig.UpdateDBForce, true, 3)
 		fmt.Printf("\n数据库依赖下载任务完成: 成功 %d/%d\n", successItems, totalItems)
 	}
 
 	// 检查必要参数
-	targetType := strings.ToLower(appConfig.TargetType)
-	if appConfig.Target == "" && targetType != "sys" {
-		fmt.Println("错误: 必须指定目标(-t, --target)，除非使用 --target-type sys")
-		os.Exit(1)
-	}
-
-	var targets []string
-
-	// 根据 target-type 参数决定如何处理输入
-	switch targetType {
-	case "string":
-		// 直接输入的目标字符串，按逗号分隔
-		if appConfig.Target == "" {
-			fmt.Println("错误: 使用 --target-type string 时必须指定 --target")
-			os.Exit(1)
-		}
-		targets = strings.Split(appConfig.Target, ",")
-
-	case "file":
-		// 从文件读取目标
-		if appConfig.Target == "" {
-			fmt.Println("错误: 使用 --target-type file 时必须指定 --target")
-			os.Exit(1)
-		}
-		targets, err = fileutils.ReadTextToList(appConfig.Target)
-		if err != nil {
-			fmt.Printf("加载目标文件失败: %v\n", err)
-			os.Exit(1)
-		}
-
-	case "sys":
-		// 从标准输入读取目标
-		targets, err = fileutils.ReadPipeToList()
-		if err != nil {
-			fmt.Printf("从标准输入读取目标失败: %v\n", err)
-			os.Exit(1)
-		}
-	default:
-		fmt.Printf("错误: 不支持的 target-type: %s\n", targetType)
-		os.Exit(1)
-	}
-
-	// 过滤空目标
-	var filteredTargets []string
-	for _, target := range targets {
-		if strings.TrimSpace(target) != "" {
-			filteredTargets = append(filteredTargets, strings.TrimSpace(target))
-		}
-	}
-	targets = filteredTargets
-
-	if len(targets) == 0 {
-		fmt.Println("错误: 没有有效的目标")
+	targets, err := checkTargetInfo(cmdConfig.Target, strings.ToLower(cmdConfig.TargetType))
+	if err != nil {
+		fmt.Printf("检测目标[%s]加载失败: %v\n", cmdConfig.Target, err)
 		os.Exit(1)
 	}
 
@@ -204,20 +150,6 @@ func main() {
 		Ipv6LocateDb: dbPaths.Ipv6LocateDb,
 	}
 
-	// 检查数据库文件是否存在
-	dbFiles := map[string]string{
-		"IPv4 ASN数据库":     dbPaths.AsnIpv4Db,
-		"IPv6 ASN数据库":     dbPaths.AsnIpv6Db,
-		"IPv4地理位置数据库": dbPaths.Ipv4LocateDb,
-		"IPv6地理位置数据库": dbPaths.Ipv6LocateDb,
-	}
-
-	for name, path := range dbFiles {
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			fmt.Printf("警告: %s文件不存在: %s\n", name, path)
-		}
-	}
-
 	checkInfos = docheck.QueryIPInfo(ipDbConfig, checkInfos)
 
 	// 加载source.json配置文件
@@ -242,7 +174,7 @@ func main() {
 
 	// 处理输出详细程度
 	var outputData interface{}
-	switch strings.ToLower(appConfig.OutputLevel) {
+	switch strings.ToLower(cmdConfig.OutputLevel) {
 	case "quiet":
 		// 仅输出不是CDN的fmt内容
 		outputData = analyzer.GetNoCDNs(checkResults)
@@ -255,44 +187,48 @@ func main() {
 	}
 
 	// 处理输出类型
-	fileutils.WriteOutputToFile(outputData, appConfig.OutputType, appConfig.OutputFile)
+	fileutils.WriteOutputToFile(outputData, cmdConfig.OutputType, cmdConfig.OutputFile)
 }
 
-// mergeConfigFromCmd 将命令行参数合并到YAML配置中
-func mergeConfigFromCmd(yamlConfig *docheck.AppConfig, cmdConfig *CmdConfig) {
-	if cmdConfig.Target != "" {
-		yamlConfig.Target = cmdConfig.Target
+func checkTargetInfo(target string, targetType string) ([]string, error) {
+	var (
+		targets []string
+		err     error
+	)
+
+	if target == "" && (targetType == "string" || targetType == "file") {
+		return nil, fmt.Errorf("错误: 必须指定目标(-t, --target)，除非使用 --target-type sys")
 	}
 
-	if cmdConfig.TargetType != "" {
-		yamlConfig.TargetType = cmdConfig.TargetType
+	switch targetType {
+	case "string":
+		targets = strings.Split(target, ",")
+	case "file":
+		targets, err = fileutils.ReadTextToList(target)
+		if err != nil {
+			return nil, fmt.Errorf("加载目标文件失败: %v", err)
+		}
+	case "sys":
+		targets, err = fileutils.ReadPipeToList()
+		if err != nil {
+			return nil, fmt.Errorf("从标准输入读取目标失败: %v", err)
+		}
+	default:
+		return nil, fmt.Errorf("不支持的 target-type: %s", targetType)
 	}
 
-	if cmdConfig.OutputFile != "" {
-		yamlConfig.OutputFile = cmdConfig.OutputFile
+	// 过滤空字符串
+	filtered := make([]string, 0, len(targets))
+	for _, t := range targets {
+		t = strings.TrimSpace(t)
+		if t != "" {
+			filtered = append(filtered, t)
+		}
 	}
 
-	if cmdConfig.OutputType != "" {
-		yamlConfig.OutputType = cmdConfig.OutputType
+	if len(filtered) == 0 {
+		return nil, fmt.Errorf("没有有效的目标")
 	}
 
-	if cmdConfig.OutputLevel != "" {
-		yamlConfig.OutputLevel = cmdConfig.OutputLevel
-	}
-
-	if cmdConfig.ProxyURL != "" {
-		yamlConfig.ProxyURL = cmdConfig.ProxyURL
-	}
-
-	if cmdConfig.StoreDir != "" {
-		yamlConfig.StoreDir = cmdConfig.StoreDir
-	}
-
-	if cmdConfig.UpdateDB || !yamlConfig.UpdateDB {
-		yamlConfig.UpdateDB = cmdConfig.UpdateDB
-	}
-
-	if cmdConfig.UpdateDBForce || !yamlConfig.UpdateDB {
-		yamlConfig.UpdateDB = cmdConfig.UpdateDBForce
-	}
+	return filtered, nil
 }

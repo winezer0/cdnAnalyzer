@@ -1,7 +1,4 @@
 # 基本参数
-target: "www.baodu.com"
-target-type: "string"
-
 # DNS并发和超时设置
 dns-timeout: 5
 resolvers-num: 5
@@ -10,11 +7,6 @@ dns-concurrency: 8
 edns-concurrency: 8
 query-edns-cnames: true
 query-edns-use-sys-ns: false
-
-# 输出配置
-output-file: "results.json"
-output-type: "json"
-output-level: "detail"
 
 # 数据库路径配置
 download-items:

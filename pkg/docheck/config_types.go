@@ -4,10 +4,7 @@ import "cdnAnalyzer/pkg/downfile"
 
 // AppConfig 表示整个配置文件结构
 type AppConfig struct {
-	// 与 CmdConfig 结构体相同的字段
-	Target     string `yaml:"target"`
-	TargetType string `yaml:"target-type"`
-
+	//// 与 CmdConfig 结构体相同的字段
 	// DNS并发和超时设置
 	ResolversNum      int  `yaml:"resolvers-num"`
 	CityMapNUm        int  `yaml:"city-map-num"`
@@ -17,25 +14,7 @@ type AppConfig struct {
 	QueryEDNSCNAMES   bool `yaml:"query-edns-cnames"`
 	QueryEDNSUseSysNS bool `yaml:"query-edns-use-sys-ns"`
 
-	// 输出配置
-	OutputFile  string `yaml:"output-file"`
-	OutputType  string `yaml:"output-type"`
-	OutputLevel string `yaml:"output-level"`
-
-	// 数据库路径配置
-	ResolversFile string `yaml:"resolvers-file"`
-	CityMapFile   string `yaml:"city-map-file"`
-	AsnIpv4Db     string `yaml:"asn-ipv4-db"`
-	AsnIpv6Db     string `yaml:"asn-ipv6-db"`
-	Ipv4LocateDb  string `yaml:"ipv4-locate-db"`
-	Ipv6LocateDb  string `yaml:"ipv6-locate-db"`
-	SourceJson    string `yaml:"source-json"`
-
-	// 下载配置
-	ProxyURL      string              `yaml:"proxy-url"`
-	StoreDir      string              `yaml:"store-dir"`
-	UpdateDB      bool                `yaml:"update-db"`
-	UpdateDBForce bool                `yaml:"update-db-force"`
+	// 数据库下载配置
 	DownloadItems []downfile.DownItem `yaml:"download-items"`
 }
 
