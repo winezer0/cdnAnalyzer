@@ -12,12 +12,12 @@ CDN Check On Golang
 - 支持通过ASN, qqwry, ipv6数 据库识别IP归属信息
 - 通过数据源对资产信息进行CDN|WAF|CLoud信息分析
 - 输出CSV、JSON、TXT、SYS日志格式
-- **支持YAML配置文件，统一管理参数和数据库下载**
-
+- 实现IP数据库自动下载, 目前是直接从github下载
 
 ## TODO
-- 实现自动化依赖资源更新，目前可以通过transfer_test.go手动更新资源库.
-
+- 编写代码实现命令行更新source.json信息 
+- 编写工作流实现source.json自动推送到github
+- 编写工作流实现更新ip数据库等大文件
 
 ## 安装方式
 安装可执行程序后, 还需要补充数据文件.
