@@ -14,14 +14,11 @@ jobs:
     
     strategy:
       matrix:
-        go-version: [1.22.x, 1.23.x]
         include:
-          - go-version: 1.22.x
-            goos: windows
+          - goos: windows
             goarch: amd64
             artifact-name: cdnAnalyzer-windows-amd64.exe
-          - go-version: 1.23.x
-            goos: linux
+          - goos: linux
             goarch: amd64
             artifact-name: cdnAnalyzer-linux-amd64
 
@@ -29,10 +26,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Go ${{ matrix.go-version }}
+    - name: Set up Go 1.22.x
       uses: actions/setup-go@v4
       with:
-        go-version: ${{ matrix.go-version }}
+        go-version: 1.22.x
 
     - name: Cache Go modules
       uses: actions/cache@v3
@@ -96,7 +93,7 @@ jobs:
           - 版本号: ${{ github.event.inputs.version }}
           - 构建日期: ${{ steps.date.outputs.builddate }}
           - 构建平台: Windows & Linux
-          - Go版本: 1.22.x & 1.23.x
+          - Go版本: 1.22.x
           
           ### 下载
           - Windows (AMD64): `cdnAnalyzer-windows-amd64.exe`
