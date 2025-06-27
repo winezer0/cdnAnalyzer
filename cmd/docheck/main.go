@@ -3,11 +3,11 @@ package main
 import (
 	"cdnAnalyzer/pkg/analyzer"
 	"cdnAnalyzer/pkg/classify"
+	"cdnAnalyzer/pkg/docheck"
 	"cdnAnalyzer/pkg/domaininfo/querydomain"
+	"cdnAnalyzer/pkg/downfile"
 	"cdnAnalyzer/pkg/fileutils"
 	"cdnAnalyzer/pkg/ipinfo/queryip"
-	"cdnAnalyzer/pkg/maputils"
-	"cdnAnalyzer/pkg/models"
 	"errors"
 	"fmt"
 	"os"
@@ -17,111 +17,34 @@ import (
 	"github.com/jessevdk/go-flags"
 )
 
-// Config 存储程序配置，使用结构体标签定义命令行参数
-type Config struct {
-	// 基本参数
+// CmdConfig 存储程序配置，使用结构体标签定义命令行参数
+type CmdConfig struct {
+	// 配置文件参数
+	ConfigFile string `short:"c" long:"config" description:"YAML配置文件路径" default:"config.yaml"`
+
+	// 基本参数 覆盖app Config中的配置
 	Target     string `short:"t" long:"target" description:"目标文件路径|目标字符串列表(逗号分隔)"`
-	TargetType string `short:"T" long:"target-type" description:"目标数据类型: string/file/sys" default:"string" choice:"string" choice:"file" choice:"sys"`
+	TargetType string `short:"T" long:"target-type" description:"目标数据类型: string/file/sys" choice:"string" choice:"file" choice:"sys"`
+	// 输出配置参数 覆盖app Config中的配置
+	OutputFile  string `short:"o" long:"output-file" description:"输出结果文件路径"`
+	OutputType  string `short:"y" long:"output-type" description:"输出文件类型: csv/json/txt/sys" choice:"csv" choice:"json" choice:"txt" choice:"sys"`
+	OutputLevel string `short:"l" long:"output-level" description:"输出详细程度: default/quiet/detail" choice:"default" choice:"quiet" choice:"detail"`
 
-	// DNS配置参数
-	ResolversFile     string `short:"r" long:"resolvers" description:"DNS解析服务器配置文件路径" default:"asset/resolvers.txt"`
-	ResolversNum      int    `short:"n" long:"resolvers-num" description:"选择用于解析的最大DNS服务器数量" default:"5"`
-	CityMapFile       string `short:"c" long:"city-map" description:"EDNS城市IP映射文件路径" default:"asset/city_ip.csv"`
-	CityMapNum        int    `short:"m" long:"city-num" description:"随机选择的城市数量" default:"5"`
-	DNSConcurrency    int    `short:"d" long:"dns-concurrency" description:"DNS并发数" default:"5"`
-	EDNSConcurrency   int    `short:"e" long:"edns-concurrency" description:"EDNS并发数" default:"5"`
-	TimeOut           int    `short:"w" long:"timeout" description:"超时时间(秒)" default:"5"`
-	QueryEDNSCNAMES   bool   `short:"C" long:"query-edns-cnames" description:"启用EDNS CNAME查询"`
-	QueryEDNSUseSysNS bool   `short:"S" long:"query-edns-use-sys-ns" description:"启用EDNS系统NS查询"`
-
-	// 数据库配置参数
-	AsnIpv4Db    string `short:"a" long:"asn-ipv4" description:"IPv4 ASN数据库路径" default:"asset/geolite2-asn-ipv4.mmdb"`
-	AsnIpv6Db    string `short:"A" long:"asn-ipv6" description:"IPv6 ASN数据库路径" default:"asset/geolite2-asn-ipv6.mmdb"`
-	Ipv4LocateDb string `short:"4" long:"ipv4-db" description:"IPv4地理位置数据库路径" default:"asset/qqwry.dat"`
-	Ipv6LocateDb string `short:"6" long:"ipv6-db" description:"IPv6地理位置数据库路径" default:"asset/zxipv6wry.db"`
-	SourceJson   string `short:"s" long:"source" description:"CDN源数据配置文件路径" default:"asset/source.json"`
-
-	// 输出配置参数
-	OutputFile  string `short:"o" long:"output-file" description:"输出结果文件路径"  default:""`
-	OutputType  string `short:"y" long:"output-type" description:"输出文件类型: csv/json/txt/sys" default:"sys" choice:"csv" choice:"json" choice:"txt" choice:"sys"`
-	OutputLevel string `short:"l" long:"output-level" description:"输出详细程度: default/quiet/detail" default:"default" choice:"default" choice:"quiet" choice:"detail"`
-}
-
-func LoadResolvers(resolversFile string, resolversNum int) ([]string, error) {
-	resolvers, err := fileutils.ReadTextToList(resolversFile)
-	if err != nil {
-		return nil, fmt.Errorf("加载DNS服务器失败: %w", err)
-	}
-	resolvers = maputils.PickRandList(resolvers, resolversNum)
-	return resolvers, nil
-}
-
-func LoadCityMap(cityMapFile string, randCityNum int) ([]map[string]string, error) {
-	cityMap, err := fileutils.ReadCSVToMap(cityMapFile)
-	if err != nil {
-		return nil, fmt.Errorf("读取城市IP映射失败: %w", err)
-	}
-	selectedCityMap := maputils.PickRandMaps(cityMap, randCityNum)
-	//fmt.Printf("selectedCityMap: %v\n", selectedCityMap)
-	return selectedCityMap, nil
-}
-
-// queryDomainInfo 进行域名信息解析
-func queryDomainInfo(dnsConfig *querydomain.DNSQueryConfig, domainEntries []classify.TargetEntry) []*models.CheckInfo {
-	// 创建DNS处理器并执行查询
-	dnsProcessor := querydomain.NewDNSProcessor(dnsConfig, &domainEntries)
-	dnsResult := dnsProcessor.Process()
-
-	//将dns查询结果合并到 CheckInfo 中去
-	var checkInfos []*models.CheckInfo
-	for _, domainEntry := range domainEntries {
-		var checkInfo *models.CheckInfo
-		//当存在dns查询结果时,补充
-		if result, ok := (*dnsResult)[domainEntry.FMT]; ok && result != nil {
-			checkInfo = querydomain.PopulateDNSResult(domainEntry, result)
-		} else {
-			fmt.Printf("No DNS result for domain: %s\n", domainEntry.FMT)
-			checkInfo = models.NewDomainCheckInfo(domainEntry.RAW, domainEntry.FMT, domainEntry.FromUrl)
-		}
-		checkInfos = append(checkInfos, checkInfo)
-	}
-	return checkInfos
-}
-
-// queryIPInfo 进行IP信息查询
-func queryIPInfo(ipDbConfig *queryip.IpDbConfig, checkInfos []*models.CheckInfo) []*models.CheckInfo {
-	// 初始化IP数据库引擎
-	ipEngines, err := queryip.InitDBEngines(ipDbConfig)
-	if err != nil {
-		fmt.Printf("初始化数据库失败: %v\n", err)
-		os.Exit(1)
-	}
-	defer ipEngines.Close()
-
-	//对 checkInfos 中的A/AAAA记录进行IP信息查询，并赋值回去
-	for _, checkInfo := range checkInfos {
-		if len(checkInfo.A) > 0 || len(checkInfo.AAAA) > 0 {
-			ipInfo, err := ipEngines.QueryIPInfo(checkInfo.A, checkInfo.AAAA)
-			if err != nil {
-				fmt.Printf("查询IP信息失败: %v\n", err)
-			} else {
-				checkInfo.Ipv4Locate = ipInfo.IPv4Locations
-				checkInfo.Ipv4Asn = ipInfo.IPv4AsnInfos
-				checkInfo.Ipv6Locate = ipInfo.IPv6Locations
-				checkInfo.Ipv6Asn = ipInfo.IPv6AsnInfos
-			}
-		}
-	}
-
-	return checkInfos
+	// 数据库更新配置
+	ProxyURL      string `short:"p" long:"proxy" description:"代理URL（支持http://和socks5://）" default:""`
+	StoreDir      string `short:"d" long:"store-dir" description:"数据库文件保存目录" default:""`
+	UpdateDB      bool   `short:"u" long:"update" description:"强制更新数据库文件，忽略缓存"`
+	UpdateDBForce bool   `short:"U" long:"update-force" description:"强制更新数据库文件，忽略缓存"`
 }
 
 func main() {
 	// 定义配置并解析命令行参数
-	var config Config
+	var cmdConfig CmdConfig
+	var appConfig docheck.AppConfig
+	var downloadItems []downfile.DownItem
 
 	// 使用 PassDoubleDash 选项强制使用 - 前缀
-	parser := flags.NewParser(&config, flags.Default)
+	parser := flags.NewParser(&cmdConfig, flags.Default)
 	parser.Name = "cdnAnalyzer"
 	parser.Usage = "[OPTIONS]"
 
@@ -139,9 +62,51 @@ func main() {
 		os.Exit(1)
 	}
 
+	// 1. 先加载配置文件
+	if cmdConfig.ConfigFile != "" {
+		loadedConfig, err := docheck.LoadAppConfigFile(cmdConfig.ConfigFile)
+		if err != nil {
+			fmt.Printf("加载配置文件失败: %v\n", err)
+			os.Exit(1)
+		}
+
+		if loadedConfig != nil {
+			appConfig = *loadedConfig
+			downloadItems = appConfig.DownloadItems
+		}
+	}
+
+	// 2. 用命令行中的其他参数覆盖配置文件中的值
+	mergeConfigFromCmd(&appConfig, &cmdConfig)
+
+	// 3. 获取并检查数据库文件路径
+	dbPaths := docheck.GetDBPathsFromConfig(&appConfig)
+	missedDB := docheck.DBFilesIsExists(dbPaths)
+	if len(missedDB) > 0 || cmdConfig.UpdateDB || cmdConfig.UpdateDBForce {
+		// 更新数据库配置
+		downfile.CleanupExpiredCache()
+		// 创建HTTP客户端配置
+		clientConfig := &downfile.ClientConfig{
+			ConnectTimeout: 30,
+			IdleTimeout:    30,
+			ProxyURL:       cmdConfig.ProxyURL,
+		}
+		// 创建HTTP客户端
+		httpClient, err := downfile.CreateHTTPClient(clientConfig)
+		if err != nil {
+			fmt.Printf("创建HTTP客户端失败: %v\n", err)
+			return
+		}
+		// 处理所有配置组
+		fmt.Printf("开始下载数据库文件: %s\n")
+		totalItems := len(downloadItems)
+		successItems := downfile.ProcessDownItems(httpClient, downloadItems, cmdConfig.StoreDir, cmdConfig.UpdateDBForce, true, 3)
+		fmt.Printf("\n数据库依赖下载任务完成: 成功 %d/%d\n", successItems, totalItems)
+	}
+
 	// 检查必要参数
-	targetType := strings.ToLower(config.TargetType)
-	if config.Target == "" && targetType != "sys" {
+	targetType := strings.ToLower(appConfig.TargetType)
+	if appConfig.Target == "" && targetType != "sys" {
 		fmt.Println("错误: 必须指定目标(-t, --target)，除非使用 --target-type sys")
 		os.Exit(1)
 	}
@@ -153,19 +118,19 @@ func main() {
 	switch targetType {
 	case "string":
 		// 直接输入的目标字符串，按逗号分隔
-		if config.Target == "" {
+		if appConfig.Target == "" {
 			fmt.Println("错误: 使用 --target-type string 时必须指定 --target")
 			os.Exit(1)
 		}
-		targets = strings.Split(config.Target, ",")
+		targets = strings.Split(appConfig.Target, ",")
 
 	case "file":
 		// 从文件读取目标
-		if config.Target == "" {
+		if appConfig.Target == "" {
 			fmt.Println("错误: 使用 --target-type file 时必须指定 --target")
 			os.Exit(1)
 		}
-		targets, err = fileutils.ReadTextToList(config.Target)
+		targets, err = fileutils.ReadTextToList(appConfig.Target)
 		if err != nil {
 			fmt.Printf("加载目标文件失败: %v\n", err)
 			os.Exit(1)
@@ -201,13 +166,13 @@ func main() {
 	classifier := classify.ClassifyTargets(targets)
 
 	//加载dns解析服务器配置文件，用于dns解析调用
-	resolvers, err := LoadResolvers(config.ResolversFile, config.ResolversNum)
+	resolvers, err := docheck.LoadResolvers(dbPaths.ResolversFile, appConfig.ResolversNum)
 	if err != nil {
 		os.Exit(1)
 	}
 
 	//加载本地EDNS城市IP信息
-	randCities, err := LoadCityMap(config.CityMapFile, config.CityMapNum)
+	randCities, err := docheck.LoadCityMap(dbPaths.CityMapFile, appConfig.CityMapNUm)
 	if err != nil {
 		os.Exit(1)
 	}
@@ -216,34 +181,54 @@ func main() {
 	dnsConfig := &querydomain.DNSQueryConfig{
 		Resolvers:          resolvers,
 		CityMap:            randCities,
-		Timeout:            time.Second * time.Duration(config.TimeOut),
-		MaxDNSConcurrency:  config.DNSConcurrency,
-		MaxEDNSConcurrency: config.EDNSConcurrency,
-		QueryEDNSCNAMES:    config.QueryEDNSCNAMES,
-		QueryEDNSUseSysNS:  config.QueryEDNSUseSysNS,
+		Timeout:            time.Second * time.Duration(appConfig.DNSTimeOut),
+		MaxDNSConcurrency:  appConfig.DNSConcurrency,
+		MaxEDNSConcurrency: appConfig.EDNSConcurrency,
+		QueryEDNSCNAMES:    appConfig.QueryEDNSCNAMES,
+		QueryEDNSUseSysNS:  appConfig.QueryEDNSUseSysNS,
 	}
 
 	// 进行DNS解析
-	checkInfos := queryDomainInfo(dnsConfig, classifier.DomainEntries)
+	checkInfos := docheck.QueryDomainInfo(dnsConfig, classifier.DomainEntries)
 
 	//将所有IP信息加入到 checkInfos 中
 	for _, ipEntries := range classifier.IPEntries {
-		checkInfo := models.NewIPCheckInfo(ipEntries.RAW, ipEntries.FMT, ipEntries.IsIPv4, ipEntries.FromUrl)
+		checkInfo := analyzer.NewIPCheckInfo(ipEntries.RAW, ipEntries.FMT, ipEntries.IsIPv4, ipEntries.FromUrl)
 		checkInfos = append(checkInfos, checkInfo)
 	}
 
 	//对 checkInfos 中的IP数据进行分析
 	ipDbConfig := &queryip.IpDbConfig{
-		AsnIpv4Db:    config.AsnIpv4Db,
-		AsnIpv6Db:    config.AsnIpv6Db,
-		Ipv4LocateDb: config.Ipv4LocateDb,
-		Ipv6LocateDb: config.Ipv6LocateDb,
+		AsnIpv4Db:    dbPaths.AsnIpv4Db,
+		AsnIpv6Db:    dbPaths.AsnIpv6Db,
+		Ipv4LocateDb: dbPaths.Ipv4LocateDb,
+		Ipv6LocateDb: dbPaths.Ipv6LocateDb,
 	}
-	checkInfos = queryIPInfo(ipDbConfig, checkInfos)
+
+	// 检查数据库文件是否存在
+	dbFiles := map[string]string{
+		"IPv4 ASN数据库":     dbPaths.AsnIpv4Db,
+		"IPv6 ASN数据库":     dbPaths.AsnIpv6Db,
+		"IPv4地理位置数据库": dbPaths.Ipv4LocateDb,
+		"IPv6地理位置数据库": dbPaths.Ipv6LocateDb,
+	}
+
+	for name, path := range dbFiles {
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			fmt.Printf("警告: %s文件不存在: %s\n", name, path)
+		}
+	}
+
+	checkInfos = docheck.QueryIPInfo(ipDbConfig, checkInfos)
 
 	// 加载source.json配置文件
+	if _, err := os.Stat(dbPaths.SourceJson); os.IsNotExist(err) {
+		fmt.Printf("错误: CDN源数据配置文件不存在: %s\n", dbPaths.SourceJson)
+		os.Exit(1)
+	}
+
 	cdnData := analyzer.NewEmptyCDNData()
-	err = fileutils.ReadJsonToStruct(config.SourceJson, cdnData)
+	err = fileutils.ReadJsonToStruct(dbPaths.SourceJson, cdnData)
 	if err != nil {
 		fmt.Printf("加载CDN源数据失败: %v\n", err)
 		os.Exit(1)
@@ -258,7 +243,7 @@ func main() {
 
 	// 处理输出详细程度
 	var outputData interface{}
-	switch strings.ToLower(config.OutputLevel) {
+	switch strings.ToLower(appConfig.OutputLevel) {
 	case "quiet":
 		// 仅输出不是CDN的fmt内容
 		outputData = analyzer.GetNoCDNs(checkResults)
@@ -271,5 +256,28 @@ func main() {
 	}
 
 	// 处理输出类型
-	fileutils.WriteOutputToFile(outputData, config.OutputType, config.OutputFile)
+	fileutils.WriteOutputToFile(outputData, appConfig.OutputType, appConfig.OutputFile)
+}
+
+// mergeConfigFromCmd 将命令行参数合并到YAML配置中
+func mergeConfigFromCmd(yamlConfig *docheck.AppConfig, cmdConfig *CmdConfig) {
+	if cmdConfig.Target != "" {
+		yamlConfig.Target = cmdConfig.Target
+	}
+
+	if cmdConfig.TargetType != "" {
+		yamlConfig.TargetType = cmdConfig.TargetType
+	}
+
+	if cmdConfig.OutputFile != "" {
+		yamlConfig.OutputFile = cmdConfig.OutputFile
+	}
+
+	if cmdConfig.OutputType != "" {
+		yamlConfig.OutputType = cmdConfig.OutputType
+	}
+
+	if cmdConfig.OutputLevel != "" {
+		yamlConfig.OutputLevel = cmdConfig.OutputLevel
+	}
 }

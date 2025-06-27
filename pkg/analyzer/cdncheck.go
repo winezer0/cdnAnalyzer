@@ -3,7 +3,6 @@ package analyzer
 import (
 	"cdnAnalyzer/pkg/ipinfo/asninfo"
 	"cdnAnalyzer/pkg/maputils"
-	"cdnAnalyzer/pkg/models"
 	"github.com/yl2chen/cidranger"
 	"net"
 	"strconv"
@@ -135,7 +134,7 @@ type CheckResult struct {
 	IpSize       int    `json:"ip_size"`
 }
 
-func checkCDN(cdnData *CDNData, checkInfo *models.CheckInfo) (CheckResult, error) {
+func checkCDN(cdnData *CDNData, checkInfo *CheckInfo) (CheckResult, error) {
 	checkResult := CheckResult{
 		RAW: checkInfo.RAW,
 		FMT: checkInfo.FMT,
@@ -184,14 +183,14 @@ func checkCDN(cdnData *CDNData, checkInfo *models.CheckInfo) (CheckResult, error
 	return checkResult, nil
 }
 
-func CheckCDNBatch(cdnData *CDNData, checkInfos []*models.CheckInfo) ([]CheckResult, error) {
+func CheckCDNBatch(cdnData *CDNData, checkInfos []*CheckInfo) ([]CheckResult, error) {
 	checkResults := make([]CheckResult, len(checkInfos))
 	var wg sync.WaitGroup
 	var mu sync.Mutex // 如果需要保护共享资源
 
 	for i, checkInfo := range checkInfos {
 		wg.Add(1)
-		go func(i int, checkInfo *models.CheckInfo) {
+		go func(i int, checkInfo *CheckInfo) {
 			defer wg.Done()
 			res, _ := checkCDN(cdnData, checkInfo)
 			mu.Lock()

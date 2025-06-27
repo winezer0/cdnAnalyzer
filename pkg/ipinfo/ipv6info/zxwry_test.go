@@ -6,7 +6,7 @@ import (
 
 func TestIpv6Location_Find(t *testing.T) {
 	// 集成测试：测试完整的查询流程
-	db, err := NewIPv6Location("C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\asset\\zxipv6wry.db")
+	db, err := NewIPv6Location("C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\zxipv6wry.db")
 	if err != nil {
 		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
 	}
@@ -38,7 +38,7 @@ func TestIpv6Location_Find(t *testing.T) {
 }
 
 func TestIpv6Location_BatchFind(t *testing.T) {
-	db, err := NewIPv6Location("C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\asset\\zxipv6wry.db")
+	db, err := NewIPv6Location("C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\zxipv6wry.db")
 	if err != nil {
 		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestIpv6Location_BatchFind(t *testing.T) {
 }
 
 func TestIpv6Location_GetDatabaseInfo(t *testing.T) {
-	db, err := NewIPv6Location("C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\asset\\zxipv6wry.db")
+	db, err := NewIPv6Location("C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\zxipv6wry.db")
 	if err != nil {
 		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
 	}

@@ -1,9 +1,5 @@
 package analyzer
 
-import (
-	"cdnAnalyzer/pkg/models"
-)
-
 // GetNoCDNs 获取NoCDN的fmt数据
 func GetNoCDNs(checkResults []CheckResult) []string {
 	var nonCDN []string
@@ -16,7 +12,7 @@ func GetNoCDNs(checkResults []CheckResult) []string {
 }
 
 // MergeCheckResultsToCheckInfos  通过 FMT 字段匹配对应条目将 checkResults 合并到 checkInfos
-func MergeCheckResultsToCheckInfos(checkInfos []*models.CheckInfo, checkResults []CheckResult) []*models.CheckInfo {
+func MergeCheckResultsToCheckInfos(checkInfos []*CheckInfo, checkResults []CheckResult) []*CheckInfo {
 	// 创建 FMT 到 CheckResult 的映射，便于快速查找
 	resultMap := make(map[string]CheckResult)
 	for _, result := range checkResults {

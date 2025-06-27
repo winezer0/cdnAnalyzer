@@ -52,25 +52,25 @@ func TestAddDataToCdnCategory(t *testing.T) {
 
 func TestMergeSameData(t *testing.T) {
 	// 加载并转换 cloud yaml
-	cloudYamlFile := "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\asset\\cloud_keys.yml"
+	cloudYamlFile := "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\cloud_keys.yml"
 	cloudYamlTransData := TransferCloudKeysYaml(cloudYamlFile)
 	//fileutils.WriteJsonFromStruct("cloudYamlTransData.json", cloudYamlTransData)
 
 	// 加载并转换 cdn.yml
 	// https://github.com/4ft35t/cdn/blob/master/src/cdn.yml
-	cdnYamlFile := "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\asset\\cdn.yml"
+	cdnYamlFile := "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\cdn.yml"
 	cdnYamlTransData := TransferNaliCdnYaml(cdnYamlFile)
 	//fileutils.WriteJsonFromStruct("cdnYamlTransData.json", cdnYamlTransData)
 
 	// 国外源：https://github.com/projectdiscovery/cdncheck/blob/main/sources_data.json
 	// 加载sources_data.json 数据的合并
-	sourceDataJson := "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\asset\\sources_data.json"
+	sourceDataJson := "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\sources_data.json"
 	sourceData := TransferPDCdnCheckJson(sourceDataJson)
 	//fileutils.WriteJsonFromStruct("sourceData.json", sourceData)
 
 	// 国内源：https://github.com/hanbufei/isCdn/blob/main/client/data/sources_china.json
 	// 加载 sources_china.json
-	sourceChinaJson := "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\asset\\sources_china.json"
+	sourceChinaJson := "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\sources_china.json"
 	sourceChina := TransferPDCdnCheckJson(sourceChinaJson)
 	//fileutils.WriteJsonFromStruct("sourceChina.json", sourceChina)
 

@@ -1,11 +1,11 @@
 package querydomain
 
 import (
+	"cdnAnalyzer/pkg/analyzer"
 	"cdnAnalyzer/pkg/classify"
 	dnsquery2 "cdnAnalyzer/pkg/domaininfo/dnsquery"
 	"cdnAnalyzer/pkg/domaininfo/ednsquery"
 	"cdnAnalyzer/pkg/maputils"
-	"cdnAnalyzer/pkg/models"
 	"fmt"
 )
 
@@ -37,8 +37,8 @@ func MergeEDNSMapToDNSMap(dnsMap dnsquery2.DomainDNSResultMap, ednsMap ednsquery
 }
 
 // PopulateDNSResult 将 DNS 查询结果填充到 CheckInfo 中
-func PopulateDNSResult(domainEntry classify.TargetEntry, query *dnsquery2.DNSResult) *models.CheckInfo {
-	dnsResult := models.NewDomainCheckInfo(domainEntry.RAW, domainEntry.FMT, domainEntry.FromUrl)
+func PopulateDNSResult(domainEntry classify.TargetEntry, query *dnsquery2.DNSResult) *analyzer.CheckInfo {
+	dnsResult := analyzer.NewDomainCheckInfo(domainEntry.RAW, domainEntry.FMT, domainEntry.FromUrl)
 
 	// 逐个复制 DNS 记录
 	dnsResult.A = append(dnsResult.A, query.A...)
