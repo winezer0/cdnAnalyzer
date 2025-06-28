@@ -1,14 +1,23 @@
 package analyzer
 
-// GetNoCDNs 获取NoCDN的fmt数据
-func GetNoCDNs(checkResults []CheckResult) []string {
-	var nonCDN []string
+// GetFmtList 获取NoCDN && NoWAF的fmt数据
+func GetFmtList(checkResults []CheckResult) []string {
+	var fmtList []string
 	for _, r := range checkResults {
-		if !r.IsCdn {
-			nonCDN = append(nonCDN, r.FMT)
+		fmtList = append(fmtList, r.FMT)
+	}
+	return fmtList
+}
+
+// FilterNoCdnNoWaf 获取NoCDN && NoWAF的数据
+func FilterNoCdnNoWaf(checkResults []CheckResult) []CheckResult {
+	var nonCDNResult []CheckResult
+	for _, r := range checkResults {
+		if !r.IsCdn && !r.IsWaf {
+			nonCDNResult = append(nonCDNResult, r)
 		}
 	}
-	return nonCDN
+	return nonCDNResult
 }
 
 // MergeCheckResultsToCheckInfos  通过 FMT 字段匹配对应条目将 checkResults 合并到 checkInfos

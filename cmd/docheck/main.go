@@ -27,9 +27,10 @@ type CmdConfig struct {
 	TargetType string `short:"T" long:"target-type" description:"目标数据类型: string/file/sys" default:"string" choice:"string" choice:"file" choice:"sys"`
 
 	// 输出配置参数 覆盖app Config中的配置
-	OutputFile  string `short:"o" long:"output-file" description:"输出结果文件路径" default:"analyser_output.json"`
-	OutputType  string `short:"y" long:"output-type" description:"输出文件类型: csv/json/txt/sys" default:"sys" choice:"csv" choice:"json" choice:"txt" choice:"sys"`
-	OutputLevel string `short:"l" long:"output-level" description:"输出详细程度: default/quiet/detail" default:"default" choice:"default" choice:"quiet" choice:"detail"`
+	OutputFile  string `long:"of" description:"输出结果文件路径" default:"analyser_output.json"`
+	OutputType  string `long:"ot" description:"输出文件类型: csv/json/txt/sys" default:"sys" choice:"csv" choice:"json" choice:"txt" choice:"sys"`
+	OutputLevel string `long:"ol" description:"输出详细程度: default/quiet/detail" default:"default" choice:"default" choice:"quiet" choice:"detail"`
+	OutputNoCDN bool   `long:"nc" description:"仅保留非CDN&&非WAF的资产"`
 
 	// 数据库更新配置
 	StoreDir      string `short:"d" long:"store-dir" description:"配置文件存储目录" default:"assets"`
@@ -176,16 +177,21 @@ func main() {
 	//进行CDN CLOUD WAF 信息分析
 	checkResults, err := analyzer.CheckCDNBatch(cdnData, checkInfos)
 	if err != nil {
-		fmt.Printf("CDN分析失败: %v\n", err)
+		fmt.Printf("CDN分析异常: %v\n", err)
 		os.Exit(1)
+	}
+
+	//排除Cdn|WAF部分的结果
+	if cmdConfig.OutputNoCDN {
+		checkResults = analyzer.FilterNoCdnNoWaf(checkResults)
 	}
 
 	// 处理输出详细程度
 	var outputData interface{}
 	switch strings.ToLower(cmdConfig.OutputLevel) {
 	case "quiet":
-		// 仅输出不是CDN的fmt内容
-		outputData = analyzer.GetNoCDNs(checkResults)
+		// 仅输出fmt部分的内容
+		outputData = analyzer.GetFmtList(checkResults)
 	case "detail":
 		// 合并 checkResults 到 checkInfos
 		outputData = analyzer.MergeCheckResultsToCheckInfos(checkInfos, checkResults)
