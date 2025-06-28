@@ -1,11 +1,11 @@
 package ednsquery
 
 import (
-	maputils2 "cdnAnalyzer/pkg/maputils"
 	"context"
 	"fmt"
 	"github.com/miekg/dns"
 	"github.com/panjf2000/ants/v2"
+	maputils2 "github.com/winezer0/cdnAnalyzer/pkg/maputils"
 	"net"
 	"sync"
 	"time"

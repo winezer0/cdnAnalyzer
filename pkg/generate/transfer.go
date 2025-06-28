@@ -1,10 +1,10 @@
 package generate
 
 import (
-	"cdnAnalyzer/pkg/analyzer"
-	"cdnAnalyzer/pkg/fileutils"
-	"cdnAnalyzer/pkg/maputils"
 	"fmt"
+	"github.com/winezer0/cdnAnalyzer/pkg/analyzer"
+	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
+	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 )
 
 // TransferNaliCdnYaml  实现nali cdn.yml到json的转换

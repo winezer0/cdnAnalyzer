@@ -1,8 +1,8 @@
 package dnsquery
 
 import (
-	"cdnAnalyzer/pkg/maputils"
 	"fmt"
+	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 	"strings"
 	"sync"
 	"time"

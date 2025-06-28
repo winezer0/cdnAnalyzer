@@ -1,8 +1,8 @@
 package fileutils
 
 import (
-	maputils2 "cdnAnalyzer/pkg/maputils"
 	"fmt"
+	maputils2 "github.com/winezer0/cdnAnalyzer/pkg/maputils"
 	"os"
 	"strings"
 )

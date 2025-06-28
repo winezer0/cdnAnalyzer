@@ -1,11 +1,11 @@
 package docheck
 
 import (
-	"cdnAnalyzer/pkg/analyzer"
-	"cdnAnalyzer/pkg/classify"
-	"cdnAnalyzer/pkg/domaininfo/querydomain"
-	"cdnAnalyzer/pkg/ipinfo/queryip"
 	"fmt"
+	"github.com/winezer0/cdnAnalyzer/pkg/analyzer"
+	"github.com/winezer0/cdnAnalyzer/pkg/classify"
+	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/querydomain"
+	"github.com/winezer0/cdnAnalyzer/pkg/ipinfo/queryip"
 	"os"
 )
 

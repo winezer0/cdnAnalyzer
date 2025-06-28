@@ -1,4 +1,4 @@
-module cdnAnalyzer
+module github.com/winezer0/cdnAnalyzer
 
 go 1.23.0
 

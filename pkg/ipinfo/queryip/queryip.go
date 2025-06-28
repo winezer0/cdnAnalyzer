@@ -1,10 +1,10 @@
 package queryip
 
 import (
-	"cdnAnalyzer/pkg/ipinfo/asninfo"
-	"cdnAnalyzer/pkg/ipinfo/ipv4info"
-	"cdnAnalyzer/pkg/ipinfo/ipv6info"
 	"fmt"
+	"github.com/winezer0/cdnAnalyzer/pkg/ipinfo/asninfo"
+	"github.com/winezer0/cdnAnalyzer/pkg/ipinfo/ipv4info"
+	"github.com/winezer0/cdnAnalyzer/pkg/ipinfo/ipv6info"
 	"net"
 )
 

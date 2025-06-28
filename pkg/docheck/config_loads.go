@@ -1,9 +1,9 @@
 package docheck
 
 import (
-	"cdnAnalyzer/pkg/fileutils"
-	"cdnAnalyzer/pkg/maputils"
 	"fmt"
+	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
+	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 	"github.com/winezer0/downtools/downfile"
 	"gopkg.in/yaml.v3"
 	"os"

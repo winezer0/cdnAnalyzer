@@ -4,10 +4,10 @@ package ipv6info
 // ipv6db数据使用http://ip.zxinc.org的免费离线数据（更新到2021年）
 
 import (
-	"cdnAnalyzer/pkg/fileutils"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
 	"net"
 	"strings"
 	"sync"

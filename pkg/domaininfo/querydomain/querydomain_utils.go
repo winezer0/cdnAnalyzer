@@ -1,12 +1,12 @@
 package querydomain
 
 import (
-	"cdnAnalyzer/pkg/analyzer"
-	"cdnAnalyzer/pkg/classify"
-	dnsquery2 "cdnAnalyzer/pkg/domaininfo/dnsquery"
-	"cdnAnalyzer/pkg/domaininfo/ednsquery"
-	"cdnAnalyzer/pkg/maputils"
 	"fmt"
+	"github.com/winezer0/cdnAnalyzer/pkg/analyzer"
+	"github.com/winezer0/cdnAnalyzer/pkg/classify"
+	dnsquery2 "github.com/winezer0/cdnAnalyzer/pkg/domaininfo/dnsquery"
+	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/ednsquery"
+	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 )
 
 func MergeEDNSMapToDNSMap(dnsMap dnsquery2.DomainDNSResultMap, ednsMap ednsquery.DomainEDNSResultMap) dnsquery2.DomainDNSResultMap {

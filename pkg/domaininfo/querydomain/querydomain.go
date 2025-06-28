@@ -1,10 +1,10 @@
 package querydomain
 
 import (
-	classify2 "cdnAnalyzer/pkg/classify"
-	dnsquery2 "cdnAnalyzer/pkg/domaininfo/dnsquery"
-	ednsquery2 "cdnAnalyzer/pkg/domaininfo/ednsquery"
 	"fmt"
+	classify2 "github.com/winezer0/cdnAnalyzer/pkg/classify"
+	dnsquery2 "github.com/winezer0/cdnAnalyzer/pkg/domaininfo/dnsquery"
+	ednsquery2 "github.com/winezer0/cdnAnalyzer/pkg/domaininfo/ednsquery"
 	"sync"
 	"time"
 )

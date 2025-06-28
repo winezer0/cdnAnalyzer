@@ -1,8 +1,8 @@
 package analyzer
 
 import (
-	"cdnAnalyzer/pkg/ipinfo/asninfo"
-	"cdnAnalyzer/pkg/maputils"
+	"github.com/winezer0/cdnAnalyzer/pkg/ipinfo/asninfo"
+	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 	"github.com/yl2chen/cidranger"
 	"net"
 	"strconv"

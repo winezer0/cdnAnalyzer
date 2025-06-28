@@ -1,10 +1,10 @@
 package ipv4info
 
 import (
-	"cdnAnalyzer/pkg/fileutils"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
 	"net"
 	"strings"
 	"sync"

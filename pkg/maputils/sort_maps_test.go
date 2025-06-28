@@ -1,7 +1,7 @@
 package maputils
 
 import (
-	fileutils2 "cdnAnalyzer/pkg/fileutils"
+	fileutils2 "github.com/winezer0/cdnAnalyzer/pkg/fileutils"
 	"testing"
 )
 

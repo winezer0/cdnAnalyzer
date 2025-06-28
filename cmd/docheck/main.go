@@ -1,14 +1,14 @@
 package main
 
 import (
-	"cdnAnalyzer/pkg/analyzer"
-	"cdnAnalyzer/pkg/classify"
-	"cdnAnalyzer/pkg/docheck"
-	"cdnAnalyzer/pkg/domaininfo/querydomain"
-	"cdnAnalyzer/pkg/fileutils"
-	"cdnAnalyzer/pkg/ipinfo/queryip"
 	"errors"
 	"fmt"
+	"github.com/winezer0/cdnAnalyzer/pkg/analyzer"
+	"github.com/winezer0/cdnAnalyzer/pkg/classify"
+	"github.com/winezer0/cdnAnalyzer/pkg/docheck"
+	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/querydomain"
+	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
+	"github.com/winezer0/cdnAnalyzer/pkg/ipinfo/queryip"
 	"os"
 	"strings"
 	"time"

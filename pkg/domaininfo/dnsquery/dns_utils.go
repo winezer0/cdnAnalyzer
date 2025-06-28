@@ -1,11 +1,11 @@
 package dnsquery
 
 import (
-	"cdnAnalyzer/pkg/maputils"
 	"context"
 	"errors"
 	"fmt"
 	"github.com/miekg/dns"
+	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 	"net"
 	"regexp"
 	"strings"

@@ -1,8 +1,8 @@
 package generate
 
 import (
-	"cdnAnalyzer/pkg/analyzer"
-	"cdnAnalyzer/pkg/fileutils"
+	"github.com/winezer0/cdnAnalyzer/pkg/analyzer"
+	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
 	"testing"
 )
 

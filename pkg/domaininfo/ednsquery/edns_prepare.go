@@ -1,10 +1,10 @@
 package ednsquery
 
 import (
-	"cdnAnalyzer/pkg/domaininfo/dnsquery"
 	"context"
 	"fmt"
 	"github.com/panjf2000/ants/v2"
+	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/dnsquery"
 	"sync"
 	"time"
 )

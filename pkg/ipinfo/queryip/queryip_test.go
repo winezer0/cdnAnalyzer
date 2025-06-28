@@ -1,7 +1,7 @@
 package queryip
 
 import (
-	"cdnAnalyzer/pkg/maputils"
+	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 	"testing"
 )
 
