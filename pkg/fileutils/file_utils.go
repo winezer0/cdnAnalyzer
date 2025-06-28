@@ -25,6 +25,11 @@ func IsFileExists(filename string) bool {
 	return !info.IsDir()
 }
 
+// IsNotExists 判断是否是普通文件不存在
+func IsNotExists(filename string) bool {
+	return !IsFileExists(filename)
+}
+
 // IsDirExists 判断是否是目录存在
 func IsDirExists(dirname string) bool {
 	info, err := os.Stat(dirname)

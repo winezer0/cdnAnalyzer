@@ -13,7 +13,7 @@ func GetFmtList(checkResults []CheckResult) []string {
 func FilterNoCdnNoWaf(checkResults []CheckResult) []CheckResult {
 	var nonCDNResult []CheckResult
 	for _, r := range checkResults {
-		if !r.IsCdn && !r.IsWaf {
+		if !r.IsCdn && !r.IsWaf && !r.IpSizeIsCdn {
 			nonCDNResult = append(nonCDNResult, r)
 		}
 	}

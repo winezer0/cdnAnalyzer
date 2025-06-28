@@ -20,7 +20,8 @@ import (
 // CmdConfig 存储程序配置，使用结构体标签定义命令行参数
 type CmdConfig struct {
 	// 配置文件参数
-	ConfigFile string `short:"c" long:"config" description:"YAML配置文件路径" default:"config.yaml"`
+	ConfigFile string `short:"c" long:"config-file" description:"YAML配置文件路径" default:"config.yaml"`
+	ConfigDown string `short:"C" long:"config-down" description:"远程加载config文件并保存" default:""`
 
 	// 基本参数 覆盖app Config中的配置
 	Target     string `short:"t" long:"target" description:"目标文件路径|目标字符串列表(逗号分隔)"`
@@ -33,7 +34,7 @@ type CmdConfig struct {
 	OutputNoCDN bool   `long:"nc" description:"仅保留非CDN&&非WAF的资产"`
 
 	// 数据库更新配置
-	StoreDir      string `short:"d" long:"store-dir" description:"配置文件存储目录" default:"assets"`
+	StoreDir      string `short:"d" long:"store-dir" description:"数据库文件存储目录" default:"assets"`
 	ProxyURL      string `short:"p" long:"proxy" description:"使用代理URL更新 (http|socks5)" default:""`
 	UpdateDB      bool   `short:"u" long:"update" description:"自动更新数据库文件 (检查更新间隔)"`
 	UpdateDBForce bool   `short:"U" long:"update-force" description:"强制更新数据库并下载未启用配置"`
@@ -63,10 +64,27 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 1. 先加载配置文件
+	// 0、进行配置文件远程下载
 	configFile := cmdConfig.ConfigFile
-	if !fileutils.IsFileExists(configFile) {
-		fmt.Printf("指定配置文件不存在: %v\n", configFile)
+	configDown := cmdConfig.ConfigDown
+	proxyURL := cmdConfig.ProxyURL
+	if configDown != "" {
+		fmt.Printf("开始远程下载配置文件: %v\n", configDown)
+		configUrl := "https://raw.githubusercontent.com/winezer0/cdnAnalyzer/refs/heads/main/cmd/docheck/config.yaml"
+		err := downfile.DownloadFileSimple(configUrl, proxyURL, configDown)
+		downfile.CleanupIncompleteDownloads("")
+		if err != nil {
+			fmt.Printf("远程配置文件下载失败: %v\n", err)
+			os.Exit(1)
+		} else {
+			fmt.Printf("远程配置文件下载成功: %v\n", configDown)
+			configFile = configDown
+		}
+	}
+
+	// 1. 先加载配置文件
+	if fileutils.IsNotExists(configFile) {
+		fmt.Printf("指定配置文件不存在: %v 请调用远程下载或重新指定配置路径.\n", configFile)
 		os.Exit(1)
 	}
 
@@ -77,36 +95,10 @@ func main() {
 	}
 
 	// 3. 获取并检查数据库文件路径
-	downItems := appConfig.DownloadItems
-	storeDir := cmdConfig.StoreDir
-	dbPaths := docheck.GetDBPathsFromConfig(downItems, storeDir)
-	missedDB := docheck.DBFilesIsExists(dbPaths)
-	forceUpdate := cmdConfig.UpdateDBForce
-	if len(missedDB) > 0 || cmdConfig.UpdateDB || forceUpdate {
-		// 更新数据库配置
-		downfile.CleanupExpiredCache()
-		// 创建HTTP客户端配置
-		clientConfig := &downfile.ClientConfig{
-			ConnectTimeout: 30,
-			IdleTimeout:    30,
-			ProxyURL:       cmdConfig.ProxyURL,
-		}
-		// 创建HTTP客户端
-		httpClient, err := downfile.CreateHTTPClient(clientConfig)
-		if err != nil {
-			fmt.Printf("创建HTTP客户端失败: %v\n", err)
-			return
-		}
-		// 仅保留已启用的项
-		if !forceUpdate {
-			downItems = downfile.FilterEnableItems(downItems)
-		}
-		// 处理所有配置组
-		fmt.Printf("开始下载IP数据库依赖文件...\n")
-		totalItems := len(downItems)
-		downedItems := downfile.ProcessDownItems(httpClient, downItems, storeDir, forceUpdate, true, 3)
-		fmt.Printf("\n数据库依赖下载任务完成: 成功 %d/%d\n", downedItems, totalItems)
-		downfile.CleanupIncompleteDownloads(storeDir)
+	dbPaths, err := docheck.CheckAndDownDBFiles(appConfig.DownloadItems, cmdConfig.StoreDir, proxyURL, cmdConfig.UpdateDB, cmdConfig.UpdateDBForce)
+	if err != nil {
+		fmt.Printf("数据库依赖下载异常: %v\n", err)
+		return
 	}
 
 	// 检查必要参数

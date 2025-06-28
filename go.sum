@@ -91,6 +91,10 @@ github.com/winezer0/downtools v0.0.4 h1:hhSUZRq4sfyTh8jFVQqIouZpZmU4jNUKDJcCVVsT
 github.com/winezer0/downtools v0.0.4/go.mod h1:uTaoUAWGrKOvQPuvcODLLtHSC4UQJ73wFw7XggDxrXY=
 github.com/winezer0/downtools v0.0.6 h1:hhKu5Z4v1VPYTovWICYz6btMvDyPCS5H/Km5x7viVoI=
 github.com/winezer0/downtools v0.0.6/go.mod h1:uTaoUAWGrKOvQPuvcODLLtHSC4UQJ73wFw7XggDxrXY=
+github.com/winezer0/downtools v0.0.7 h1:ImoWbDt0hSEkwIgM7GRKl4jec8VLnbXxT9QY7Y9RCTA=
+github.com/winezer0/downtools v0.0.7/go.mod h1:uTaoUAWGrKOvQPuvcODLLtHSC4UQJ73wFw7XggDxrXY=
+github.com/winezer0/downtools v0.0.8 h1:FncPfTWGGHsSFWn0oohBwM1+UGsCd+tszegZJyJz7Ok=
+github.com/winezer0/downtools v0.0.8/go.mod h1:uTaoUAWGrKOvQPuvcODLLtHSC4UQJ73wFw7XggDxrXY=
 github.com/yl2chen/cidranger v1.0.2 h1:lbOWZVCG1tCRX4u24kuM1Tb4nHqWkDxwLdoS+SevawU=
 github.com/yl2chen/cidranger v1.0.2/go.mod h1:9U1yz7WPYDwf0vpNWFaeRh0bjwz5RVgRy/9UEQfHl0g=
 github.com/zu1k/nali v0.8.1 h1:jqLkZ+ylMmfR+tAhd/kvRVeviU/P9S0LOswban6aUxE=
