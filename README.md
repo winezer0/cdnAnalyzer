@@ -20,7 +20,7 @@ CDN Check On Golang
 - 编写工作流实现更新ip数据库等大文件
 
 ## 安装方式
-安装可执行程序后, 还需要补充数据文件.
+安装可执行程序后, 需要补充依赖数据库文件, 可执行命令或手动下载解压assets目录.
 
 ### go install 安装
 ```
@@ -38,8 +38,6 @@ go build -ldflags="-s -w" -o cdnAnalyzer.exe ./cmd/docheck/main.go
 通过workflow编译的程序将自动发布到release中:
 https://github.com/winezer0/cdnAnalyzer/releases
 ```
-
-
 
 ### MIND
 ```
@@ -79,16 +77,14 @@ https://github.com/winezer0/cdnAnalyzer/releases
    - other custom keys
 
 
-
-### 依赖数据库文件下载和更新
-```
-依赖数据库文件已实现自动更新 具体下载路径 请查看config.yaml文件
-```
-
 ### 配置文件使用
-现在支持通过YAML配置文件来管理所有参数和数据库下载配置。使用 `-c` 参数指定配置文件路径：
+现在支持通过YAML配置文件来管理所有参数和数据库下载配置。
 
 ```
+使用 `-c` 参数指定配置文件路径： 
+cdnAnalyzer.exe -c config.yaml
+
+使用 `-C` 参数指定从内置URL下载到本地配置文件： 
 cdnAnalyzer.exe -c config.yaml
 ```
 命令行参数会覆盖配置文件中的设置，因此您可以同时使用配置文件和命令行参数。
