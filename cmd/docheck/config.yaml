@@ -14,65 +14,92 @@ download-items:
     filename: qqwry.dat
     download-urls:
       - https://github.com/metowolf/qqwry.dat/releases/latest/download/qqwry.dat
+      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/qqwry.dat
     keep-updated: true
+    enable: true
 
   - module: zxipv6wry
     filename: zxipv6wry.db
     download-urls:
       - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/zxipv6wry.db
+      - https://raw.githubusercontent.com/ZX-Inc/zxipdb-python/main/data/ipv6wry.db
+      - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/zxipv6wry.db
     keep-updated: false
+    enable: true
 
   - module: geolite2-asn-ipv4
     filename: geolite2-asn-ipv4.mmdb
     download-urls:
       - https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv4.mmdb
+      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/geolite2-asn-ipv4.mmdb
+      - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/geolite2-asn-ipv4.mmdb
     keep-updated: true
+    enable: true
 
   - module: geolite2-asn-ipv6
     filename: geolite2-asn-ipv6.mmdb
     download-urls:
       - https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv6.mmdb
+      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/geolite2-asn-ipv6.mmdb
+      - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/geolite2-asn-ipv6.mmdb
     keep-updated: true
+    enable: true
 
-  - module: cdn
-    filename: cdn.yml
-    download-urls:
-      - https://raw.githubusercontent.com/4ft35t/cdn/master/src/cdn.yml
-      - https://cdn.jsdelivr.net/gh/4ft35t/cdn/src/cdn.yml
-    keep-updated: false
 
   - module: dns-resolvers
     filename: resolvers.txt
     download-urls:
       - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/resolvers.txt
+      - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/resolvers.txt
     keep-updated: false
+    enable: true
 
   - module: edns-city-ip
     filename: city_ip.csv
     download-urls:
       - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/city_ip.csv
+      - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/city_ip.csv
     keep-updated: false
-
-  - module: cdn-keys
-    filename: cloud_keys.yml
-    download-urls:
-      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/cloud_keys.yml
-    keep-updated: false
-
-  - module: cdn-sources_china
-    filename: sources_china.json
-    download-urls:
-      - https://github.com/hanbufei/isCdn/blob/main/client/data/sources_china.json
-    keep-updated: false
-
-  - module: cdn-sources-foreign
-    filename: sources_foreign.json
-    download-urls:
-      - https://github.com/projectdiscovery/cdncheck/blob/main/sources_data.json
-    keep-updated: true
+    enable: true
 
   - module: cdn-sources
     filename: sources.json
     download-urls:
       - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/source.json
+      - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/source.json
     keep-updated: true
+    enable: true
+
+  - module: cdn
+    filename: cdn.yml
+    download-urls:
+      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/cdn.yml
+      - https://raw.githubusercontent.com/4ft35t/cdn/master/src/cdn.yml
+      - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/cdn.yml
+    keep-updated: false
+    enable: false
+
+  - module: cdn-keys
+    filename: cloud_keys.yml
+    download-urls:
+      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/cloud_keys.yml
+      - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/cloud_keys.yml
+    keep-updated: false
+    enable: false
+
+  - module: cdn-sources_china
+    filename: sources_china.json
+    download-urls:
+      - https://github.com/hanbufei/isCdn/blob/main/client/data/sources_china.json
+      - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/sources_china.json
+    keep-updated: false
+    enable: false
+
+  - module: cdn-sources-foreign
+    filename: sources_foreign.json
+    download-urls:
+      - https://github.com/projectdiscovery/cdncheck/blob/main/sources_data.json
+      - https://cdn.jsdelivr.net/gh/projectdiscovery/cdncheck/sources_data.json
+      - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/sources_data.json
+    keep-updated: true
+    enable: false

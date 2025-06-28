@@ -35,7 +35,7 @@ type CmdConfig struct {
 	StoreDir      string `short:"d" long:"store-dir" description:"配置文件存储目录" default:"assets"`
 	ProxyURL      string `short:"p" long:"proxy" description:"使用代理URL更新 (http|socks5)" default:""`
 	UpdateDB      bool   `short:"u" long:"update" description:"自动更新数据库文件 (检查更新间隔)"`
-	UpdateDBForce bool   `short:"U" long:"update-force" description:"强制更新数据库文件 (忽略更新间隔)"`
+	UpdateDBForce bool   `short:"U" long:"update-force" description:"强制更新数据库并下载未启用配置"`
 }
 
 func main() {
@@ -76,9 +76,12 @@ func main() {
 	}
 
 	// 3. 获取并检查数据库文件路径
-	dbPaths := docheck.GetDBPathsFromConfig(appConfig.DownloadItems, cmdConfig.StoreDir)
+	downItems := appConfig.DownloadItems
+	storeDir := cmdConfig.StoreDir
+	dbPaths := docheck.GetDBPathsFromConfig(downItems, storeDir)
 	missedDB := docheck.DBFilesIsExists(dbPaths)
-	if len(missedDB) > 0 || cmdConfig.UpdateDB || cmdConfig.UpdateDBForce {
+	forceUpdate := cmdConfig.UpdateDBForce
+	if len(missedDB) > 0 || cmdConfig.UpdateDB || forceUpdate {
 		// 更新数据库配置
 		downfile.CleanupExpiredCache()
 		// 创建HTTP客户端配置
@@ -93,11 +96,16 @@ func main() {
 			fmt.Printf("创建HTTP客户端失败: %v\n", err)
 			return
 		}
+		// 仅保留已启用的项
+		if !forceUpdate {
+			downItems = downfile.FilterEnableItems(downItems)
+		}
 		// 处理所有配置组
-		fmt.Printf("开始下载IP数据库文件...\n")
-		totalItems := len(appConfig.DownloadItems)
-		successItems := downfile.ProcessDownItems(httpClient, appConfig.DownloadItems, cmdConfig.StoreDir, cmdConfig.UpdateDBForce, true, 3)
-		fmt.Printf("\n数据库依赖下载任务完成: 成功 %d/%d\n", successItems, totalItems)
+		fmt.Printf("开始下载IP数据库依赖文件...\n")
+		totalItems := len(downItems)
+		downedItems := downfile.ProcessDownItems(httpClient, downItems, storeDir, forceUpdate, true, 3)
+		fmt.Printf("\n数据库依赖下载任务完成: 成功 %d/%d\n", downedItems, totalItems)
+		downfile.CleanupIncompleteDownloads(storeDir)
 	}
 
 	// 检查必要参数
