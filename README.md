@@ -22,6 +22,11 @@ CDN Check On Golang
 ## 安装方式
 安装可执行程序后, 还需要补充数据文件.
 
+### go install 安装
+```
+go install github.com/winezer0/cdnAnalyzer/cmd/docheck@latest
+```
+
 ### 源码安装
 ```
 git clone --depth 1 https://github.com/winezer0/cdnAnalyzer
