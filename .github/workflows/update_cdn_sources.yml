@@ -1,4 +1,4 @@
-name: 每日更新 CDN 源
+name: Update CDN Sources Daily
 
 on:
   schedule:
@@ -32,9 +32,6 @@ jobs:
 
       - name: 复制文件到 assets 目录
         run: |
-          # 先返回到上原始目录
-          cd ..
-          
           # 复制 sources 目录下的所有文件到 assets 目录
           cp -f cmd/cdnSources/sources/* assets/
           
