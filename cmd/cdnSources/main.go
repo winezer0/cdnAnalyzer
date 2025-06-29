@@ -1,8 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"os"
 
+	"github.com/jessevdk/go-flags"
 	"github.com/winezer0/cdnAnalyzer/pkg/analyzer"
 	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
 	"github.com/winezer0/cdnAnalyzer/pkg/generate"
@@ -17,10 +20,28 @@ type SourcesFilePaths struct {
 	SourcesForeignJson string
 }
 
+// Options 命令行参数选项
+type Options struct {
+	SourcesConfig string `short:"c" description:"资源配置文件路径" default:"sources.yaml"`
+	DownloadDir   string `short:"d" description:"资源下载存储目录" default:"sources"`
+	SourcesPath   string `short:"o" description:"资源更新后的输出文件" default:"sources.json"`
+}
+
 func main() {
-	sourcesConfig := "sources.yaml"
-	downloadDir := "sources"
-	sourcesPath := "sources.json"
+	// 定义命令行参数
+	var options Options
+	parser := flags.NewParser(&options, flags.Default)
+	_, err := parser.Parse()
+	if err != nil {
+		var flagsErr *flags.Error
+		if errors.As(err, &flagsErr) && errors.Is(flagsErr.Type, flags.ErrHelp) {
+			os.Exit(0)
+		}
+	}
+
+	sourcesConfig := options.SourcesConfig
+	downloadDir := options.DownloadDir
+	sourcesPath := options.SourcesPath
 
 	//1、实现相关配置文件自动下载
 	downloadConfig, err := downfile.LoadConfig(sourcesConfig)
