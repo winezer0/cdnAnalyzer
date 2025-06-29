@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/winezer0/cdnAnalyzer/pkg/analyzer"
 	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
 	"github.com/winezer0/cdnAnalyzer/pkg/generate"
@@ -17,10 +18,8 @@ type SourcesFilePaths struct {
 }
 
 func main() {
-	//sourcesConfig := "sources.yaml"
-	sourcesConfig := "C:\\Users\\WINDOWS\\Desktop\\CDNCheck\\cmd\\cdnSources\\sources.yaml"
+	sourcesConfig := "sources.yaml"
 	downloadDir := "sources"
-	forceUpdate := true
 	sourcesPath := "sources.json"
 
 	//1、实现相关配置文件自动下载
@@ -58,7 +57,7 @@ func main() {
 	// 下载所有配置
 	if len(downItems) > 0 {
 		fmt.Printf("总计需要下载的文件数量:[%v]\n", len(downItems))
-		downfile.ProcessDownItems(httpClient, downItems, downloadDir, forceUpdate, false, 3)
+		downfile.ProcessDownItems(httpClient, downItems, downloadDir, true, false, 3)
 	} else {
 		fmt.Printf("未发现需要下载的文件\n")
 		return
