@@ -1,0 +1,63 @@
+name: 每日更新 CDN 源
+
+on:
+  schedule:
+    # 每天 UTC 时间 0:00 运行（相当于北京时间 8:00）
+    - cron: '0 0 * * *'
+  # 允许手动触发工作流
+  workflow_dispatch:
+
+jobs:
+  update-cdn-sources:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Go 环境
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: 运行更新脚本
+        run: |
+          cd cmd/cdnSources
+          # 确保 sources 目录存在
+          mkdir -p sources
+          # 运行更新脚本
+          go run main.go -o sources/sources.json
+          echo "源文件更新完成"
+          ls -la sources/
+
+      - name: 复制文件到 assets 目录
+        run: |
+          # 先返回到上原始目录
+          cd ..
+          
+          # 复制 sources 目录下的所有文件到 assets 目录
+          cp -f cmd/cdnSources/sources/* assets/
+          
+          echo "文件已复制到 assets 目录"
+          ls -la assets/
+
+      - name: 提交更改
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          git add assets/
+          
+          # 检查是否有更改需要提交
+          if git diff --staged --quiet; then
+            echo "没有检测到更改，跳过提交"
+            exit 0
+          fi
+          
+          git commit -m "自动更新: CDN 源文件 $(date +'%Y-%m-%d')"
+          
+      - name: 推送更改
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }} 
