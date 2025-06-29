@@ -1,0 +1,31 @@
+databases:
+  - module: cdn
+    filename: cdn.yml
+    download-urls:
+      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/cdn.yml
+#      - https://github.com/4ft35t/cdn/blob/master/src/cdn.yml
+    keep-updated: false
+    enable: false
+
+  - module: cdn-keys
+    filename: cloud_keys.yml
+    download-urls:
+      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/cloud_keys.yml
+    keep-updated: false
+    enable: false
+
+  - module: cdn-sources_china
+    filename: sources_china.json
+    download-urls:
+      - https://github.com/hanbufei/isCdn/blob/main/client/data/sources_china.json
+#      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/sources_china.json
+    keep-updated: false
+    enable: false
+
+  - module: cdn-sources-foreign
+    filename: sources_foreign.json
+    download-urls:
+      - https://github.com/projectdiscovery/cdncheck/blob/main/sources_data.json
+#      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/sources_data.json
+    keep-updated: true
+    enable: false
