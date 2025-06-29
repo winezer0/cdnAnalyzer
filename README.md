@@ -24,7 +24,8 @@ CDN Check On Golang
 
 ### go install 安装
 ```
-go install github.com/winezer0/cdnAnalyzer/cmd/docheck@latest
+go install github.com/winezer0/cdnAnalyzer/cmd/cdnAnalyzer@latest
+提示: 可能版本更新不及时
 ```
 
 ### 源码安装
