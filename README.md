@@ -13,11 +13,10 @@ CDN Check On Golang
 - 通过数据源对资产信息进行CDN|WAF|CLoud信息分析
 - 输出CSV、JSON、TXT、SYS日志格式
 - 实现IP数据库自动下载, 目前是直接从github下载
+- 实现CDN解析数据自动更新, 目前是直接通过Github工作流实现每天自动更新
 
 ## TODO
-- 编写代码实现命令行更新sources.json信息 
-- 编写工作流实现sources.json自动推送到github
-- 编写工作流实现更新ip数据库等大文件
+- 寻找更多的CDN数据源信息
 
 ## 安装方式
 安装可执行程序后, 需要补充依赖数据库文件, 可执行命令或手动下载解压assets目录.
@@ -25,7 +24,6 @@ CDN Check On Golang
 ### go install 安装
 ```
 go install github.com/winezer0/cdnAnalyzer/cmd/cdnAnalyzer@latest
-提示: 可能版本更新不及时
 ```
 
 ### 源码安装

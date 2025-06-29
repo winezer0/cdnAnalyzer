@@ -30,7 +30,6 @@ go.work.sum
 # Editor/IDE
 .idea/
 .vscode/
-/pkg/docheck/assets
 *.download
 /sources
 /cmd/cdnSources/sources
