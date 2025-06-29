@@ -1,8 +1,6 @@
 module github.com/winezer0/cdnAnalyzer
 
-go 1.23.0
-
-toolchain go1.23.9
+go 1.20
 
 require (
 	github.com/jessevdk/go-flags v1.6.1
