@@ -4,14 +4,14 @@ databases:
     download-urls:
       - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/cloud_keys.yml
     keep-updated: false
-    enable: false
+    enable: true
 
   - module: cdn-domains
     filename: cdn.yml
     download-urls:
       - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/cdn.yml
     keep-updated: false
-    enable: false
+    enable: true
 
   - module: cdn-sources-china
     filename: sources_china.json
@@ -19,11 +19,18 @@ databases:
       - https://github.com/hanbufei/isCdn/blob/main/client/data/sources_china.json
 #      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/sources_china.json
     keep-updated: false
-    enable: false
+    enable: true
 
   - module: cdn-sources-foreign
     filename: sources_foreign.json
     download-urls:
       - https://github.com/projectdiscovery/cdncheck/blob/main/sources_data.json
     keep-updated: true
-    enable: false
+    enable: true
+
+  - module: cdn-provider-foreign
+    filename: provider_foreign.yaml
+    download-urls:
+      - https://github.com/projectdiscovery/cdncheck/blob/main/cmd/generate-index/provider.yaml
+    keep-updated: false
+    enable: true

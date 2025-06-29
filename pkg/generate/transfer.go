@@ -6,8 +6,8 @@ import (
 	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 )
 
-// TransferNaliCdnYaml  实现nali cdn.yml到json的转换
-func TransferNaliCdnYaml(path string) *analyzer.CDNData {
+// TransferCdnDomainsYaml  实现NaLi cdn.yml到json的转换
+func TransferCdnDomainsYaml(path string) *analyzer.CDNData {
 	// 数据来源 https://github.com/4ft35t/cdn/blob/master/src/cdn.yml
 	// CloudKeysData 是整个 YAML 文件的结构
 	type naliCdnData map[string]struct {
@@ -80,6 +80,65 @@ func TransferCloudKeysYaml(path string) *analyzer.CDNData {
 	cdnData := analyzer.NewEmptyCDNData()
 	for cloudName, yamEntry := range cloudKeysYaml {
 		cdnData.CLOUD.KEYS[cloudName] = yamEntry.Keys
+	}
+
+	return cdnData
+}
+
+// TransferProviderYAML 读取并解析 provider.yaml 文件
+func TransferProviderYAML(filePath string) *analyzer.CDNData {
+	// 定义结构体匹配 provider.yaml 格式
+	type Component struct {
+		FQDN map[string][]string `yaml:"fqdn"`
+		ASN  map[string][]string `yaml:"asn"`
+		URLs map[string][]string `yaml:"urls"`
+		CIDR map[string][]string `yaml:"cidr"`
+	}
+
+	// 主配置结构体，使用嵌套的 Component
+	type ProviderConfig struct {
+		CDN    Component `yaml:"cdn"`
+		WAF    Component `yaml:"waf"`
+		CLOUD  Component `yaml:"CLOUD"`
+		COMMON Component `yaml:"common"`
+	}
+
+	// 初始化配置结构体
+	var providerConfig ProviderConfig
+	err := fileutils.ReadYamlToStruct(filePath, &providerConfig)
+	if err != nil {
+		panic(err)
+	}
+
+	// 初始化 CDNData 结构
+	cdnData := analyzer.NewEmptyCDNData()
+	for name, asns := range providerConfig.CDN.ASN {
+		cdnData.CDN.ASN[name] = analyzer.NormalizeASNList(asns)
+	}
+
+	for name, cidr := range providerConfig.CDN.CIDR {
+		cdnData.CDN.IP[name] = cidr
+	}
+
+	for name, asns := range providerConfig.WAF.ASN {
+		cdnData.WAF.ASN[name] = analyzer.NormalizeASNList(asns)
+	}
+
+	for name, cidr := range providerConfig.WAF.CIDR {
+		cdnData.WAF.IP[name] = cidr
+	}
+
+	for name, asns := range providerConfig.CLOUD.ASN {
+		cdnData.CLOUD.ASN[name] = analyzer.NormalizeASNList(asns)
+	}
+
+	for name, cidr := range providerConfig.CLOUD.CIDR {
+		cdnData.CLOUD.IP[name] = cidr
+	}
+
+	// 添加 common 的 子域名到 CDN 的CNAMES子域名
+	for name, fqdn := range providerConfig.COMMON.FQDN {
+		cdnData.CDN.CNAME[name] = fqdn
 	}
 
 	return cdnData

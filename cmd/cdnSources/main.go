@@ -14,10 +14,11 @@ import (
 
 // SourcesFilePaths 存储所有依赖文件路径
 type SourcesFilePaths struct {
-	CdnKeysYaml        string
-	CdnDomainsYaml     string
-	SourcesChinaJson   string
-	SourcesForeignJson string
+	CdnKeysYaml         string
+	CdnDomainsYaml      string
+	SourcesChinaJson    string
+	SourcesForeignJson  string
+	ProviderForeignYaml string
 }
 
 // Options 命令行参数选项
@@ -126,16 +127,19 @@ func main() {
 	cdnKeysTransData := generate.TransferCloudKeysYaml(sourcesPaths.CdnKeysYaml)
 
 	// 加载并转换 cdn.yml
-	cdnYamlTransData := generate.TransferNaliCdnYaml(sourcesPaths.CdnDomainsYaml)
+	cdnYamlTransData := generate.TransferCdnDomainsYaml(sourcesPaths.CdnDomainsYaml)
 
-	// 加载sources_data.json 数据的合并
+	// 加载sources_foreign.json 数据的合并
 	sourceData := generate.TransferPDCdnCheckJson(sourcesPaths.SourcesForeignJson)
 
 	// 加载 sources_china.json
 	sourceChina := generate.TransferPDCdnCheckJson(sourcesPaths.SourcesChinaJson)
 
+	// 加载 sources_provider.json
+	sourceProvider := generate.TransferProviderYAML(sourcesPaths.ProviderForeignYaml)
+
 	//// 合并写入文件
-	sourceMerge, _ := analyzer.CdnDataMergeSafe(*sourceData, *sourceChina, *cdnYamlTransData, *cdnKeysTransData)
+	sourceMerge, _ := analyzer.CdnDataMergeSafe(*sourceData, *sourceChina, *cdnYamlTransData, *cdnKeysTransData, *sourceProvider)
 	fileutils.WriteJsonFromStruct(sourcesPath, sourceMerge)
 	if fileutils.IsEmptyFile(sourcesPath) {
 		fmt.Printf("数据文件[%v]生成失败!!!\n", sourcesPath)
@@ -148,10 +152,11 @@ func main() {
 func getSourcesPaths(downloadItems []downfile.DownItem) SourcesFilePaths {
 	// 数据库文件名常量
 	const (
-		CdnKeysYaml        = "cdn-keys"
-		CdnDomainsYaml     = "cdn-domains"
-		SourcesChinaJson   = "cdn-sources-china"
-		SourcesForeignJson = "cdn-sources-foreign"
+		CdnKeysYaml         = "cdn-keys"
+		CdnDomainsYaml      = "cdn-domains"
+		SourcesChinaJson    = "cdn-sources-china"
+		SourcesForeignJson  = "cdn-sources-foreign"
+		ProviderForeignYaml = "cdn-provider-foreign"
 	)
 
 	// 初始化空路径
@@ -174,6 +179,8 @@ func getSourcesPaths(downloadItems []downfile.DownItem) SourcesFilePaths {
 			paths.SourcesForeignJson = storePath
 		case SourcesChinaJson:
 			paths.SourcesChinaJson = storePath
+		case ProviderForeignYaml:
+			paths.ProviderForeignYaml = storePath
 		}
 	}
 	return paths

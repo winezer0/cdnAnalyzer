@@ -29,6 +29,15 @@ func normalizeASN(asn string) string {
 	return asn
 }
 
+// NormalizeASNList 批量清洗 ASN 字符串列表
+func NormalizeASNList(asns []string) []string {
+	result := make([]string, 0, len(asns))
+	for _, asn := range asns {
+		result = append(result, normalizeASN(asn))
+	}
+	return result
+}
+
 // CdnDataMergeSafe 实现多个cdnData数据的合并
 func CdnDataMergeSafe(cdnDatas ...CDNData) (map[string]interface{}, error) {
 	var mergedMap map[string]interface{}

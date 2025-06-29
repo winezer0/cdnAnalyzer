@@ -60,11 +60,12 @@ func TestMergeSameData(t *testing.T) {
 	// https://github.com/4ft35t/cdn/blob/master/src/cdn.yml
 	cdnYamlFile := "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\cdn.yml"
 	cdnYamlTransData := TransferNaliCdnYaml(cdnYamlFile)
+	cdnYamlTransData := TransferCdnDomainsYaml(cdnYamlFile)
 	//fileutils.WriteJsonFromStruct("cdnYamlTransData.json", cdnYamlTransData)
 
 	// 国外源：https://github.com/projectdiscovery/cdncheck/blob/main/sources_data.json
-	// 加载sources_data.json 数据的合并
-	sourceDataJson := "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\sources_data.json"
+	// 加载sources_foreign.json 数据的合并
+	sourceDataJson := "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\sources_foreign.json"
 	sourceData := TransferPDCdnCheckJson(sourceDataJson)
 	//fileutils.WriteJsonFromStruct("sourceData.json", sourceData)
 
@@ -77,4 +78,11 @@ func TestMergeSameData(t *testing.T) {
 	// 合并写入文件
 	sourceMerge, _ := analyzer.CdnDataMergeSafe(*sourceData, *sourceChina, *cdnYamlTransData, *cloudYamlTransData)
 	fileutils.WriteJsonFromStruct("sources.json", sourceMerge)
+}
+
+func TestTransferProviderYAML(t *testing.T) {
+	providerYaml := "C:\\Users\\WINDOWS\\Desktop\\provider.yaml"
+	sourceData := TransferProviderYAML(providerYaml)
+	outFile := providerYaml + ".update.json"
+	fileutils.WriteJsonFromStruct(outFile, *sourceData)
 }

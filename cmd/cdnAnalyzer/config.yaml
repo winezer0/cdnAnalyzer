@@ -45,7 +45,6 @@ download-items:
     keep-updated: true
     enable: true
 
-
   - module: dns-resolvers
     filename: resolvers.txt
     download-urls:
@@ -100,6 +99,6 @@ download-items:
     download-urls:
       - https://github.com/projectdiscovery/cdncheck/blob/main/sources_data.json
       - https://cdn.jsdelivr.net/gh/projectdiscovery/cdncheck/sources_data.json
-      - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/sources_data.json
+      - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/sources_foreign.json
     keep-updated: true
     enable: false
