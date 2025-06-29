@@ -33,3 +33,4 @@ go.work.sum
 /pkg/docheck/assets
 *.download
 /sources
+/cmd/cdnSources/sources

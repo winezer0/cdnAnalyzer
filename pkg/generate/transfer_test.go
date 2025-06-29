@@ -59,7 +59,6 @@ func TestMergeSameData(t *testing.T) {
 	// 加载并转换 cdn.yml
 	// https://github.com/4ft35t/cdn/blob/master/src/cdn.yml
 	cdnYamlFile := "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\cdn.yml"
-	cdnYamlTransData := TransferNaliCdnYaml(cdnYamlFile)
 	cdnYamlTransData := TransferCdnDomainsYaml(cdnYamlFile)
 	//fileutils.WriteJsonFromStruct("cdnYamlTransData.json", cdnYamlTransData)
 

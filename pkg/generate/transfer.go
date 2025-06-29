@@ -74,7 +74,7 @@ func TransferCloudKeysYaml(path string) *analyzer.CDNData {
 	if err != nil {
 		panic(err)
 	}
-	//
+
 	// 2. 构建 cname map[string][]string 并赋值给 cdnData.CDN.CNAME
 	// 初始化 CDNData 结构
 	cdnData := analyzer.NewEmptyCDNData()
