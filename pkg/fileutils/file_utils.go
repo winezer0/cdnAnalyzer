@@ -96,3 +96,12 @@ func FindFile(filename string) []string {
 
 	return foundPaths
 }
+
+// GetAbsolutePath 返回给定文件或目录的绝对路径
+func GetAbsolutePath(relativePath string) (string, error) {
+	absPath, err := filepath.Abs(relativePath)
+	if err != nil {
+		return "", err
+	}
+	return absPath, nil
+}

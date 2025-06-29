@@ -1,7 +1,6 @@
 package generate
 
 import (
-	"fmt"
 	"github.com/winezer0/cdnAnalyzer/pkg/analyzer"
 	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
 	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
@@ -75,7 +74,6 @@ func TransferCloudKeysYaml(path string) *analyzer.CDNData {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("yamlData: %v", cloudKeysYaml)
 	//
 	// 2. 构建 cname map[string][]string 并赋值给 cdnData.CDN.CNAME
 	// 初始化 CDNData 结构

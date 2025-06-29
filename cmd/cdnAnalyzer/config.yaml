@@ -70,7 +70,7 @@ download-items:
     keep-updated: true
     enable: true
 
-  - module: cdn
+  - module: cdn-domains
     filename: cdn.yml
     download-urls:
       - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/cdn.yml
