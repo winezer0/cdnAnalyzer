@@ -153,14 +153,14 @@ func main() {
 
 	checkInfos = docheck.QueryIPInfo(ipDbConfig, checkInfos)
 
-	// 加载source.json配置文件
-	if _, err := os.Stat(dbPaths.SourceJson); os.IsNotExist(err) {
-		fmt.Printf("错误: CDN源数据配置文件不存在: %s\n", dbPaths.SourceJson)
+	// 加载sources.json配置文件
+	if _, err := os.Stat(dbPaths.CdnSource); os.IsNotExist(err) {
+		fmt.Printf("错误: CDN源数据配置文件不存在: %s\n", dbPaths.CdnSource)
 		os.Exit(1)
 	}
 
 	cdnData := analyzer.NewEmptyCDNData()
-	err = fileutils.ReadJsonToStruct(dbPaths.SourceJson, cdnData)
+	err = fileutils.ReadJsonToStruct(dbPaths.CdnSource, cdnData)
 	if err != nil {
 		fmt.Printf("加载CDN源数据失败: %v\n", err)
 		os.Exit(1)

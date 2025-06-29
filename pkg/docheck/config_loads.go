@@ -54,7 +54,7 @@ func GetDBPathsFromConfig(downloadItems []downfile.DownItem, storeDir string) DB
 		case ModuleIPv6Locate:
 			paths.Ipv6LocateDb = storePath
 		case ModuleCDNSource:
-			paths.SourceJson = storePath
+			paths.CdnSource = storePath
 		}
 	}
 	return paths
@@ -83,8 +83,8 @@ func DBFilesIsExists(paths DBFilePaths) []string {
 	if fileutils.IsNotExists(paths.Ipv6LocateDb) {
 		missingPaths = append(missingPaths, fmt.Sprintf("IPv6地理位置数据库(ipv6-locate-db) -> Not File [%s]", paths.Ipv6LocateDb))
 	}
-	if fileutils.IsNotExists(paths.SourceJson) {
-		missingPaths = append(missingPaths, fmt.Sprintf("CDN源数据配置文件(source-json) -> Not File [%s]", paths.SourceJson))
+	if fileutils.IsNotExists(paths.CdnSource) {
+		missingPaths = append(missingPaths, fmt.Sprintf("CDN源数据配置文件(sources-json) -> Not File [%s]", paths.CdnSource))
 	}
 
 	return missingPaths

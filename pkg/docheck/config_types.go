@@ -26,7 +26,7 @@ type DBFilePaths struct {
 	AsnIpv6Db     string
 	Ipv4LocateDb  string
 	Ipv6LocateDb  string
-	SourceJson    string
+	CdnSource     string
 }
 
 // 数据库文件名常量

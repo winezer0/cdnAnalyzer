@@ -65,8 +65,8 @@ download-items:
   - module: cdn-sources
     filename: sources.json
     download-urls:
-      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/source.json
-      - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/source.json
+      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/sources.json
+      - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/sources.json
     keep-updated: true
     enable: true
 

@@ -15,8 +15,8 @@ CDN Check On Golang
 - 实现IP数据库自动下载, 目前是直接从github下载
 
 ## TODO
-- 编写代码实现命令行更新source.json信息 
-- 编写工作流实现source.json自动推送到github
+- 编写代码实现命令行更新sources.json信息 
+- 编写工作流实现sources.json自动推送到github
 - 编写工作流实现更新ip数据库等大文件
 
 ## 安装方式
