@@ -34,3 +34,10 @@ databases:
       - https://github.com/projectdiscovery/cdncheck/blob/main/cmd/generate-index/provider.yaml
     keep-updated: false
     enable: true
+
+  - module: unknown-cdn-cname
+    filename: unknown-cdn-cname.txt
+    download-urls:
+      - https://github.com/alwaystest18/cdnChecker/blob/master/cdn_cname
+    keep-updated: false
+    enable: true

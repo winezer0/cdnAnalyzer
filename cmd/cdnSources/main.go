@@ -1,9 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/winezer0/cdnAnalyzer/pkg/analyzer"
@@ -19,6 +21,7 @@ type SourcesFilePaths struct {
 	SourcesChinaJson    string
 	SourcesForeignJson  string
 	ProviderForeignYaml string
+	UnknownCdnCname     string
 }
 
 // Options 命令行参数选项
@@ -138,9 +141,21 @@ func main() {
 	// 加载 sources_provider.json
 	sourceProvider := generate.TransferProviderYAML(sourcesPaths.ProviderForeignYaml)
 
-	//// 合并写入文件
+	// 合并以上几种数据源
 	sourceMerge, _ := analyzer.CdnDataMergeSafe(*sourceData, *sourceChina, *cdnYamlTransData, *cdnKeysTransData, *sourceProvider)
-	fileutils.WriteJsonFromStruct(sourcesPath, sourceMerge)
+
+	// 合并后的json重新转为CDNData结构体
+	sourceCdnData := analyzer.NewEmptyCDNData()
+	sourceMergeBytes, err := json.Marshal(sourceMerge)
+	json.Unmarshal(sourceMergeBytes, sourceCdnData)
+
+	// 添加未知供应商的CDN CNAME
+	cnameList, err := fileutils.ReadTextToList(sourcesPaths.UnknownCdnCname)
+	cleanedCnameList := cleanCnameList(cnameList)
+	analyzer.AddDataToCdnDataCategory(sourceCdnData, analyzer.CategoryCDN, analyzer.FieldCNAME, "UNKNOWN", cleanedCnameList)
+
+	// 写入结构体到文件中去
+	fileutils.WriteJsonFromStruct(sourcesPath, sourceCdnData)
 	if fileutils.IsEmptyFile(sourcesPath) {
 		fmt.Printf("数据文件[%v]生成失败!!!\n", sourcesPath)
 	} else {
@@ -157,6 +172,7 @@ func getSourcesPaths(downloadItems []downfile.DownItem) SourcesFilePaths {
 		SourcesChinaJson    = "cdn-sources-china"
 		SourcesForeignJson  = "cdn-sources-foreign"
 		ProviderForeignYaml = "cdn-provider-foreign"
+		UnknownCdnCname     = "unknown-cdn-cname"
 	)
 
 	// 初始化空路径
@@ -181,7 +197,19 @@ func getSourcesPaths(downloadItems []downfile.DownItem) SourcesFilePaths {
 			paths.SourcesChinaJson = storePath
 		case ProviderForeignYaml:
 			paths.ProviderForeignYaml = storePath
+		case UnknownCdnCname:
+			paths.UnknownCdnCname = storePath
 		}
 	}
 	return paths
+}
+
+// 遍历列表，清理每个元素
+func cleanCnameList(cnameList []string) []string {
+	var result []string
+	for _, cname := range cnameList {
+		cname = strings.Trim(strings.TrimSpace(cname), ".")
+		result = append(result, cname)
+	}
+	return result
 }
