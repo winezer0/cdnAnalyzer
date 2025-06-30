@@ -47,41 +47,41 @@ func TestAddDataToCdnCategory(t *testing.T) {
 	}
 	// 5. 写入文件
 	outFile := sourceJson + ".update.json"
-	fileutils.WriteJsonFromStruct(outFile, *sourceData)
+	fileutils.WriteJson(outFile, *sourceData)
 }
 
 func TestMergeSameData(t *testing.T) {
 	// 加载并转换 cloud yaml
 	cloudYamlFile := "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\cloud_keys.yml"
 	cloudYamlTransData := TransferCloudKeysYaml(cloudYamlFile)
-	//fileutils.WriteJsonFromStruct("cloudYamlTransData.json", cloudYamlTransData)
+	//fileutils.WriteJson("cloudYamlTransData.json", cloudYamlTransData)
 
 	// 加载并转换 cdn.yml
 	// https://github.com/4ft35t/cdn/blob/master/src/cdn.yml
 	cdnYamlFile := "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\cdn.yml"
 	cdnYamlTransData := TransferCdnDomainsYaml(cdnYamlFile)
-	//fileutils.WriteJsonFromStruct("cdnYamlTransData.json", cdnYamlTransData)
+	//fileutils.WriteJson("cdnYamlTransData.json", cdnYamlTransData)
 
 	// 国外源：https://github.com/projectdiscovery/cdncheck/blob/main/sources_data.json
 	// 加载sources_foreign.json 数据的合并
 	sourceDataJson := "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\sources_foreign.json"
 	sourceData := TransferPDCdnCheckJson(sourceDataJson)
-	//fileutils.WriteJsonFromStruct("sourceData.json", sourceData)
+	//fileutils.WriteJson("sourceData.json", sourceData)
 
 	// 国内源：https://github.com/hanbufei/isCdn/blob/main/client/data/sources_china.json
 	// 加载 sources_china.json
 	sourceChinaJson := "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\sources_china.json"
 	sourceChina := TransferPDCdnCheckJson(sourceChinaJson)
-	//fileutils.WriteJsonFromStruct("sourceChina.json", sourceChina)
+	//fileutils.WriteJson("sourceChina.json", sourceChina)
 
 	// 合并写入文件
 	sourceMerge, _ := analyzer.CdnDataMergeSafe(*sourceData, *sourceChina, *cdnYamlTransData, *cloudYamlTransData)
-	fileutils.WriteJsonFromStruct("sources.json", sourceMerge)
+	fileutils.WriteJson("sources.json", sourceMerge)
 }
 
 func TestTransferProviderYAML(t *testing.T) {
 	providerYaml := "C:\\Users\\WINDOWS\\Desktop\\provider.yaml"
 	sourceData := TransferProviderYAML(providerYaml)
 	outFile := providerYaml + ".update.json"
-	fileutils.WriteJsonFromStruct(outFile, *sourceData)
+	fileutils.WriteJson(outFile, *sourceData)
 }

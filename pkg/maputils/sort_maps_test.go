@@ -10,5 +10,5 @@ func TestSortMap(t *testing.T) {
 	data, _ := fileutils2.ReadJsonToMap(filePath)
 	data = SortMapRecursively(data)
 	outPath := "C:\\Users\\WINDOWS\\Downloads\\sources.new.json"
-	fileutils2.WriteJsonFromStruct(outPath, data)
+	fileutils2.WriteJson(outPath, data)
 }

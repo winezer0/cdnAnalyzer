@@ -155,7 +155,7 @@ func main() {
 	analyzer.AddDataToCdnDataCategory(sourceCdnData, analyzer.CategoryCDN, analyzer.FieldCNAME, "UNKNOWN", cleanedCnameList)
 
 	// 写入结构体到文件中去
-	fileutils.WriteJsonFromStruct(sourcesPath, sourceCdnData)
+	fileutils.WriteSortedJson(sourcesPath, sourceCdnData)
 	if fileutils.IsEmptyFile(sourcesPath) {
 		fmt.Printf("数据文件[%v]生成失败!!!\n", sourcesPath)
 	} else {

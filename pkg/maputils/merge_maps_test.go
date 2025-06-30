@@ -37,7 +37,7 @@ func TestDeepMerge(t *testing.T) {
 	filePath := "C:\\Users\\WINDOWS\\Downloads\\output.json"
 
 	// 写入 JSON 文件
-	err := fileutils2.WriteJsonFromStruct(filePath, merged)
+	err := fileutils2.WriteJson(filePath, merged)
 	if err != nil {
 		fmt.Println("写入失败:", err)
 		return
