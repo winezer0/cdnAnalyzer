@@ -83,7 +83,7 @@ func main() {
 	// 下载所有配置
 	if len(downItems) > 0 {
 		fmt.Printf("总计需要下载的文件数量:[%v]\n", len(downItems))
-		downfile.ProcessDownItems(httpClient, downItems, downloadDir, true, false, 3)
+		downfile.ProcessDownItems(httpClient, downItems, downloadDir, false, false, 3)
 	} else {
 		fmt.Printf("未发现需要下载的文件\n")
 		return
@@ -159,9 +159,9 @@ func main() {
 	analyzer.AddDataToCdnDataCategory(sourceCdnData, analyzer.CategoryCDN, analyzer.FieldCNAME, "UNKNOWN", cleanedCnameList)
 
 	// 写入结构体到文件中去
-	fileutils.WriteSortedJson(sourcesPath, sourceCdnData)
-	if fileutils.IsEmptyFile(sourcesPath) {
-		fmt.Printf("数据文件[%v]生成失败!!!\n", sourcesPath)
+	err = fileutils.WriteSortedJson(sourcesPath, sourceCdnData)
+	if err != nil {
+		fmt.Printf("数据文件[%v]生成失败 -> [%w]!!!\n", sourcesPath, err)
 	} else {
 		fmt.Printf("数据文件[%v]生成成功...\n", sourcesPath)
 	}
