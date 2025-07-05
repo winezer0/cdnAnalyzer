@@ -5,27 +5,62 @@ import (
 	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 	"github.com/yl2chen/cidranger"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 )
 
-// containKeys 检查传入的 字符串是否包含任一子字符串
-func containKeys(str string, keys []string) bool {
-	str = strings.Trim(str, ".")
-	for _, cn := range keys {
-		if strings.Contains(strings.ToLower(str), strings.ToLower(cn)) {
+// containsAny 检查字符串是否包含任一子字符串（忽略大小写） 注意：keys 必须已经是小写形式
+func containsAny(str string, keys []string) bool {
+	for _, key := range keys {
+		if strings.Contains(str, key) {
 			return true
 		}
 	}
 	return false
 }
 
-// keysInMap 检查一组 CNAME 是否命中某个 CDN 厂商，并复用 containKeys 实现
+var regexCache sync.Map
+var regexMark = []string{"]", ")", "}", "*", "+", "^", "$", "?", "|", "\\"}
+
+func containKeysSupportRegex(str string, keys []string) bool {
+	str = strings.Trim(str, ".")
+	strLower := strings.ToLower(str)
+
+	for _, key := range keys {
+		keyLower := strings.ToLower(key)
+
+		if containsAny(keyLower, regexMark) {
+			val, ok := regexCache.Load(key)
+			if !ok {
+				regex, err := regexp.Compile("(?i)" + key)
+				if err != nil {
+					if strings.Contains(strLower, keyLower) {
+						return true
+					}
+					continue
+				}
+				val, _ = regexCache.LoadOrStore(key, regex)
+			}
+
+			if re, ok := val.(*regexp.Regexp); ok && re.MatchString(str) {
+				return true
+			}
+		} else {
+			if strings.Contains(strLower, keyLower) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// keysInMap 检查一组 CNAME 是否命中某个 CDN 厂商，并复用 containsAny 实现
 func keysInMap(cnames []string, cnamesMap map[string][]string) (bool, string) {
 	for _, cname := range cnames {
 		for companyName, cdnCNames := range cnamesMap {
-			if ok := containKeys(cname, cdnCNames); ok {
+			if ok := containKeysSupportRegex(cname, cdnCNames); ok {
 				return true, companyName
 			}
 		}
