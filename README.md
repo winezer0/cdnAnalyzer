@@ -18,6 +18,48 @@ CDN Check On Golang
 ## TODO
 - 寻找更多的CDN数据源信息
 
+## 已集成数据源
+```
+qqwry.dat
+- https://github.com/metowolf/qqwry.dat
+
+zxipv6wry.db
+- https://github.com/winezer0/cdnAnalyzer/blob/main/assets/zxipv6wry.db
+
+geolite2-asn-ipv4.mmdb
+- https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv4.mmdb
+
+geolite2-asn-ipv6.mmdb
+- https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv6.mmdb
+
+dns-resolvers(自定义的)
+- https://github.com/winezer0/cdnAnalyzer/blob/main/assets/resolvers.txt
+
+city_ip.csv
+- https://github.com/winezer0/cdnAnalyzer/blob/main/assets/city_ip.csv 
+
+nali cdn.yml
+- https://raw.githubusercontent.com/4ft35t/cdn/master/src/cdn.yml
+
+cloud_keys.yml (自定义的)
+- https://github.com/winezer0/cdnAnalyzer/blob/main/assets/cloud_keys.yml
+
+sources_china.json
+- https://github.com/hanbufei/isCdn/blob/main/client/data/sources_china.json
+
+sources_foreign.json
+- https://github.com/projectdiscovery/cdncheck/blob/main/sources_data.json
+
+provider_foreign.yaml
+- https://github.com/projectdiscovery/cdncheck/blob/main/cmd/generate-index/provider.yaml
+
+unknown-cdn-cname.txt
+- https://github.com/alwaystest18/cdnChecker/blob/master/cdn_cname
+
+sources_china2.json
+- https://github.com/mabangde/cdncheck_cn/blob/main/sources_data.json
+```
+
 ## 安装方式
 安装可执行程序后, 需要补充依赖数据库文件, 可执行命令或手动下载解压assets目录.
 

@@ -41,3 +41,10 @@ databases:
       - https://github.com/alwaystest18/cdnChecker/blob/master/cdn_cname
     keep-updated: false
     enable: true
+
+  - module: cdn-sources-china2
+    filename: sources_china2.json
+    download-urls:
+      - https://github.com/mabangde/cdncheck_cn/blob/main/sources_data.json
+    keep-updated: false
+    enable: true
