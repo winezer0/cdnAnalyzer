@@ -50,8 +50,8 @@ func main() {
 	parser.Usage = "[OPTIONS]"
 
 	// 添加描述信息
-	parser.ShortDescription = "CDN信息分析检查工具"
-	parser.LongDescription = "CDN信息分析检查工具, 用于检查(URL|Domain|IP)等格式目标所使用的(域名解析|IP分析|CDN|WAF|Cloud)等信息."
+	parser.ShortDescription = "CDN Information Analysis Tool"
+	parser.LongDescription = "CDN Information Analysis Tool, Analysis Such as (Domain resolution|IP analysis|CDN|WAF|Cloud)."
 
 	// 解析命令行参数
 	if _, err := parser.Parse(); err != nil {
@@ -94,7 +94,7 @@ func main() {
 	// 获取并检查数据库文件路径
 	dbPaths, err := docheck.CheckAndDownDbFiles(appConfig.DownItems, cmdConfig.Folder, cmdConfig.Proxy, cmdConfig.UpdateDB)
 	if err != nil {
-		fmt.Printf("Check And Down DbF files failed: %v\n", err)
+		fmt.Printf("check and down db files failed: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -152,21 +152,21 @@ func main() {
 
 	// 加载sources.json配置文件
 	if _, err := os.Stat(dbPaths.CdnSource); os.IsNotExist(err) {
-		fmt.Printf("错误: CDN源数据配置文件不存在: %s\n", dbPaths.CdnSource)
+		fmt.Printf("Error: The CDN source data not exist.: %s\n", dbPaths.CdnSource)
 		os.Exit(1)
 	}
 
 	cdnData := analyzer.NewEmptyCDNData()
 	err = fileutils.ReadJsonToStruct(dbPaths.CdnSource, cdnData)
 	if err != nil {
-		fmt.Printf("加载CDN源数据失败: %v\n", err)
+		fmt.Printf("Failed to load CDN source data: %v\n", err)
 		os.Exit(1)
 	}
 
 	//进行CDN CLOUD WAF 信息分析
 	checkResults, err := analyzer.CheckCDNBatch(cdnData, checkInfos)
 	if err != nil {
-		fmt.Printf("CDN分析异常: %v\n", err)
+		fmt.Printf("CDN information analysis is abnormal: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -200,7 +200,7 @@ func checkTargetInfo(target string, targetType string) ([]string, error) {
 	)
 
 	if target == "" && (targetType == "string" || targetType == "file") {
-		return nil, fmt.Errorf("错误: 必须指定目标(-t, --target)，除非使用 --target-type sys")
+		return nil, fmt.Errorf("the target must be specified")
 	}
 
 	switch targetType {
@@ -209,15 +209,15 @@ func checkTargetInfo(target string, targetType string) ([]string, error) {
 	case "file":
 		targets, err = fileutils.ReadTextToList(target)
 		if err != nil {
-			return nil, fmt.Errorf("加载目标文件失败: %v", err)
+			return nil, fmt.Errorf("failed to load the target file: %v", err)
 		}
 	case "sys":
 		targets, err = fileutils.ReadPipeToList()
 		if err != nil {
-			return nil, fmt.Errorf("从标准输入读取目标失败: %v", err)
+			return nil, fmt.Errorf("failed to load the system pipe: %v", err)
 		}
 	default:
-		return nil, fmt.Errorf("不支持的 target-type: %s", targetType)
+		return nil, fmt.Errorf("unsupported target type: %s", targetType)
 	}
 
 	// 过滤空字符串
@@ -230,7 +230,7 @@ func checkTargetInfo(target string, targetType string) ([]string, error) {
 	}
 
 	if len(filtered) == 0 {
-		return nil, fmt.Errorf("没有有效的目标")
+		return nil, fmt.Errorf("no valid target has been entered")
 	}
 
 	return filtered, nil
