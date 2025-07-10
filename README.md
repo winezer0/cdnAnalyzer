@@ -66,25 +66,6 @@ sources_china2.json
 - https://github.com/mabangde/cdncheck_cn/blob/main/sources_data.json
 ```
 
-## 安装方式
-安装可执行程序后, 需要补充依赖数据库文件, 可执行命令或手动下载解压assets目录.
-
-### go install 安装
-```
-go install github.com/winezer0/cdnAnalyzer/cmd/cdnAnalyzer@latest
-```
-
-### 源码安装
-```
-git clone --depth 1 https://github.com/winezer0/cdnAnalyzer
-go build -ldflags="-s -w" -o cdnAnalyzer.exe ./cmd/docheck/main.go
-```
-
-### release安装
-```
-通过workflow编译的程序将自动发布到release中:
-https://github.com/winezer0/cdnAnalyzer/releases
-```
 
 ### MIND
 ```
@@ -124,58 +105,6 @@ https://github.com/winezer0/cdnAnalyzer/releases
    - other custom keys
 
 
-### 使用示例
-提示: 在window下使用-t /t 是相同的,只是会自动根据操作系统来显示参数标志符.
-
-### 使用管道符传入
-```
-λ echo www.baidu.com | cdnAnalyzer.exe -I sys
-[
-  {
-    "raw": "www.baidu.com",
-    "fmt": "www.baidu.com",
-    "is_cdn": true,
-    "cdn_company": "百度旗下业务地域负载均衡系统",
-    "is_waf": false,
-    "waf_company": "",
-    "is_cloud": false,
-    "cloud_company": "",
-    "ip_size_is_cdn": true,
-    "ip_size": 10
-  }
-]
-
-```
-### 传入目标字符串
-```
-λ cdnAnalyzer.exe -i www.baidu.com,www.google.com
-[
-  {
-    "raw": "www.baidu.com",
-    "fmt": "www.baidu.com",
-    "is_cdn": true,
-    "cdn_company": "百度旗下业务地域负载均衡系统",
-    "is_waf": false,
-    "waf_company": "",
-    "is_cloud": false,
-    "cloud_company": "",
-    "ip_size_is_cdn": true,
-    "ip_size": 10
-  },
-  {
-    "raw": "www.google.com",
-    "fmt": "www.google.com",
-    "is_cdn": false,
-    "cdn_company": "",
-    "is_waf": false,
-    "waf_company": "",
-    "is_cloud": false,
-    "cloud_company": "",
-    "ip_size_is_cdn": true,
-    "ip_size": 10
-  }
-]
-```
 
 
 ### 其他思路(未实现)：
