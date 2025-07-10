@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/winezer0/cdnAnalyzer/internal/analyzer"
 	"github.com/winezer0/cdnAnalyzer/internal/docheck"
+	"github.com/winezer0/cdnAnalyzer/internal/embeds"
 	"github.com/winezer0/cdnAnalyzer/pkg/classify"
 	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/querydomain"
 	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
@@ -20,23 +21,23 @@ import (
 // CmdConfig 存储程序配置，使用结构体标签定义命令行参数
 type CmdConfig struct {
 	// 配置文件参数
-	ConfigFile   string `short:"c" long:"config-file" description:"YAML配置文件路径" default:""`
-	UpdateConfig bool   `short:"C" long:"update-config" description:"从Github URL 远程下载更新配置文件内容"`
+	ConfigFile   string `short:"c" long:"config-file" description:"config yaml file path" default:""`
+	UpdateConfig bool   `short:"C" long:"update-config" description:"updated config content by remote url"`
 
 	// 基本参数 覆盖app Config中的配置
-	Input     string `short:"i" long:"input" description:"目标文件路径|目标字符串列表(逗号分隔)"`
-	InputType string `short:"I" long:"input-type" description:"目标数据类型: string/file/sys" default:"string" choice:"string" choice:"string" choice:"string"`
+	Input     string `short:"i" long:"input" description:"input file or str list (separated by commas)"`
+	InputType string `short:"I" long:"input-type" description:"input data type: string/file/sys" default:"string" choice:"string" choice:"string" choice:"string"`
 
 	// 输出配置参数 覆盖app Config中的配置
-	Output        string `short:"o" long:"output" description:"输出结果文件路径" default:"analyser_output.json"`
-	OutputType    string `short:"O" long:"output-type" description:"输出文件类型: csv/json/txt/sys" default:"sys" choice:"csv" choice:"json" choice:"txt" choice:"sys"`
-	OutputVerbose string `short:"V" long:"ov" description:"输出详细程度: default/quiet/detail" default:"default" choice:"default" choice:"quiet" choice:"detail"`
-	OutputNoCDN   bool   `short:"N" long:"nc" description:"仅保留非CDN&&非WAF的资产"`
+	Output      string `short:"o" long:"output" description:"output file path" default:"analyser_output.json"`
+	OutputType  string `short:"O" long:"output-type" description:"output file type: csv/json/txt/sys" default:"sys" choice:"csv" choice:"json" choice:"txt" choice:"sys"`
+	OutputLevel int    `short:"l" long:"output-level" description:"Output verbosity level: 1=quiet, 2=default, 3=detail" default:"2" choice:"1" choice:"2" choice:"3"`
+	OutputNoCDN bool   `short:"n" long:"output-no-cdn" description:"only output Info where not CDN and not WAF."`
 
 	// 数据库更新配置
-	Proxy    string `short:"p" long:"proxy" description:"使用代理URL进行数据库下载 (http|socks5)" default:""`
-	Folder   string `short:"d" long:"folder" description:"依赖文件存储目录 (默认用户目录)" default:""`
-	UpdateDB bool   `short:"u" long:"update-db" description:"自动更新数据库文件 (检查更新间隔)"`
+	Proxy    string `short:"p" long:"proxy" description:"use the proxy URL down files (http|socks5)" default:""`
+	Folder   string `short:"d" long:"folder" description:"db files storage dir (default user directory)" default:""`
+	UpdateDB bool   `short:"u" long:"update-db" description:"Automatically update db files (will check interval)"`
 }
 
 func main() {
@@ -84,6 +85,12 @@ func main() {
 		}
 	}
 
+	//生成默认配置文件
+	if fileutils.IsEmptyFile(cmdConfig.ConfigFile) {
+		fileutils.MakeDirs(cmdConfig.ConfigFile, true)
+		fileutils.WriteAny(cmdConfig.ConfigFile, embeds.GetConfig())
+	}
+
 	// 加载配置文件远程更新
 	appConfig, err := docheck.LoadAppConfigFile(cmdConfig.ConfigFile)
 	if err != nil || appConfig == nil {
@@ -92,7 +99,7 @@ func main() {
 	}
 
 	// 获取并检查数据库文件路径
-	dbPaths, err := docheck.CheckAndDownDbFiles(appConfig.DownItems, cmdConfig.Folder, cmdConfig.Proxy, cmdConfig.UpdateDB)
+	dbPaths, err := docheck.DownloadDbFiles(appConfig.DownloadItems, cmdConfig.Folder, cmdConfig.Proxy, cmdConfig.UpdateDB)
 	if err != nil {
 		fmt.Printf("check and down db files failed: %v\n", err)
 		os.Exit(1)
@@ -177,15 +184,15 @@ func main() {
 
 	// 处理输出详细程度
 	var outputData interface{}
-	switch strings.ToLower(cmdConfig.OutputVerbose) {
-	case "quiet":
+	switch cmdConfig.OutputLevel {
+	case 1:
 		// 仅输出fmt部分的内容
 		outputData = analyzer.GetFmtList(checkResults)
-	case "detail":
+	case 3:
 		// 合并 checkResults 到 checkInfos
 		outputData = analyzer.MergeCheckResultsToCheckInfos(checkInfos, checkResults)
 	default:
-		// default: 输出 checkResults
+		// 输出 checkResults
 		outputData = checkResults
 	}
 

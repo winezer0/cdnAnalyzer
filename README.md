@@ -124,26 +124,12 @@ https://github.com/winezer0/cdnAnalyzer/releases
    - other custom keys
 
 
-### 配置文件使用
-现在支持通过YAML配置文件来管理所有参数和数据库下载配置。
-
-初次使用请先下载数据库配置文件信息
-```
-使用 `-c` 参数指定配置文件路径： 
-cdnAnalyzer.exe -c config.yaml
-
-使用 `-C` 参数指定从远程URL更新配置文件内容到本地配置文件： 
-cdnAnalyzer.exe -c config.yaml -C
-```
-命令行参数会覆盖配置文件中的设置，因此您可以同时使用配置文件和命令行参数。
-
-
 ### 使用示例
 提示: 在window下使用-t /t 是相同的,只是会自动根据操作系统来显示参数标志符.
 
 ### 使用管道符传入
 ```
-λ echo www.baidu.com | cdnAnalyzer.exe -T sys
+λ echo www.baidu.com | cdnAnalyzer.exe -I sys
 [
   {
     "raw": "www.baidu.com",
@@ -162,7 +148,7 @@ cdnAnalyzer.exe -c config.yaml -C
 ```
 ### 传入目标字符串
 ```
-λ cdnAnalyzer.exe -t www.baidu.com,www.google.com
+λ cdnAnalyzer.exe -i www.baidu.com,www.google.com
 [
   {
     "raw": "www.baidu.com",

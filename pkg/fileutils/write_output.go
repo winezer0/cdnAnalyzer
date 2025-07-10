@@ -19,7 +19,7 @@ func WriteOutputToFile(data interface{}, outputType, outputFile string) error {
 		if mapErr == nil {
 			err = WriteCSV(outputFile, sliceToMaps, true)
 		} else {
-			err = WriteText(outputFile, maputils.AnyToTxtStr(data))
+			err = WriteAny(outputFile, maputils.AnyToTxtStr(data))
 		}
 
 	case "json":
@@ -32,7 +32,7 @@ func WriteOutputToFile(data interface{}, outputType, outputFile string) error {
 		if outputFile == "" {
 			outputFile = "result.txt"
 		}
-		err = WriteText(outputFile, maputils.AnyToTxtStr(data))
+		err = WriteAny(outputFile, maputils.AnyToTxtStr(data))
 
 	default:
 		fmt.Println(maputils.AnyToTxtStr(data))

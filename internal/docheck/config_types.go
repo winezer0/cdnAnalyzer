@@ -15,7 +15,7 @@ type AppConfig struct {
 	QueryEDNSUseSysNS bool `yaml:"query-edns-use-sys-ns"`
 
 	// 数据库下载配置
-	DownItems []downfile.DownItem `yaml:"down-items"`
+	DownloadItems []downfile.DownItem `yaml:"download-items"`
 }
 
 // DBFilePaths 存储所有数据库文件路径

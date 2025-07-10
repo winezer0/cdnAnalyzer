@@ -138,3 +138,14 @@ func IsAbsolutePath(path string) bool {
 func IsRelativePath(path string) bool {
 	return !filepath.IsAbs(path)
 }
+
+// MakeDirs 创建指定路径的所有必要目录（递归创建）
+func MakeDirs(path string, isFile bool) error {
+	if isFile {
+		path, _ = GetFileDirectory(path)
+	}
+	if err := os.MkdirAll(path, 0755); err != nil {
+		return fmt.Errorf("failed to create the directory: %w", err)
+	}
+	return nil
+}

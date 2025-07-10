@@ -119,8 +119,8 @@ func LoadCityMap(cityMapFile string, randCityNum int) ([]map[string]string, erro
 	return selectedCityMap, nil
 }
 
-// CheckAndDownDbFiles 进行数据库文件检查和下载
-func CheckAndDownDbFiles(downItems []downfile.DownItem, storeDir string, proxyUrl string, updateDB bool) (DBFilePaths, error) {
+// DownloadDbFiles 进行数据库文件检查和下载
+func DownloadDbFiles(downItems []downfile.DownItem, storeDir string, proxyUrl string, updateDB bool) (DBFilePaths, error) {
 	var errs error
 	dbPaths := GetDBPathsFromConfig(downItems, storeDir)
 	missedDB := DBFilesIsExists(dbPaths)
