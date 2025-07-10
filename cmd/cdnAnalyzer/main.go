@@ -70,7 +70,7 @@ func main() {
 	proxyURL := cmdConfig.ProxyURL
 	if configDown != "" {
 		fmt.Printf("开始远程下载配置文件: %v\n", configDown)
-		configUrl := "https://raw.githubusercontent.com/winezer0/cdnAnalyzer/refs/heads/main/cmd/docheck/config.yaml"
+		configUrl := "https://raw.githubusercontent.com/winezer0/cdnAnalyzer/refs/heads/main/cmd/cdnAnalyzer/config.yaml"
 		err := downfile.DownloadFileSimple(configUrl, proxyURL, configDown)
 		downfile.CleanupIncompleteDownloads("")
 		if err != nil {
