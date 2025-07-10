@@ -38,6 +38,15 @@ type CmdConfig struct {
 	Proxy    string `short:"p" long:"proxy" description:"use the proxy URL down files (http|socks5)" default:""`
 	Folder   string `short:"d" long:"folder" description:"db files storage dir (default user directory)" default:""`
 	UpdateDB bool   `short:"u" long:"update-db" description:"Automatically update db files (will check interval)"`
+
+	// DNS 相关参数（新增）
+	DNSTimeout        int    `short:"t" long:"dns-timeout" description:"Cover Config, Set DNS query timeout in seconds" default:"0"`
+	ResolversNum      int    `short:"r" long:"resolvers-num" description:"Cover Config, Set number of resolvers to use" default:"0"`
+	CityMapNum        int    `short:"m" long:"city-map-num" description:"Cover Config, Set number of city map workers" default:"0"`
+	DNSConcurrency    int    `short:"w" long:"dns-concurrency" description:"Cover Config, Set concurrent DNS queries" default:"0"`
+	EDNSConcurrency   int    `short:"W" long:"edns-concurrency" description:"Cover Config, Set concurrent EDNS queries" default:"0"`
+	QueryEDNSCNAMES   string `short:"q" long:"query-ednscnames" description:"Cover Config, Set enable CNAME resolution via EDNS (allow:|false|true)" default:"" choice:"" choice:"false" choice:"true"`
+	QueryEDNSUseSysNS string `short:"s" long:"query-edns-use-sys-ns" description:"Cover Config, Set use system nameservers for EDNS (allow:|false|true)" default:"" choice:"" choice:"false" choice:"true"`
 }
 
 func main() {
@@ -112,6 +121,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	//使用cmd配置更新配置文件中的某些配置
+	appConfig = updateAppConfig(appConfig, cmdConfig)
 	// 分类输入数据为 IP Domain InvalidEntries
 	classifier := classify.ClassifyTargets(targets)
 
@@ -198,6 +209,38 @@ func main() {
 
 	// 处理输出类型
 	fileutils.WriteOutputToFile(outputData, cmdConfig.OutputType, cmdConfig.Output)
+}
+
+// 使用命令行非默认值参数更新配置文件中的参数
+func updateAppConfig(appConfig *docheck.AppConfig, cmdConfig *CmdConfig) *docheck.AppConfig {
+	if cmdConfig.DNSTimeout > 0 {
+		appConfig.DNSTimeOut = cmdConfig.DNSTimeout
+	}
+
+	if cmdConfig.ResolversNum > 0 {
+		appConfig.ResolversNum = cmdConfig.ResolversNum
+	}
+
+	if cmdConfig.CityMapNum > 0 {
+		appConfig.CityMapNUm = cmdConfig.CityMapNum
+	}
+
+	if cmdConfig.DNSConcurrency > 0 {
+		appConfig.DNSConcurrency = cmdConfig.DNSConcurrency
+	}
+
+	if cmdConfig.EDNSConcurrency > 0 {
+		appConfig.EDNSConcurrency = cmdConfig.EDNSConcurrency
+	}
+
+	if cmdConfig.QueryEDNSCNAMES != "" {
+		appConfig.QueryEDNSCNAMES = cmdConfig.QueryEDNSCNAMES == "true"
+	}
+
+	if cmdConfig.QueryEDNSUseSysNS != "" {
+		appConfig.QueryEDNSUseSysNS = cmdConfig.QueryEDNSUseSysNS == "true"
+	}
+	return appConfig
 }
 
 func checkTargetInfo(target string, targetType string) ([]string, error) {

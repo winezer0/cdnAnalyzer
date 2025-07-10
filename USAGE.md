@@ -19,15 +19,52 @@ https://github.com/winezer0/cdnAnalyzer/releases
 ```
 
 
-## ✅ 命令行参数说明文档
+## 命令行参数说明文档
 
-### 📋 工具参数说明
+### 工具参数
+
+```
+Usage: cdnAnalyzer [OPTIONS]
+
+Options:
+
+# 配置文件相关
+-c, --config-file FILE       指定配置文件路径 (YAML)
+-C, --update-config          从远程 URL 更新配置内容
+
+# 基本参数（覆盖 App Config）
+-i, --input INPUT            输入目标列表，支持文件或逗号分隔的字符串
+-I, --input-type TYPE        输入数据类型: string(直接输入)/file(文件)/sys(stdin) [default: string]
+
+# 输出配置（覆盖 App Config）
+-o, --output FILE            输出文件路径 [default: analyser_output.json]
+-O, --output-type TYPE       输出文件类型: csv/json/txt/sys [default: sys]
+-l, --output-level LEVEL     输出详细级别：1=安静模式 / 2=默认 / 3=详细模式 [default: 2] [choices: 1, 2, 3]
+-n, --output-no-cdn          只输出非 CDN/WAF 的信息
+
+# 数据库更新配置
+-p, --proxy URL              使用代理下载文件（支持 http/socks5）
+-d, --folder DIR             数据库存储目录（默认为用户目录）
+-u, --update-db              自动更新数据库文件（定期检查）
+
+# DNS 相关参数（有值时会覆盖配置文件）
+-t, --dns-timeout SEC        设置 DNS 查询超时时间（秒）[default: 0]
+-r, --resolvers-num NUM      设置使用的 resolver 数量 [default: 0]
+-m, --city-map-num NUM       设置城市地图 worker 数量 [default: 0]
+-w, --dns-concurrency NUM    设置并发 DNS 查询数 [default: 0]
+-W, --edns-concurrency NUM   设置并发 EDNS 查询数 [default: 0]
+-q, --query-ednscnames BOOL  是否启用通过 EDNS 解析 CNAME [allow: "", false, true]
+-s, --query-edns-use-sys-ns BOOL  是否使用系统 DNS 服务器解析 EDNS [allow: "", false, true]
+```
+
+
+### 工具参数说明
 
 以下是支持的所有命令行参数及其含义说明：
 
 ---
 
-### 🔧 配置文件相关
+#### 配置文件相关
 
 | 参数             | 短格式  | 长格式               | 描述                   | 默认值         |
 |----------------|------|-------------------|----------------------|-------------|
@@ -36,7 +73,7 @@ https://github.com/winezer0/cdnAnalyzer/releases
 
 ---
 
-### 📥 输入相关
+#### 输入相关
 
 | 参数          | 短格式  | 长格式            | 描述                                          | 默认值             |
 |-------------|------|----------------|---------------------------------------------|-----------------|
@@ -45,7 +82,7 @@ https://github.com/winezer0/cdnAnalyzer/releases
 
 ---
 
-### 📤 输出相关
+#### 输出相关
 
 | 参数            | 短格式  | 长格式               | 描述                                          | 默认值                      |
 |---------------|------|-------------------|---------------------------------------------|--------------------------|
@@ -56,7 +93,7 @@ https://github.com/winezer0/cdnAnalyzer/releases
 
 ---
 
-### 🛢️ 数据库更新相关
+#### 数据库更新相关
 
 | 参数         | 短格式  | 长格式           | 描述                                | 默认值   |
 |------------|------|---------------|-----------------------------------|-------|
@@ -66,26 +103,39 @@ https://github.com/winezer0/cdnAnalyzer/releases
 
 ---
 
-## 📚 使用示例
+
+#### DNS 相关参数（覆盖配置文件）
+
+| 参数 | 短选项 | 长选项 | 描述 | 默认值 | 可选值 |
+|------|--------|--------|------|--------|--------|
+| DNSTimeout | `-t` | `--dns-timeout` | 设置 DNS 查询超时时间（秒） | `0` | - |
+| ResolversNum | `-r` | `--resolvers-num` | 设置使用的 resolver 数量 | `0` | - |
+| CityMapNum | `-m` | `--city-map-num` | 设置城市地图 worker 数量 | `0` | - |
+| DNSConcurrency | `-w` | `--dns-concurrency` | 设置并发 DNS 查询数 | `0` | - |
+| EDNSConcurrency | `-W` | `--edns-concurrency` | 设置并发 EDNS 查询数 | `0` | - |
+| QueryEDNSCNAMES | `-q` | `--query-ednscnames` | 是否启用通过 EDNS 解析 CNAME | `""` | `""`, `"false"`, `"true"` |
+| QueryEDNSUseSysNS | `-s` | `--query-edns-use-sys-ns` | 是否使用系统 DNS 服务器解析 EDNS | `""` | `""`, `"false"`, `"true"` |
+
+---
+
+## 使用示例
 
 ```bash
-# 基础使用 - 指定输入并输出到 JSON 文件
-./cdnAnalyzer -i  example.com,google.com -o results.json -O json
 
 # 检查更新数据库
 ./cdnAnalyzer -u
 
 # 通过代理下载数据库并指定存储路径
 ./cdnAnalyzer -p http://127.0.0.1:8080 -u
+
+# 基础使用 - 指定输入并输出到 JSON 文件
+./cdnAnalyzer -i  example.com,google.com -o results.json -O json
 ```
+
 ---
-
-### 使用示例
-提示: 在window下使用-t /t 是相同的,只是会自动根据操作系统来显示参数标志符.
-
 ### 使用管道符传入
 ```
-λ echo www.baidu.com | cdnAnalyzer.exe -I sys
+echo www.baidu.com | cdnAnalyzer.exe -I sys
 [
   {
     "raw": "www.baidu.com",
@@ -104,7 +154,7 @@ https://github.com/winezer0/cdnAnalyzer/releases
 ```
 ### 传入目标字符串
 ```
-λ cdnAnalyzer.exe -i www.baidu.com,www.google.com
+cdnAnalyzer.exe -i www.baidu.com,www.google.com
 [
   {
     "raw": "www.baidu.com",
@@ -133,3 +183,4 @@ https://github.com/winezer0/cdnAnalyzer/releases
 ]
 ```
 ---
+
