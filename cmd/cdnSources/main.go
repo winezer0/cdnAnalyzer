@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/winezer0/cdnAnalyzer/internal/analyzer"
+	"github.com/winezer0/cdnAnalyzer/internal/generate"
 	"os"
 	"strings"
 
 	"github.com/jessevdk/go-flags"
-	"github.com/winezer0/cdnAnalyzer/pkg/analyzer"
 	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
-	"github.com/winezer0/cdnAnalyzer/pkg/generate"
 	"github.com/winezer0/downtools/downfile"
 )
 

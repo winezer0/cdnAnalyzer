@@ -2,14 +2,12 @@ package querydomain
 
 import (
 	"fmt"
-	"github.com/winezer0/cdnAnalyzer/pkg/analyzer"
-	"github.com/winezer0/cdnAnalyzer/pkg/classify"
-	dnsquery2 "github.com/winezer0/cdnAnalyzer/pkg/domaininfo/dnsquery"
+	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/dnsquery"
 	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/ednsquery"
 	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 )
 
-func MergeEDNSMapToDNSMap(dnsMap dnsquery2.DomainDNSResultMap, ednsMap ednsquery.DomainEDNSResultMap) dnsquery2.DomainDNSResultMap {
+func MergeEDNSMapToDNSMap(dnsMap dnsquery.DomainDNSResultMap, ednsMap ednsquery.DomainEDNSResultMap) dnsquery.DomainDNSResultMap {
 	for domain, ednsResult := range ednsMap {
 		dnsResult, ok := dnsMap[domain]
 		if !ok || ednsResult == nil {
@@ -31,22 +29,7 @@ func MergeEDNSMapToDNSMap(dnsMap dnsquery2.DomainDNSResultMap, ednsMap ednsquery
 		}
 
 		//优化整理
-		dnsquery2.OptimizeDNSResult(dnsResult)
+		dnsquery.OptimizeDNSResult(dnsResult)
 	}
 	return dnsMap
-}
-
-// PopulateDNSResult 将 DNS 查询结果填充到 CheckInfo 中
-func PopulateDNSResult(domainEntry classify.TargetEntry, query *dnsquery2.DNSResult) *analyzer.CheckInfo {
-	dnsResult := analyzer.NewDomainCheckInfo(domainEntry.RAW, domainEntry.FMT, domainEntry.FromUrl)
-
-	// 逐个复制 DNS 记录
-	dnsResult.A = append(dnsResult.A, query.A...)
-	dnsResult.AAAA = append(dnsResult.AAAA, query.AAAA...)
-	dnsResult.CNAME = append(dnsResult.CNAME, query.CNAME...)
-	dnsResult.NS = append(dnsResult.NS, query.NS...)
-	dnsResult.MX = append(dnsResult.MX, query.MX...)
-	dnsResult.TXT = append(dnsResult.TXT, query.TXT...)
-
-	return dnsResult
 }

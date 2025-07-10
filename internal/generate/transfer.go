@@ -1,7 +1,7 @@
 package generate
 
 import (
-	"github.com/winezer0/cdnAnalyzer/pkg/analyzer"
+	"github.com/winezer0/cdnAnalyzer/internal/analyzer"
 	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
 	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 )

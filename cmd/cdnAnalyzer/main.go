@@ -3,9 +3,9 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/winezer0/cdnAnalyzer/pkg/analyzer"
+	"github.com/winezer0/cdnAnalyzer/internal/analyzer"
+	"github.com/winezer0/cdnAnalyzer/internal/docheck"
 	"github.com/winezer0/cdnAnalyzer/pkg/classify"
-	"github.com/winezer0/cdnAnalyzer/pkg/docheck"
 	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/querydomain"
 	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
 	"github.com/winezer0/cdnAnalyzer/pkg/ipinfo/queryip"
@@ -20,24 +20,23 @@ import (
 // CmdConfig 存储程序配置，使用结构体标签定义命令行参数
 type CmdConfig struct {
 	// 配置文件参数
-	ConfigFile string `short:"c" long:"config-file" description:"YAML配置文件路径" default:"config.yaml"`
-	ConfigDown string `short:"C" long:"config-down" description:"远程加载config文件并保存" default:""`
+	ConfigFile   string `short:"c" long:"config-file" description:"YAML配置文件路径" default:""`
+	UpdateConfig bool   `short:"C" long:"update-config" description:"从Github URL 远程下载更新配置文件内容"`
 
 	// 基本参数 覆盖app Config中的配置
-	Target     string `short:"t" long:"target" description:"目标文件路径|目标字符串列表(逗号分隔)"`
-	TargetType string `short:"T" long:"target-type" description:"目标数据类型: string/file/sys" default:"string" choice:"string" choice:"file" choice:"sys"`
+	Input     string `short:"i" long:"input" description:"目标文件路径|目标字符串列表(逗号分隔)"`
+	InputType string `short:"I" long:"input-type" description:"目标数据类型: string/file/sys" default:"string" choice:"string" choice:"string" choice:"string"`
 
 	// 输出配置参数 覆盖app Config中的配置
-	OutputFile  string `long:"of" description:"输出结果文件路径" default:"analyser_output.json"`
-	OutputType  string `long:"ot" description:"输出文件类型: csv/json/txt/sys" default:"sys" choice:"csv" choice:"json" choice:"txt" choice:"sys"`
-	OutputLevel string `long:"ol" description:"输出详细程度: default/quiet/detail" default:"default" choice:"default" choice:"quiet" choice:"detail"`
-	OutputNoCDN bool   `long:"nc" description:"仅保留非CDN&&非WAF的资产"`
+	Output        string `short:"o" long:"output" description:"输出结果文件路径" default:"analyser_output.json"`
+	OutputType    string `short:"O" long:"output-type" description:"输出文件类型: csv/json/txt/sys" default:"sys" choice:"csv" choice:"json" choice:"txt" choice:"sys"`
+	OutputVerbose string `short:"V" long:"ov" description:"输出详细程度: default/quiet/detail" default:"default" choice:"default" choice:"quiet" choice:"detail"`
+	OutputNoCDN   bool   `short:"N" long:"nc" description:"仅保留非CDN&&非WAF的资产"`
 
 	// 数据库更新配置
-	StoreDir      string `short:"d" long:"store-dir" description:"数据库文件存储目录" default:"assets"`
-	ProxyURL      string `short:"p" long:"proxy" description:"使用代理URL更新 (http|socks5)" default:""`
-	UpdateDB      bool   `short:"u" long:"update" description:"自动更新数据库文件 (检查更新间隔)"`
-	UpdateDBForce bool   `short:"U" long:"update-force" description:"强制更新数据库并下载未启用配置"`
+	Proxy    string `short:"p" long:"proxy" description:"使用代理URL进行数据库下载 (http|socks5)" default:""`
+	Folder   string `short:"d" long:"folder" description:"依赖文件存储目录 (默认用户目录)" default:""`
+	UpdateDB bool   `short:"u" long:"update-db" description:"自动更新数据库文件 (检查更新间隔)"`
 }
 
 func main() {
@@ -64,47 +63,45 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 0、进行配置文件远程下载
-	configFile := cmdConfig.ConfigFile
-	configDown := cmdConfig.ConfigDown
-	proxyURL := cmdConfig.ProxyURL
-	if configDown != "" {
-		fmt.Printf("开始远程下载配置文件: %v\n", configDown)
-		configUrl := "https://raw.githubusercontent.com/winezer0/cdnAnalyzer/refs/heads/main/cmd/cdnAnalyzer/config.yaml"
-		err := downfile.DownloadFileSimple(configUrl, proxyURL, configDown)
-		downfile.CleanupIncompleteDownloads("")
+	// 初始化数据库文件默认存储目录
+	if cmdConfig.Folder == "" {
+		cmdConfig.Folder = fileutils.GetUserSubDir("cdnAnalyzer")
+	}
+
+	//初始化配置文件默认路径 存储到 cmdConfig.Folder 下
+	if cmdConfig.ConfigFile == "" {
+		cmdConfig.ConfigFile = fileutils.JoinPath(cmdConfig.Folder, "config.yaml")
+	}
+
+	// 进行配置文件远程更新
+	if cmdConfig.UpdateConfig {
+		url := "https://raw.githubusercontent.com/winezer0/cdnAnalyzer/refs/heads/main/cmd/cdnAnalyzer/config.yaml"
+		err := downfile.DownloadFileSimple(url, cmdConfig.Proxy, cmdConfig.ConfigFile)
+		downfile.CleanupIncompleteDownloads(cmdConfig.Folder) //清理下载失败的数据
 		if err != nil {
-			fmt.Printf("远程配置文件下载失败: %v\n", err)
+			fmt.Printf("Failed to load <%s> -> error: %v\n", url, err)
 			os.Exit(1)
-		} else {
-			fmt.Printf("远程配置文件下载成功: %v\n", configDown)
-			configFile = configDown
 		}
 	}
 
-	// 1. 先加载配置文件
-	if fileutils.IsNotExists(configFile) {
-		fmt.Printf("指定配置文件不存在: %v 请调用远程下载或重新指定配置路径.\n", configFile)
-		os.Exit(1)
-	}
-
-	appConfig, err := docheck.LoadAppConfigFile(configFile)
+	// 加载配置文件远程更新
+	appConfig, err := docheck.LoadAppConfigFile(cmdConfig.ConfigFile)
 	if err != nil || appConfig == nil {
-		fmt.Printf("加载配置文件失败: %v\n", err)
+		fmt.Printf("Failed to load the config: %v\n", err)
 		os.Exit(1)
 	}
 
-	// 3. 获取并检查数据库文件路径
-	dbPaths, err := docheck.CheckAndDownDBFiles(appConfig.DownloadItems, cmdConfig.StoreDir, proxyURL, cmdConfig.UpdateDB, cmdConfig.UpdateDBForce)
+	// 获取并检查数据库文件路径
+	dbPaths, err := docheck.CheckAndDownDbFiles(appConfig.DownItems, cmdConfig.Folder, cmdConfig.Proxy, cmdConfig.UpdateDB)
 	if err != nil {
-		fmt.Printf("数据库依赖下载异常: %v\n", err)
-		return
+		fmt.Printf("Check And Down DbF files failed: %v\n", err)
+		os.Exit(1)
 	}
 
 	// 检查必要参数
-	targets, err := checkTargetInfo(cmdConfig.Target, strings.ToLower(cmdConfig.TargetType))
+	targets, err := checkTargetInfo(cmdConfig.Input, strings.ToLower(cmdConfig.InputType))
 	if err != nil {
-		fmt.Printf("检测目标[%s]加载失败: %v\n", cmdConfig.Target, err)
+		fmt.Printf("target [%s] loading failed: %v\n", cmdConfig.Input, err)
 		os.Exit(1)
 	}
 
@@ -180,7 +177,7 @@ func main() {
 
 	// 处理输出详细程度
 	var outputData interface{}
-	switch strings.ToLower(cmdConfig.OutputLevel) {
+	switch strings.ToLower(cmdConfig.OutputVerbose) {
 	case "quiet":
 		// 仅输出fmt部分的内容
 		outputData = analyzer.GetFmtList(checkResults)
@@ -193,7 +190,7 @@ func main() {
 	}
 
 	// 处理输出类型
-	fileutils.WriteOutputToFile(outputData, cmdConfig.OutputType, cmdConfig.OutputFile)
+	fileutils.WriteOutputToFile(outputData, cmdConfig.OutputType, cmdConfig.Output)
 }
 
 func checkTargetInfo(target string, targetType string) ([]string, error) {

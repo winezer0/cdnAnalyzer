@@ -2,8 +2,9 @@ package docheck
 
 import (
 	"fmt"
-	"github.com/winezer0/cdnAnalyzer/pkg/analyzer"
+	"github.com/winezer0/cdnAnalyzer/internal/analyzer"
 	"github.com/winezer0/cdnAnalyzer/pkg/classify"
+	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/dnsquery"
 	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/querydomain"
 	"github.com/winezer0/cdnAnalyzer/pkg/ipinfo/queryip"
 	"os"
@@ -21,7 +22,7 @@ func QueryDomainInfo(dnsConfig *querydomain.DNSQueryConfig, domainEntries []clas
 		var checkInfo *analyzer.CheckInfo
 		//当存在dns查询结果时,补充
 		if result, ok := (*dnsResult)[domainEntry.FMT]; ok && result != nil {
-			checkInfo = querydomain.PopulateDNSResult(domainEntry, result)
+			checkInfo = PopulateDNSResult(domainEntry, result)
 		} else {
 			fmt.Printf("No DNS result for domain: %s\n", domainEntry.FMT)
 			checkInfo = analyzer.NewDomainCheckInfo(domainEntry.RAW, domainEntry.FMT, domainEntry.FromUrl)
@@ -57,4 +58,19 @@ func QueryIPInfo(ipDbConfig *queryip.IpDbConfig, checkInfos []*analyzer.CheckInf
 	}
 
 	return checkInfos
+}
+
+// PopulateDNSResult 将 DNS 查询结果填充到 CheckInfo 中
+func PopulateDNSResult(domainEntry classify.TargetEntry, query *dnsquery.DNSResult) *analyzer.CheckInfo {
+	dnsResult := analyzer.NewDomainCheckInfo(domainEntry.RAW, domainEntry.FMT, domainEntry.FromUrl)
+
+	// 逐个复制 DNS 记录
+	dnsResult.A = append(dnsResult.A, query.A...)
+	dnsResult.AAAA = append(dnsResult.AAAA, query.AAAA...)
+	dnsResult.CNAME = append(dnsResult.CNAME, query.CNAME...)
+	dnsResult.NS = append(dnsResult.NS, query.NS...)
+	dnsResult.MX = append(dnsResult.MX, query.MX...)
+	dnsResult.TXT = append(dnsResult.TXT, query.TXT...)
+
+	return dnsResult
 }

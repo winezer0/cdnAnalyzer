@@ -1,8 +1,6 @@
 package analyzer
 
 import (
-	"github.com/winezer0/cdnAnalyzer/pkg/ipinfo/asninfo"
-	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 	"github.com/yl2chen/cidranger"
 	"net"
 	"regexp"
@@ -156,84 +154,54 @@ func CheckCategory(categoryMap Category, ipList []string, asnList []uint64, cnam
 	return false, ""
 }
 
-type CheckResult struct {
-	RAW          string `json:"raw"`
-	FMT          string `json:"fmt"`
-	IsCdn        bool   `json:"is_cdn"`
-	CdnCompany   string `json:"cdn_company"`
-	IsWaf        bool   `json:"is_waf"`
-	WafCompany   string `json:"waf_company"`
-	IsCloud      bool   `json:"is_cloud"`
-	CloudCompany string `json:"cloud_company"`
-	IpSizeIsCdn  bool   `json:"ip_size_is_cdn"`
-	IpSize       int    `json:"ip_size"`
+// GetFmtList 获取NoCDN && NoWAF的fmt数据
+func GetFmtList(checkResults []CheckResult) []string {
+	var fmtList []string
+	for _, r := range checkResults {
+		fmtList = append(fmtList, r.FMT)
+	}
+	return fmtList
 }
 
-func checkCDN(cdnData *CDNData, checkInfo *CheckInfo) (CheckResult, error) {
-	checkResult := CheckResult{
-		RAW: checkInfo.RAW,
-		FMT: checkInfo.FMT,
+// FilterNoCdnNoWaf 获取NoCDN && NoWAF的数据
+func FilterNoCdnNoWaf(checkResults []CheckResult) []CheckResult {
+	var nonCDNResult []CheckResult
+	for _, r := range checkResults {
+		if !r.IsCdn && !r.IsWaf && !r.IpSizeIsCdn {
+			nonCDNResult = append(nonCDNResult, r)
+		}
 	}
-
-	cnameList := checkInfo.CNAME
-	ipList := maputils.UniqueMergeSlices(checkInfo.A, checkInfo.AAAA)
-	asnList := maputils.UniqueMergeAnySlices(
-		asninfo.GetUniqueOrgNumbers(checkInfo.Ipv4Asn),
-		asninfo.GetUniqueOrgNumbers(checkInfo.Ipv6Asn),
-	)
-	ipLocateList := maputils.UniqueMergeSlices(
-		maputils.GetMapsValuesUnique(checkInfo.Ipv4Locate),
-		maputils.GetMapsValuesUnique(checkInfo.Ipv6Locate),
-	)
-
-	// 判断 IP 数量是否符合 CDN 特征
-	checkResult.IpSizeIsCdn, checkResult.IpSize = IpsSizeIsCdn(ipList, 3)
-
-	// 封装分类检查逻辑
-	type categoryHandler struct {
-		db    Category
-		setFn func(bool, string)
-	}
-
-	categories := []categoryHandler{
-		{
-			db:    cdnData.CDN,
-			setFn: func(b bool, s string) { checkResult.IsCdn, checkResult.CdnCompany = b, s },
-		},
-		{
-			db:    cdnData.WAF,
-			setFn: func(b bool, s string) { checkResult.IsWaf, checkResult.WafCompany = b, s },
-		},
-		{
-			db:    cdnData.CLOUD,
-			setFn: func(b bool, s string) { checkResult.IsCloud, checkResult.CloudCompany = b, s },
-		},
-	}
-
-	for _, cat := range categories {
-		match, company := CheckCategory(cat.db, ipList, asnList, cnameList, ipLocateList)
-		cat.setFn(match, company)
-	}
-
-	return checkResult, nil
+	return nonCDNResult
 }
 
-func CheckCDNBatch(cdnData *CDNData, checkInfos []*CheckInfo) ([]CheckResult, error) {
-	checkResults := make([]CheckResult, len(checkInfos))
-	var wg sync.WaitGroup
-	var mu sync.Mutex // 如果需要保护共享资源
-
-	for i, checkInfo := range checkInfos {
-		wg.Add(1)
-		go func(i int, checkInfo *CheckInfo) {
-			defer wg.Done()
-			res, _ := checkCDN(cdnData, checkInfo)
-			mu.Lock()
-			checkResults[i] = res
-			mu.Unlock()
-		}(i, checkInfo)
+// MergeCheckResultsToCheckInfos  通过 FMT 字段匹配对应条目将 checkResults 合并到 checkInfos
+func MergeCheckResultsToCheckInfos(checkInfos []*CheckInfo, checkResults []CheckResult) []*CheckInfo {
+	// 创建 FMT 到 CheckResult 的映射，便于快速查找
+	resultMap := make(map[string]CheckResult)
+	for _, result := range checkResults {
+		resultMap[result.FMT] = result
 	}
 
-	wg.Wait()
-	return checkResults, nil
+	// 遍历 checkInfos，将对应的 CheckResult 信息合并进去
+	for _, checkInfo := range checkInfos {
+		// 查找对应的 CheckResult
+		if result, ok := resultMap[checkInfo.FMT]; ok {
+			// 合并 CDN 相关信息
+			checkInfo.IsCdn = result.IsCdn
+			checkInfo.CdnCompany = result.CdnCompany
+
+			// 合并 WAF 相关信息
+			checkInfo.IsWaf = result.IsWaf
+			checkInfo.WafCompany = result.WafCompany
+
+			// 合并 Cloud 相关信息
+			checkInfo.IsCloud = result.IsCloud
+			checkInfo.CloudCompany = result.CloudCompany
+
+			// 合并 IP 大小相关信息
+			checkInfo.IpSizeIsCdn = result.IpSizeIsCdn
+			checkInfo.IpSize = result.IpSize
+		}
+	}
+	return checkInfos
 }

@@ -1,6 +1,7 @@
 package fileutils
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -104,4 +105,36 @@ func GetAbsolutePath(relativePath string) (string, error) {
 		return "", err
 	}
 	return absPath, nil
+}
+
+// GetFileDirectory 返回给定文件路径的目录部分
+func GetFileDirectory(filePath string) (string, error) {
+	if filePath == "" {
+		return "", fmt.Errorf("文件路径不能为空")
+	}
+
+	dir := filepath.Dir(filePath)
+	return dir, nil
+}
+
+// GetUserSubDir 返回当前用户的某个子目录的完整路径，支持多层目录拼接
+func GetUserSubDir(subDirs ...string) string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "" // 静默失败，返回空字符串
+	}
+	return filepath.Join(append([]string{homeDir}, subDirs...)...)
+}
+
+// JoinPath 拼接多个路径元素，返回平台兼容的完整路径
+func JoinPath(elem ...string) string {
+	return filepath.Join(elem...)
+}
+
+func IsAbsolutePath(path string) bool {
+	return filepath.IsAbs(path)
+}
+
+func IsRelativePath(path string) bool {
+	return !filepath.IsAbs(path)
 }

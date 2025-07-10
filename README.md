@@ -127,36 +127,19 @@ https://github.com/winezer0/cdnAnalyzer/releases
 ### 配置文件使用
 现在支持通过YAML配置文件来管理所有参数和数据库下载配置。
 
+初次使用请先下载数据库配置文件信息
 ```
 使用 `-c` 参数指定配置文件路径： 
 cdnAnalyzer.exe -c config.yaml
 
-使用 `-C` 参数指定从内置URL下载到本地配置文件： 
-cdnAnalyzer.exe -c config.yaml
+使用 `-C` 参数指定从远程URL更新配置文件内容到本地配置文件： 
+cdnAnalyzer.exe -c config.yaml -C
 ```
 命令行参数会覆盖配置文件中的设置，因此您可以同时使用配置文件和命令行参数。
 
 
 ### 使用示例
 提示: 在window下使用-t /t 是相同的,只是会自动根据操作系统来显示参数标志符.
-```
-λ cdnAnalyzer.exe -h
-Usage:
-  cdnAnalyzer [OPTIONS]
-
-CDN信息分析检查工具, 用于检查(URL|Domain|IP)等格式目标所使用的(域名解析|IP分析|CDN|WAF|Cloud)等信息.
-Application Options:
-  /c, /config:                              YAML配置文件路径
-  /t, /target:                              目标文件路径|目标字符串列表(逗号分隔)
-  /T, /target-type:[string|file|sys]        目标数据类型: string/file/sys (default: string)
-  /o, /output-file:                         输出结果文件路径
-  /y, /output-type:[csv|json|txt|sys]       输出文件类型: csv/json/txt/sys (default: sys)
-  /l, /output-level:[default|quiet|detail]  输出详细程度: default/quiet/detail (default: default)
-
-Help Options:
-  /?                                        Show this help message
-  /h, /help                                 Show this help message
-```
 
 ### 使用管道符传入
 ```

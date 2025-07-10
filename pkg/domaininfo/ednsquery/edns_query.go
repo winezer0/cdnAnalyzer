@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/miekg/dns"
 	"github.com/panjf2000/ants/v2"
-	maputils2 "github.com/winezer0/cdnAnalyzer/pkg/maputils"
+	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 	"net"
 	"sync"
 	"time"
@@ -130,14 +130,14 @@ func ResolveEDNSWithCities(
 			// 合并权威 DNS 和默认 DNS
 			dnsServers := []string{"8.8.8.8:53"}
 			if queryCNAMES && len(pr.NameServers) > 0 {
-				dnsServers = maputils2.UniqueMergeSlices(dnsServers, pr.NameServers)
+				dnsServers = maputils.UniqueMergeSlices(dnsServers, pr.NameServers)
 			}
 
 			// 为该域名下的所有 DNS 和 Location 提交子任务
 			for _, dnsServer := range dnsServers {
 				for _, cityEntry := range cities {
-					city := maputils2.GetMapValue(cityEntry, "City")
-					cityIP := maputils2.GetMapValue(cityEntry, "IP")
+					city := maputils.GetMapValue(cityEntry, "City")
+					cityIP := maputils.GetMapValue(cityEntry, "IP")
 
 					wg.Add(1)
 

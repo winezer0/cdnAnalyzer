@@ -2,7 +2,7 @@ package maputils
 
 import (
 	"fmt"
-	fileutils2 "github.com/winezer0/cdnAnalyzer/pkg/fileutils"
+	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
 	"testing"
 )
 
@@ -29,15 +29,15 @@ func TestDeepMerge(t *testing.T) {
 	//mapA, _ := ParseJSON(jsonA)
 	//mapB, _ := ParseJSON(jsonB)
 
-	mapA, _ := fileutils2.ReadJsonToMap("C:\\Users\\WINDOWS\\Downloads\\sources_china.json")
-	mapB, _ := fileutils2.ReadJsonToMap("C:\\Users\\WINDOWS\\Downloads\\sources_foreign.json")
+	mapA, _ := fileutils.ReadJsonToMap("C:\\Users\\WINDOWS\\Downloads\\sources_china.json")
+	mapB, _ := fileutils.ReadJsonToMap("C:\\Users\\WINDOWS\\Downloads\\sources_foreign.json")
 	merged := DeepMerge(mapA, mapB)
 
 	// 指定输出文件路径
 	filePath := "C:\\Users\\WINDOWS\\Downloads\\output.json"
 
 	// 写入 JSON 文件
-	err := fileutils2.WriteJson(filePath, merged)
+	err := fileutils.WriteJson(filePath, merged)
 	if err != nil {
 		fmt.Println("写入失败:", err)
 		return

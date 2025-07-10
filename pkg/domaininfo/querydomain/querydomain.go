@@ -2,9 +2,9 @@ package querydomain
 
 import (
 	"fmt"
-	classify2 "github.com/winezer0/cdnAnalyzer/pkg/classify"
-	dnsquery2 "github.com/winezer0/cdnAnalyzer/pkg/domaininfo/dnsquery"
-	ednsquery2 "github.com/winezer0/cdnAnalyzer/pkg/domaininfo/ednsquery"
+	"github.com/winezer0/cdnAnalyzer/pkg/classify"
+	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/dnsquery"
+	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/ednsquery"
 	"sync"
 	"time"
 )
@@ -23,11 +23,11 @@ type DNSQueryConfig struct {
 // DNSProcessor DNS查询处理器
 type DNSProcessor struct {
 	DNSQueryConfig *DNSQueryConfig
-	DomainEntries  *[]classify2.TargetEntry
+	DomainEntries  *[]classify.TargetEntry
 }
 
 // NewDNSProcessor 创建新的DNS处理器
-func NewDNSProcessor(dnsQueryConfig *DNSQueryConfig, domainEntry *[]classify2.TargetEntry) *DNSProcessor {
+func NewDNSProcessor(dnsQueryConfig *DNSQueryConfig, domainEntry *[]classify.TargetEntry) *DNSProcessor {
 	return &DNSProcessor{
 		DNSQueryConfig: dnsQueryConfig,
 		DomainEntries:  domainEntry,
@@ -36,17 +36,17 @@ func NewDNSProcessor(dnsQueryConfig *DNSQueryConfig, domainEntry *[]classify2.Ta
 
 // DNSQueryResult 存储DNS查询结果
 type DNSQueryResult struct {
-	DomainEntry *classify2.TargetEntry
-	DNSResult   *dnsquery2.DNSResult
+	DomainEntry *classify.TargetEntry
+	DNSResult   *dnsquery.DNSResult
 }
 
 // Process 执行DNS查询并收集结果
-func (pro *DNSProcessor) Process() *dnsquery2.DomainDNSResultMap {
+func (pro *DNSProcessor) Process() *dnsquery.DomainDNSResultMap {
 	// 1. 收集所有域名
-	domains := classify2.ExtractFMTsPtr(pro.DomainEntries)
+	domains := classify.ExtractFMTsPtr(pro.DomainEntries)
 
 	// 2. 批量常规DNS查询
-	dnsResultMap := dnsquery2.ResolveDNSWithResolversMulti(
+	dnsResultMap := dnsquery.ResolveDNSWithResolversMulti(
 		domains,
 		nil, // recordTypes, nil表示默认类型
 		pro.DNSQueryConfig.Resolvers,
@@ -54,10 +54,10 @@ func (pro *DNSProcessor) Process() *dnsquery2.DomainDNSResultMap {
 		pro.DNSQueryConfig.MaxDNSConcurrency,
 	)
 	// 合并为每域名一个DNSResult DomainDNSResultMap
-	domainDNSResultMap := dnsquery2.MergeDomainResolverResultMap(dnsResultMap)
+	domainDNSResultMap := dnsquery.MergeDomainResolverResultMap(dnsResultMap)
 
 	// 3. 批量EDNS查询
-	ednsResultMap := ednsquery2.ResolveEDNSWithCities(
+	ednsResultMap := ednsquery.ResolveEDNSWithCities(
 		domains,
 		pro.DNSQueryConfig.CityMap,
 		pro.DNSQueryConfig.Timeout,
@@ -66,7 +66,7 @@ func (pro *DNSProcessor) Process() *dnsquery2.DomainDNSResultMap {
 		pro.DNSQueryConfig.QueryEDNSUseSysNS,
 	)
 	// 合并为每域名一个EDNSResult
-	domainEDNSResultMap := ednsquery2.MergeDomainCityEDNSResultMap(ednsResultMap)
+	domainEDNSResultMap := ednsquery.MergeDomainCityEDNSResultMap(ednsResultMap)
 
 	//合并 domainDNSResultMap 和 domainEDNSResultMap
 	domainDNSResultMap = MergeEDNSMapToDNSMap(domainDNSResultMap, domainEDNSResultMap)
@@ -74,19 +74,19 @@ func (pro *DNSProcessor) Process() *dnsquery2.DomainDNSResultMap {
 }
 
 // FastProcess 并行执行DNS和EDNS查询，并允许分别指定并发线程数
-func (pro *DNSProcessor) FastProcess() *dnsquery2.DomainDNSResultMap {
-	domains := classify2.ExtractFMTsPtr(pro.DomainEntries)
+func (pro *DNSProcessor) FastProcess() *dnsquery.DomainDNSResultMap {
+	domains := classify.ExtractFMTsPtr(pro.DomainEntries)
 
-	var finalDNSMap dnsquery2.DomainDNSResultMap
-	var finalEDNSMap ednsquery2.DomainEDNSResultMap
+	var finalDNSMap dnsquery.DomainDNSResultMap
+	var finalEDNSMap ednsquery.DomainEDNSResultMap
 
 	var wg sync.WaitGroup
 	wg.Add(2)
 
 	// DNS 查询 channel
-	dnsChan := make(chan dnsquery2.DomainDNSResultMap, 1)
+	dnsChan := make(chan dnsquery.DomainDNSResultMap, 1)
 	// EDNS 查询 channel
-	ednsChan := make(chan ednsquery2.DomainEDNSResultMap, 1)
+	ednsChan := make(chan ednsquery.DomainEDNSResultMap, 1)
 
 	// 启动 DNS 查询 goroutine
 	go func() {
@@ -94,17 +94,17 @@ func (pro *DNSProcessor) FastProcess() *dnsquery2.DomainDNSResultMap {
 		defer func() {
 			if r := recover(); r != nil {
 				fmt.Println("DNS goroutine panic:", r)
-				dnsChan <- dnsquery2.DomainDNSResultMap{}
+				dnsChan <- dnsquery.DomainDNSResultMap{}
 			}
 		}()
-		resultMap := dnsquery2.ResolveDNSWithResolversMulti(
+		resultMap := dnsquery.ResolveDNSWithResolversMulti(
 			domains,
 			nil,
 			pro.DNSQueryConfig.Resolvers,
 			pro.DNSQueryConfig.Timeout,
 			pro.DNSQueryConfig.MaxDNSConcurrency,
 		)
-		merged := dnsquery2.MergeDomainResolverResultMap(resultMap)
+		merged := dnsquery.MergeDomainResolverResultMap(resultMap)
 		dnsChan <- merged
 	}()
 
@@ -114,10 +114,10 @@ func (pro *DNSProcessor) FastProcess() *dnsquery2.DomainDNSResultMap {
 		defer func() {
 			if r := recover(); r != nil {
 				fmt.Println("EDNS goroutine panic:", r)
-				ednsChan <- ednsquery2.DomainEDNSResultMap{}
+				ednsChan <- ednsquery.DomainEDNSResultMap{}
 			}
 		}()
-		resultMap := ednsquery2.ResolveEDNSWithCities(
+		resultMap := ednsquery.ResolveEDNSWithCities(
 			domains,
 			pro.DNSQueryConfig.CityMap,
 			pro.DNSQueryConfig.Timeout,
@@ -125,7 +125,7 @@ func (pro *DNSProcessor) FastProcess() *dnsquery2.DomainDNSResultMap {
 			pro.DNSQueryConfig.QueryEDNSCNAMES,
 			pro.DNSQueryConfig.QueryEDNSUseSysNS,
 		)
-		merged := ednsquery2.MergeDomainCityEDNSResultMap(resultMap)
+		merged := ednsquery.MergeDomainCityEDNSResultMap(resultMap)
 		ednsChan <- merged
 	}()
 

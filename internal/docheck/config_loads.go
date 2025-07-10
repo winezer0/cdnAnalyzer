@@ -119,12 +119,12 @@ func LoadCityMap(cityMapFile string, randCityNum int) ([]map[string]string, erro
 	return selectedCityMap, nil
 }
 
-// CheckAndDownDBFiles 进行数据库文件检查和下载
-func CheckAndDownDBFiles(downItems []downfile.DownItem, storeDir string, proxyURL string, updateDB bool, updateDBForce bool) (DBFilePaths, error) {
-	var errs error = nil
+// CheckAndDownDbFiles 进行数据库文件检查和下载
+func CheckAndDownDbFiles(downItems []downfile.DownItem, storeDir string, proxyUrl string, updateDB bool) (DBFilePaths, error) {
+	var errs error
 	dbPaths := GetDBPathsFromConfig(downItems, storeDir)
 	missedDB := DBFilesIsExists(dbPaths)
-	if len(missedDB) > 0 || updateDB || updateDBForce {
+	if len(missedDB) > 0 || updateDB {
 		// 更新数据库缓存记录文件
 		downfile.CleanupExpiredCache()
 
@@ -132,27 +132,24 @@ func CheckAndDownDBFiles(downItems []downfile.DownItem, storeDir string, proxyUR
 		clientConfig := &downfile.ClientConfig{
 			ConnectTimeout: 30,
 			IdleTimeout:    30,
-			ProxyURL:       proxyURL,
+			ProxyURL:       proxyUrl,
 		}
 		httpClient, err := downfile.CreateHTTPClient(clientConfig)
 		if err != nil {
-			errs = fmt.Errorf("创建HTTP客户端失败: %v\n", err)
+			errs = fmt.Errorf("Failed to create HTTP client: %v\n", err)
 		}
 
 		// 仅保留已启用的项
-		if !updateDBForce {
-			downItems = downfile.FilterEnableItems(downItems)
-			fmt.Printf("过滤下载数据库文件数量: %v\n", len(downItems))
-		}
+		downItems = downfile.FilterEnableItems(downItems)
 
 		// 处理所有配置组
 		totalItems := len(downItems)
 		if totalItems > 0 {
-			fmt.Printf("开始下载IP数据库依赖文件, totalItems:[%v]...\n", totalItems)
-			downedItems := downfile.ProcessDownItems(httpClient, downItems, storeDir, updateDBForce, true, 3)
+			//fmt.Printf("Start downloading the dependent files for the IP database, totalItems:[%v]...\n", totalItems)
+			downedItems := downfile.ProcessDownItems(httpClient, downItems, storeDir, false, false, 3)
 			downfile.CleanupIncompleteDownloads(storeDir)
 			if downedItems != totalItems {
-				errs = fmt.Errorf("文件下载进度缺失[%v/%v]", downedItems, totalItems)
+				errs = fmt.Errorf("file download progress is missing:[%v/%v]", downedItems, totalItems)
 			}
 		}
 	}
