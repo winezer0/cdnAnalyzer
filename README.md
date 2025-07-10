@@ -3,6 +3,12 @@ CDN Check On Golang
 
 目前最完善的CDN分析工具 便于快速筛选CDN资产信息 基于IP|ASN|CNAME|IPlocate等多种方案
 
+## 免责声明
+继续阅读文章或使用工具视为您已同意NOVASEC免责声明
+
+[NOVASEC免责声明](https://mp.weixin.qq.com/s/iRWRVxkYu7Fx5unxA34I7g)
+
+
 ## 功能介绍
 - 使用GO编写
 - 支持输入(URL|Domain|IP)等多种格式目标
