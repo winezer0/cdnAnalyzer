@@ -2,8 +2,12 @@ name: Update CDN Sources Daily
 
 on:
   schedule:
-    # 每天 UTC 时间 0:00 运行（相当于北京时间 8:00）
-    - cron: '0 0 * * *'
+#    # 每天 UTC 时间 0:00 运行（相当于北京时间 8:00）
+#    - cron: '0 0 * * *'
+    # 每三天 UTC 时间 0:00 运行（北京时间 8:00）
+    - cron: '0 0 */3 * *'
+#    # 每周（每周一）UTC 时间 0:00 运行（北京时间 8:00）
+#    - cron: '0 0 * * 1'
   # 允许手动触发工作流
   workflow_dispatch:
 
