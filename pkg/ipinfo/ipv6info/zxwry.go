@@ -12,7 +12,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zu1k/nali/pkg/wry"
+	"github.com/winezer0/cdnAnalyzer/pkg/wry"
 )
 
 // Ipv6Location IPv6地理位置数据库管理器

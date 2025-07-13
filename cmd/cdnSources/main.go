@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/jessevdk/go-flags"
+	"github.com/winezer0/cdnAnalyzer/pkg/downfile"
 	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
-	"github.com/winezer0/downtools/downfile"
 )
 
 // SourcesFilePaths 存储所有依赖文件路径

@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/jessevdk/go-flags"
-	"github.com/winezer0/downtools/downfile"
+	"github.com/winezer0/cdnAnalyzer/pkg/downfile"
 )
 
 // CmdConfig 存储程序配置，使用结构体标签定义命令行参数

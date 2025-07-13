@@ -1,0 +1,107 @@
+name: Build and Release for Go 1.20
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号 (例如: 0.3.0)'
+        required: true
+        default: '0.3.0'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        include:
+          - goos: windows
+            goarch: amd64
+            artifact-name: cdnAnalyzer-windows-amd64.exe
+          - goos: linux
+            goarch: amd64
+            artifact-name: cdnAnalyzer-linux-amd64
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go 1.20.14
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.20.14'
+
+    - name: Downgrade Go version in go.mod
+      run: go mod edit -go=1.20.14
+
+    - name: Apply go.mod replacements for Go 1.20
+      run: |
+        echo "//go build on 1.20.14" >> go.mod
+        echo "replace (" >> go.mod
+        echo "	golang.org/x/sync => golang.org/x/sync v0.11.0" >> go.mod
+        echo "	golang.org/x/sys => golang.org/x/sys v0.21.0" >> go.mod
+        echo "	golang.org/x/text => golang.org/x/text v0.20.0" >> go.mod
+        echo "	github.com/miekg/dns => github.com/miekg/dns v1.1.57" >> go.mod
+        echo ")" >> go.mod
+        
+    - name: Tidy go.mod
+      run: go mod tidy
+
+    - name: Build for ${{ matrix.goos }}-${{ matrix.goarch }}
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        CGO_ENABLED: 0
+      run: |
+        go build -ldflags="-s -w -X main.Version=${{ github.event.inputs.version }}" -o ${{ matrix.artifact-name }} ./cmd/cdnAnalyzer/main.go
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact-name }}
+        path: ${{ matrix.artifact-name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./artifacts
+
+    - name: Get current date
+      id: date
+      run: |
+        buildDate=$(date +'%Y.%m.%d')
+        echo "builddate=$buildDate" >> $GITHUB_OUTPUT
+        echo "Build date: $buildDate"
+
+    - name: Create release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ github.event.inputs.version }}-go1.20.14
+        name: Release v${{ github.event.inputs.version }} (Go 1.20.14)
+        body: |
+          ## cdnAnalyzer v${{ github.event.inputs.version }} (Go 1.20 build)
+          
+          ### 构建信息
+          - 版本号: ${{ github.event.inputs.version }}
+          - 构建日期: ${{ steps.date.outputs.builddate }}
+          - 构建平台: Windows & Linux
+          - Go版本: 1.20.14
+          
+          ### 下载
+          - Windows (AMD64): `cdnAnalyzer-windows-amd64.exe`
+          - Linux (AMD64): `cdnAnalyzer-linux-amd64`
+        files: |
+          ./artifacts/cdnAnalyzer-windows-amd64.exe/cdnAnalyzer-windows-amd64.exe
+          ./artifacts/cdnAnalyzer-linux-amd64/cdnAnalyzer-linux-amd64
+        draft: false
+        prerelease: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
