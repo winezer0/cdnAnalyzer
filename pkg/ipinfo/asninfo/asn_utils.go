@@ -85,7 +85,7 @@ func GetUniqueOrgNumbers(asnInfos []ASNInfo) []uint64 {
 // PrintASNInfo 打印ASN信息
 func PrintASNInfo(ipInfo *ASNInfo) {
 	if ipInfo == nil {
-		logging.Debugln("ASN信息为空")
+		logging.Debug("ASN信息为空")
 		return
 	}
 

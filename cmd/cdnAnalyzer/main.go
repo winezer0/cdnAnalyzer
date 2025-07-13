@@ -38,7 +38,7 @@ type CmdConfig struct {
 
 	// 日志配置参数
 	LogLevel string `long:"log-level" description:"log level: debug/info/warn/error (default error" default:"error" choice:"debug" choice:"info" choice:"warn" choice:"error"`
-	LogFile  string `long:"log-file" description:"log file path (default: stdout)" default:"stdout"`
+	LogFile  string `long:"log-file" description:"log file path (default: stdout)" default:""`
 
 	// 数据库更新配置
 	Proxy    string `short:"p" long:"proxy" description:"use the proxy URL down files (support http|socks5)" default:""`
@@ -84,7 +84,7 @@ func main() {
 		fmt.Printf("Failed to initialize logger: %v\n", err)
 		os.Exit(1)
 	}
-	defer logging.Logger.Sync()
+	defer logging.Sync()
 
 	// 初始化数据库文件默认存储目录
 	if cmdConfig.Folder == "" {
