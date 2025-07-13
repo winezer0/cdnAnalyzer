@@ -2,13 +2,13 @@ package dnsquery
 
 import (
 	"fmt"
-	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
+
 	"github.com/miekg/dns"
-	"github.com/panjf2000/ants/v2"
 )
 
 // DNSResult 表示一个解析器对某个域名的查询结果（按 recordType 分类）
@@ -102,7 +102,6 @@ func ResolveDNSWithResolversMulti(
 	timeout time.Duration,
 	maxConcurrency int,
 ) DomainResolverDNSResultMap {
-
 	if len(recordTypes) == 0 {
 		recordTypes = DefaultRecordTypesSlice
 	}
@@ -111,36 +110,26 @@ func ResolveDNSWithResolversMulti(
 	var mu sync.Mutex
 	var wgAll sync.WaitGroup
 
-	// 创建 goroutine 池
-	pool, err := ants.NewPool(maxConcurrency, ants.WithOptions(ants.Options{
-		Nonblocking: true,
-	}))
-	if err != nil {
-		panic(err)
-	}
-	defer pool.Release()
+	sem := make(chan struct{}, maxConcurrency)
 
 	// 初始化每个 domain 的结果容器
 	for _, domain := range domains {
-		domain := domain
 		results[domain] = make(map[string]*DNSResult)
 		for _, resolver := range resolvers {
-			resolver := resolver
 			results[domain][resolver] = NewEmptyDNSQueryResult()
 		}
 	}
 
 	// 提交并发任务
 	for _, domain := range domains {
-		domain := domain
 		for _, resolver := range resolvers {
-			resolver := resolver
 			for _, qType := range recordTypes {
-				qType := qType
 				wgAll.Add(1)
+				sem <- struct{}{} // 获取令牌
 
-				err := pool.Submit(func() {
+				go func(domain, resolver, qType string) {
 					defer wgAll.Done()
+					defer func() { <-sem }() // 释放令牌
 
 					recs, err := ResolveDNS(domain, resolver, qType, timeout)
 
@@ -151,24 +140,7 @@ func ResolveDNSWithResolversMulti(
 						setRecord(results[domain][resolver], qType, recs)
 					}
 					mu.Unlock()
-				})
-
-				if err != nil {
-					// 回退到同步执行
-					go func() {
-						defer wgAll.Done()
-
-						recs, err := ResolveDNS(domain, resolver, qType, timeout)
-
-						mu.Lock()
-						if err != nil {
-							results[domain][resolver].Error[qType] = err.Error()
-						} else {
-							setRecord(results[domain][resolver], qType, recs)
-						}
-						mu.Unlock()
-					}()
-				}
+				}(domain, resolver, qType)
 			}
 		}
 	}

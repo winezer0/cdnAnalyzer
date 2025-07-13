@@ -4,6 +4,7 @@ dns-timeout: 5
 resolvers-num: 5
 city-map-num: 5
 dns-concurrency: 8
+edns-concurrency: 8
 query-edns-cnames: true
 query-edns-use-sys-ns: false
 

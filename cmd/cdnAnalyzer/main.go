@@ -3,6 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/winezer0/cdnAnalyzer/internal/analyzer"
 	"github.com/winezer0/cdnAnalyzer/internal/docheck"
 	"github.com/winezer0/cdnAnalyzer/internal/embeds"
@@ -10,9 +14,6 @@ import (
 	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/querydomain"
 	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
 	"github.com/winezer0/cdnAnalyzer/pkg/ipinfo/queryip"
-	"os"
-	"strings"
-	"time"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/winezer0/cdnAnalyzer/pkg/downfile"
@@ -123,6 +124,7 @@ func main() {
 
 	//使用cmd配置更新配置文件中的某些配置
 	appConfig = updateAppConfig(appConfig, cmdConfig)
+
 	// 分类输入数据为 IP Domain InvalidEntries
 	classifier := classify.ClassifyTargets(targets)
 
@@ -239,6 +241,14 @@ func updateAppConfig(appConfig *docheck.AppConfig, cmdConfig *CmdConfig) *dochec
 
 	if cmdConfig.QueryEDNSUseSysNS != "" {
 		appConfig.QueryEDNSUseSysNS = cmdConfig.QueryEDNSUseSysNS == "true"
+	}
+
+	// 确保并发数有一个合理的默认值，防止死锁
+	if appConfig.DNSConcurrency <= 0 {
+		appConfig.DNSConcurrency = 10
+	}
+	if appConfig.EDNSConcurrency <= 0 {
+		appConfig.EDNSConcurrency = 10
 	}
 	return appConfig
 }

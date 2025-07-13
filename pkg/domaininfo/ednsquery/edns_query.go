@@ -3,12 +3,12 @@ package ednsquery
 import (
 	"context"
 	"fmt"
-	"github.com/miekg/dns"
-	"github.com/panjf2000/ants/v2"
-	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 	"net"
 	"sync"
 	"time"
+
+	"github.com/miekg/dns"
+	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 )
 
 // EDNSResult 存放最后格式化的结果
@@ -96,7 +96,6 @@ func ResolveEDNSWithCities(
 	queryCNAMES bool,
 	useSysNSQueryCNAMES bool,
 ) DomainCityEDNSResultMap {
-
 	// Step 1: 异步并发预查所有域名的 CNAME / NS
 	ctx := context.Background()
 	var preResults []DomainPreQueryResult
@@ -108,17 +107,10 @@ func ResolveEDNSWithCities(
 	}
 
 	// Step 2: 创建协程池进行并发查询
-	pool, err := ants.NewPool(maxConcurrency)
-	if err != nil {
-		panic(err)
-	}
-	defer pool.Release()
-
+	sem := make(chan struct{}, maxConcurrency)
 	resultMap := make(DomainCityEDNSResultMap)
 	var mu sync.Mutex
 	var wg sync.WaitGroup
-
-	resultsChan := make(chan struct{}, len(preResults)) // 控制等待完成
 
 	// 对每个域名启动任务
 	for _, pre := range preResults {
@@ -140,9 +132,11 @@ func ResolveEDNSWithCities(
 					cityIP := maputils.GetMapValue(cityEntry, "IP")
 
 					wg.Add(1)
+					sem <- struct{}{} // 获取令牌
 
-					pool.Submit(func() {
+					go func(dnsServer, city, cityIP string) {
 						defer wg.Done()
+						defer func() { <-sem }() // 释放令牌
 
 						// 执行 EDNS 查询
 						res := ResolveEDNS(pr.FinalDomain, cityIP, dnsServer, timeout)
@@ -169,24 +163,14 @@ func ResolveEDNSWithCities(
 						}
 						resultMap[pr.Domain][key] = &ednsRes
 						mu.Unlock()
-
-						resultsChan <- struct{}{}
-					})
+					}(dnsServer, city, cityIP)
 				}
 			}
 		}(pre)
 	}
 
 	// 等待所有任务完成
-	go func() {
-		wg.Wait()
-		close(resultsChan)
-	}()
-
-	// 等待所有结果
-	for range resultsChan {
-		// 只用于阻塞主 goroutine
-	}
+	wg.Wait()
 
 	return resultMap
 }

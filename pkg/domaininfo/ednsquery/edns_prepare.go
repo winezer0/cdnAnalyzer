@@ -3,10 +3,10 @@ package ednsquery
 import (
 	"context"
 	"fmt"
-	"github.com/panjf2000/ants/v2"
-	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/dnsquery"
 	"sync"
 	"time"
+
+	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/dnsquery"
 )
 
 type DomainPreQueryResult struct {
@@ -39,27 +39,22 @@ func NewEmptyDomainPreQueryResults(domains []string) []DomainPreQueryResult {
 
 // preQueryDomains 辅助函数：异步并发预查 CNAME / NS
 func preQueryDomains(ctx context.Context, domains []string, timeout time.Duration, maxConcurrency int, useSysNS bool) []DomainPreQueryResult {
-
 	defaultNS := "8.8.8.8:53"
 	if useSysNS {
 		defaultNS = dnsquery.GetSystemDefaultAddress()
 	}
 
-	pool, err := ants.NewPool(maxConcurrency)
-	if err != nil {
-		panic(err)
-	}
-	defer pool.Release()
-
+	sem := make(chan struct{}, maxConcurrency)
 	resultChan := make(chan DomainPreQueryResult, len(domains))
 	var wg sync.WaitGroup
 
 	for _, domain := range domains {
-		domain := domain // 避免闭包捕获问题
 		wg.Add(1)
+		sem <- struct{}{} // 获取一个令牌
 
-		_ = pool.Submit(func() {
+		go func(domain string) {
 			defer wg.Done()
+			defer func() { <-sem }() // 释放令牌
 
 			var (
 				cnameChains []string
@@ -112,7 +107,7 @@ func preQueryDomains(ctx context.Context, domains []string, timeout time.Duratio
 				return
 			case resultChan <- res:
 			}
-		})
+		}(domain)
 	}
 
 	// 启动 goroutine 等待所有任务完成并关闭 channel
