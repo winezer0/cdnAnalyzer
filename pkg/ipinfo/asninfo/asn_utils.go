@@ -41,7 +41,7 @@ func (m *MMDBManager) ExportToCSV(outputPath string) error {
 			var record ASNRecord
 			ipNet, err := networks.Network(&record)
 			if err != nil {
-				logging.Warnf("解析网络段失败: %v", err)
+				logging.Errorf("解析网络段失败: %v", err)
 				continue
 			}
 

@@ -117,7 +117,6 @@ func LoadCityMap(cityMapFile string, randCityNum int) ([]map[string]string, erro
 		return nil, errors.New("读取城市IP映射失败")
 	}
 	selectedCityMap := maputils.PickRandMaps(cityMap, randCityNum)
-	logging.Debugf("selectedCityMap: %v", selectedCityMap)
 	return selectedCityMap, nil
 }
 

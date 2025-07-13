@@ -138,12 +138,14 @@ func main() {
 
 	//加载dns解析服务器配置文件，用于dns解析调用
 	resolvers, err := docheck.LoadResolvers(dbPaths.ResolversFile, appConfig.ResolversNum)
+	logging.Debugf("rand resolvers: %v", resolvers)
 	if err != nil {
 		logging.Fatalf("Failed to load resolvers: %v", err)
 	}
 
 	//加载本地EDNS城市IP信息
 	randCities, err := docheck.LoadCityMap(dbPaths.CityMapFile, appConfig.CityMapNUm)
+	logging.Debugf("rand cities: %v", randCities)
 	if err != nil {
 		logging.Fatalf("Failed to load city map: %v", err)
 	}

@@ -123,12 +123,12 @@ func downloadFile(client *http.Client, downloadUrl, storePath string, keepOldFil
 
 	// 重命名临时文件为最终文件名
 	if err := os.Rename(tempFile, storePath); err != nil {
-		return fmt.Errorf("错误: 重命名临时文件失败: %w", err)
+		return fmt.Errorf("Error: 重命名临时文件失败: %w", err)
 	}
 
 	// 更新文件下载时间缓存
 	if err := UpdateFileDownloadTime(storePath); err != nil {
-		logging.Debugf("    错误: 更新下载缓存失败: %v\n", err)
+		logging.Errorf("    Error: 更新下载缓存失败: %v\n", err)
 	}
 
 	return nil

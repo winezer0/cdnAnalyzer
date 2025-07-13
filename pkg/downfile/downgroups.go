@@ -58,10 +58,10 @@ func ProcessDownItems(client *http.Client, items []DownItem, downloadDir string,
 				if err := downloadFile(client, downloadURL, storePath, keepOld); err != nil {
 					// 检查是否是404错误
 					var downloadErr DownloadError
-					logging.Warnf("    下载失败: %v", err)
+					logging.Errorf("    下载失败: %v", err)
 
 					if errors.As(err, &downloadErr) && downloadErr.Type == ErrResourceNotFound {
-						logging.Warnf("    资源不存在 (404)，请检查配置中的URL是否正确")
+						logging.Errorf("    资源不存在 (404)，请检查配置中的URL是否正确")
 						resourceNotFound = true
 						break // 404错误不需要重试
 					}
@@ -89,9 +89,9 @@ func ProcessDownItems(client *http.Client, items []DownItem, downloadDir string,
 
 		if !success {
 			if resourceNotFound {
-				logging.Warnf("  警告: %s 的资源不存在，请检查配置文件中的URL", item.Module)
+				logging.Errorf("  Warn: %s 的资源不存在，请检查配置文件中的URL", item.Module)
 			} else {
-				logging.Errorf("  错误: 所有下载源都失败，无法下载 %s", item.Module)
+				logging.Errorf("  Error: 所有下载源都失败，无法下载 %s", item.Module)
 			}
 		}
 	}
