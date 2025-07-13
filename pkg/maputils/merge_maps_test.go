@@ -1,8 +1,8 @@
 package maputils
 
 import (
-	"fmt"
 	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
+	"github.com/winezer0/cdnAnalyzer/pkg/logging"
 	"testing"
 )
 
@@ -39,13 +39,9 @@ func TestDeepMerge(t *testing.T) {
 	// 写入 JSON 文件
 	err := fileutils.WriteJson(filePath, merged)
 	if err != nil {
-		fmt.Println("写入失败:", err)
+		logging.Errorf("数据写入文件失败:", err)
 		return
 	} else {
-		fmt.Printf("数据已成功写入到文件: %s\n", filePath)
+		logging.Debugf("数据写入文件成功: %s\n", filePath)
 	}
-
-	//
-	//mergedJSON := AnyToJsonStr(merged)
-	//fmt.Println(mergedJSON)
 }

@@ -1,12 +1,13 @@
 package querydomain
 
 import (
-	"fmt"
+	"sync"
+	"time"
+
 	"github.com/winezer0/cdnAnalyzer/pkg/classify"
 	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/dnsquery"
 	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/ednsquery"
-	"sync"
-	"time"
+	"github.com/winezer0/cdnAnalyzer/pkg/logging"
 )
 
 // DNSQueryConfig 存储DNS查询配置
@@ -93,7 +94,7 @@ func (pro *DNSProcessor) FastProcess() *dnsquery.DomainDNSResultMap {
 		defer wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Println("DNS goroutine panic:", r)
+				logging.Errorf("DNS goroutine panic: %v", r)
 				dnsChan <- dnsquery.DomainDNSResultMap{}
 			}
 		}()
@@ -113,7 +114,7 @@ func (pro *DNSProcessor) FastProcess() *dnsquery.DomainDNSResultMap {
 		defer wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Println("EDNS goroutine panic:", r)
+				logging.Errorf("EDNS goroutine panic: %v", r)
 				ednsChan <- ednsquery.DomainEDNSResultMap{}
 			}
 		}()

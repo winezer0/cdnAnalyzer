@@ -17,6 +17,7 @@ import (
 
 	"github.com/jessevdk/go-flags"
 	"github.com/winezer0/cdnAnalyzer/pkg/downfile"
+	"github.com/winezer0/cdnAnalyzer/pkg/logging"
 )
 
 // CmdConfig 存储程序配置，使用结构体标签定义命令行参数
@@ -34,6 +35,10 @@ type CmdConfig struct {
 	OutputType  string `short:"O" long:"output-type" description:"output file type: csv/json/txt/sys" default:"sys" choice:"csv" choice:"json" choice:"txt" choice:"sys"`
 	OutputLevel int    `short:"l" long:"output-level" description:"Output verbosity level: 1=quiet, 2=default, 3=detail" default:"2" choice:"1" choice:"2" choice:"3"`
 	OutputNoCDN bool   `short:"n" long:"output-no-cdn" description:"only output Info where not CDN and not WAF."`
+
+	// 日志配置参数
+	LogLevel string `long:"log-level" description:"log level (debug, info, warn, error)" default:"error"`
+	LogFile  string `long:"log-file" description:"log file path (default: stdout)" default:"stdout"`
 
 	// 数据库更新配置
 	Proxy    string `short:"p" long:"proxy" description:"use the proxy URL down files (http|socks5)" default:""`
@@ -70,9 +75,16 @@ func main() {
 		if errors.As(err, &flagsErr) && errors.Is(flagsErr.Type, flags.ErrHelp) {
 			os.Exit(0)
 		}
-		fmt.Println("Error:", err)
+		fmt.Printf("Error:%v\n", err)
 		os.Exit(1)
 	}
+
+	// 初始化日志记录器
+	if err := logging.InitLogger(cmdConfig.LogLevel, cmdConfig.LogFile); err != nil {
+		fmt.Printf("Failed to initialize logger: %v\n", err)
+		os.Exit(1)
+	}
+	defer logging.Logger.Sync()
 
 	// 初始化数据库文件默认存储目录
 	if cmdConfig.Folder == "" {
@@ -90,8 +102,7 @@ func main() {
 		err := downfile.DownloadFileSimple(url, cmdConfig.Proxy, cmdConfig.ConfigFile)
 		downfile.CleanupIncompleteDownloads(cmdConfig.Folder) //清理下载失败的数据
 		if err != nil {
-			fmt.Printf("Failed to load <%s> -> error: %v\n", url, err)
-			os.Exit(1)
+			logging.Fatalf("Failed to load <%s> -> error: %v\n", url, err)
 		}
 	}
 
@@ -104,22 +115,19 @@ func main() {
 	// 加载配置文件远程更新
 	appConfig, err := docheck.LoadAppConfigFile(cmdConfig.ConfigFile)
 	if err != nil || appConfig == nil {
-		fmt.Printf("Failed to load the config: %v\n", err)
-		os.Exit(1)
+		logging.Fatalf("Failed to load the config: %v\n", err)
 	}
 
 	// 获取并检查数据库文件路径
 	dbPaths, err := docheck.DownloadDbFiles(appConfig.DownloadItems, cmdConfig.Folder, cmdConfig.Proxy, cmdConfig.UpdateDB)
 	if err != nil {
-		fmt.Printf("check and down db files failed: %v\n", err)
-		os.Exit(1)
+		logging.Fatalf("check and down db files failed: %v\n", err)
 	}
 
 	// 检查必要参数
 	targets, err := checkTargetInfo(cmdConfig.Input, strings.ToLower(cmdConfig.InputType))
 	if err != nil {
-		fmt.Printf("target [%s] loading failed: %v\n", cmdConfig.Input, err)
-		os.Exit(1)
+		logging.Fatalf("target [%s] loading failed: %v\n", cmdConfig.Input, err)
 	}
 
 	//使用cmd配置更新配置文件中的某些配置
@@ -131,13 +139,13 @@ func main() {
 	//加载dns解析服务器配置文件，用于dns解析调用
 	resolvers, err := docheck.LoadResolvers(dbPaths.ResolversFile, appConfig.ResolversNum)
 	if err != nil {
-		os.Exit(1)
+		logging.Fatalf("Failed to load resolvers: %v", err)
 	}
 
 	//加载本地EDNS城市IP信息
 	randCities, err := docheck.LoadCityMap(dbPaths.CityMapFile, appConfig.CityMapNUm)
 	if err != nil {
-		os.Exit(1)
+		logging.Fatalf("Failed to load city map: %v", err)
 	}
 
 	// 配置DNS查询参数
@@ -172,22 +180,19 @@ func main() {
 
 	// 加载sources.json配置文件
 	if _, err := os.Stat(dbPaths.CdnSource); os.IsNotExist(err) {
-		fmt.Printf("Error: The CDN source data not exist.: %s\n", dbPaths.CdnSource)
-		os.Exit(1)
+		logging.Fatalf("Error: The CDN source data not exist.: %s\n", dbPaths.CdnSource)
 	}
 
 	cdnData := analyzer.NewEmptyCDNData()
 	err = fileutils.ReadJsonToStruct(dbPaths.CdnSource, cdnData)
 	if err != nil {
-		fmt.Printf("Failed to load CDN source data: %v\n", err)
-		os.Exit(1)
+		logging.Fatalf("Failed to load CDN source data: %v\n", err)
 	}
 
 	//进行CDN CLOUD WAF 信息分析
 	checkResults, err := analyzer.CheckCDNBatch(cdnData, checkInfos)
 	if err != nil {
-		fmt.Printf("CDN information analysis is abnormal: %v\n", err)
-		os.Exit(1)
+		logging.Fatalf("CDN information analysis is abnormal: %v\n", err)
 	}
 
 	//排除Cdn|WAF部分的结果

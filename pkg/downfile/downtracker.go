@@ -1,10 +1,11 @@
 package downfile
 
 import (
-	"fmt"
 	"io"
 	"sync/atomic"
 	"time"
+
+	"github.com/winezer0/cdnAnalyzer/pkg/logging"
 )
 
 // ProgressTracker 下载进度跟踪器
@@ -68,7 +69,7 @@ func (pt *ProgressTracker) MonitorSpeed() {
 			// 检查当前下载速度是否低于最小要求
 			if pt.Speed < MinRequiredSpeed {
 				// 提示用户当前速度过低并取消下载
-				fmt.Printf("\r    下载已取消: 速度过低 (%s/s)，低于最小要求 (%s/s)，网络可能存在问题\n",
+				logging.Warnf("\r    下载已取消: 速度过低 (%s/s)，低于最小要求 (%s/s)，网络可能存在问题",
 					formatSize(int64(pt.Speed)),
 					formatSize(int64(MinRequiredSpeed)))
 
@@ -159,7 +160,7 @@ func (pt *ProgressTracker) displayKnownSizeProgress() {
 		}
 		remainingTime := time.Duration(remainingSeconds) * time.Second
 
-		fmt.Printf("\r    下载进度: %.1f%% (%s/%s) 速度: %s 剩余时间: %s                    ",
+		logging.Debugf("\r    下载进度: %.1f%% (%s/%s) 速度: %s 剩余时间: %s                    ",
 			progress,
 			formatSize(currentSize),
 			formatSize(pt.FileSize),
@@ -167,14 +168,14 @@ func (pt *ProgressTracker) displayKnownSizeProgress() {
 			formatDuration(remainingTime))
 	} else if pt.Speed > 0 {
 		// 速度极低但不为0，显示速度但不显示剩余时间
-		fmt.Printf("\r    下载进度: %.1f%% (%s/%s) 速度: %s 剩余时间: 未知                    ",
+		logging.Debugf("\r    下载进度: %.1f%% (%s/%s) 速度: %s 剩余时间: 未知                    ",
 			progress,
 			formatSize(currentSize),
 			formatSize(pt.FileSize),
 			speedStr)
 	} else {
 		// 速度为0，等待恢复
-		fmt.Printf("\r    下载进度: %.1f%% (%s/%s) 等待数据传输...                    ",
+		logging.Debugf("\r    下载进度: %.1f%% (%s/%s) 等待数据传输...                    ",
 			progress,
 			formatSize(currentSize),
 			formatSize(pt.FileSize))
@@ -187,11 +188,11 @@ func (pt *ProgressTracker) displayUnknownSizeProgress() {
 	speedStr := formatSize(int64(pt.Speed)) + "/s"
 
 	if pt.Speed > MinValidSpeed {
-		fmt.Printf("\r    已下载: %s 速度: %s                    ",
+		logging.Debugf("\r    已下载: %s 速度: %s                    ",
 			formatSize(currentSize),
 			speedStr)
 	} else {
-		fmt.Printf("\r    已下载: %s 等待数据传输...                    ",
+		logging.Debugf("\r    已下载: %s 等待数据传输...                    ",
 			formatSize(currentSize))
 	}
 }
@@ -203,14 +204,11 @@ func (pt *ProgressTracker) DisplaySummary() {
 		return
 	}
 
-	// 清除进度条行
-	fmt.Print("\r                                                                                                                                    \r")
-
 	// 显示总下载时间和平均速度
 	totalTime := time.Since(pt.StartTime)
 	totalBytes := pt.BytesCount.Load()
 	avgSpeed := float64(totalBytes) / totalTime.Seconds()
-	fmt.Printf("    下载完成: 总大小 %s, 用时 %s, 平均速度 %s/s\n",
+	logging.Debugf("    下载完成: 总大小 %s, 用时 %s, 平均速度 %s/s",
 		formatSize(totalBytes),
 		formatDuration(totalTime),
 		formatSize(int64(avgSpeed)))

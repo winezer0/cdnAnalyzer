@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/winezer0/cdnAnalyzer/internal/analyzer"
-	"github.com/winezer0/cdnAnalyzer/internal/generate"
 	"os"
 	"strings"
+
+	"github.com/winezer0/cdnAnalyzer/internal/analyzer"
+	"github.com/winezer0/cdnAnalyzer/internal/generate"
+	"github.com/winezer0/cdnAnalyzer/pkg/logging"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/winezer0/cdnAnalyzer/pkg/downfile"
@@ -30,6 +32,8 @@ type Options struct {
 	SourcesConfig string `short:"c" description:"资源配置文件路径" default:"sources.yaml"`
 	DownloadDir   string `short:"d" description:"资源下载存储目录" default:"sources"`
 	SourcesPath   string `short:"o" description:"资源更新后的输出文件" default:"sources/sources.json"`
+	LogLevel      string `long:"log-level" description:"log level (debug, info, warn, error)" default:"error"`
+	LogFile       string `long:"log-file" description:"log file path (default: stdout)" default:"stdout"`
 }
 
 func main() {
@@ -42,7 +46,16 @@ func main() {
 		if errors.As(err, &flagsErr) && errors.Is(flagsErr.Type, flags.ErrHelp) {
 			os.Exit(0)
 		}
+		fmt.Printf("Error parsing flags: %v\n", err)
+		os.Exit(1)
 	}
+
+	// 初始化日志记录器
+	if err := logging.InitLogger(options.LogLevel, options.LogFile); err != nil {
+		fmt.Printf("Failed to initialize logger: %v\n", err)
+		os.Exit(1)
+	}
+	defer logging.Logger.Sync()
 
 	sourcesConfig := options.SourcesConfig
 	downloadDir := options.DownloadDir
@@ -51,10 +64,10 @@ func main() {
 	//1、实现相关配置文件自动下载
 	downloadConfig, err := downfile.LoadConfig(sourcesConfig)
 	if err != nil {
-		fmt.Printf("加载配置文件失败: %v\n", err)
+		logging.Errorf("加载配置文件失败: %v", err)
 		return
 	}
-	fmt.Printf("加载配置文件成功: %v\n", downloadConfig)
+	logging.Debugf("加载配置文件成功: %v", downloadConfig)
 
 	// 清理过期缓存记录
 	downfile.CacheFileName = ".sources_cache.json"
@@ -70,7 +83,7 @@ func main() {
 	// 创建HTTP客户端
 	httpClient, err := downfile.CreateHTTPClient(clientConfig)
 	if err != nil {
-		fmt.Printf("创建HTTP客户端失败: %v\n", err)
+		logging.Errorf("创建HTTP客户端失败: %v", err)
 		return
 	}
 
@@ -82,10 +95,10 @@ func main() {
 
 	// 下载所有配置
 	if len(downItems) > 0 {
-		fmt.Printf("总计需要下载的文件数量:[%v]\n", len(downItems))
+		logging.Debugf("总计需要下载的文件数量:[%v]", len(downItems))
 		downfile.ProcessDownItems(httpClient, downItems, downloadDir, false, false, 3)
 	} else {
-		fmt.Printf("未发现需要下载的文件\n")
+		logging.Debug("未发现需要下载的文件")
 		return
 	}
 
@@ -95,15 +108,15 @@ func main() {
 	// 格式化 downItems 中的物理路径
 	absDir, err := fileutils.GetAbsolutePath(downloadDir)
 	if err != nil {
-		fmt.Printf("获取目录[%v]的绝对路径出现错误: %v\n", absDir, err)
+		logging.Errorf("获取目录[%v]的绝对路径出现错误: %v", absDir, err)
 		return
 	} else {
-		fmt.Printf("DownDir:[%v] -> AbsPath:[%v]\n", downloadDir, absDir)
+		logging.Debugf("DownDir:[%v] -> AbsPath:[%v]", downloadDir, absDir)
 	}
 
 	for index, downedItem := range downItems {
 		absPath := downfile.GetItemFilePath(downedItem.FileName, absDir)
-		fmt.Printf("FileName:[%v] -> AbsPath:[%v]\n", downedItem.FileName, absPath)
+		logging.Debugf("FileName:[%v] -> AbsPath:[%v]", downedItem.FileName, absPath)
 		downedItem.FileName = absPath
 		downItems[index] = downedItem
 	}
@@ -117,14 +130,14 @@ func main() {
 	}
 
 	if len(missingPaths) > 0 {
-		fmt.Printf("存在未下载完成的必须依赖文件: %v...\n", missingPaths)
+		logging.Errorf("存在未下载完成的必须依赖文件: %v...", missingPaths)
 		return
 	} else {
-		fmt.Printf("所有必须依赖文件已经下载完成.\n")
+		logging.Debug("所有必须依赖文件已经下载完成.")
 	}
 
 	sourcesPaths := getSourcesPaths(downItems)
-	fmt.Printf("sourcesPaths: %v.\n", sourcesPaths)
+	logging.Debugf("sourcesPaths: %v.", sourcesPaths)
 
 	// 合并已下载的数据库文件到source
 	// 加载并转换 cloud_keys.yml
@@ -161,9 +174,9 @@ func main() {
 	// 写入结构体到文件中去
 	err = fileutils.WriteSortedJson(sourcesPath, sourceCdnData)
 	if err != nil {
-		fmt.Printf("数据文件[%v]生成失败 -> [%w]!!!\n", sourcesPath, err)
+		logging.Errorf("数据文件[%v]生成失败 -> [%w]!!!", sourcesPath, err)
 	} else {
-		fmt.Printf("数据文件[%v]生成成功...\n", sourcesPath)
+		logging.Debugf("数据文件[%v]生成成功...", sourcesPath)
 	}
 }
 

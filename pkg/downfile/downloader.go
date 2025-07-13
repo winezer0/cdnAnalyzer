@@ -2,6 +2,7 @@ package downfile
 
 import (
 	"fmt"
+	"github.com/winezer0/cdnAnalyzer/pkg/logging"
 	"io"
 	"net/http"
 	"os"
@@ -111,7 +112,7 @@ func downloadFile(client *http.Client, downloadUrl, storePath string, keepOldFil
 			if err := os.Rename(storePath, oldFilePath); err != nil {
 				return fmt.Errorf("备份旧文件失败: %w", err)
 			}
-			fmt.Printf("    已备份旧文件为: %s\n", oldFilePath)
+			logging.Debugf("    已备份旧文件为: %s\n", oldFilePath)
 		} else {
 			// 不保留旧文件，直接删除
 			if err := os.Remove(storePath); err != nil {
@@ -127,7 +128,7 @@ func downloadFile(client *http.Client, downloadUrl, storePath string, keepOldFil
 
 	// 更新文件下载时间缓存
 	if err := UpdateFileDownloadTime(storePath); err != nil {
-		fmt.Printf("    错误: 更新下载缓存失败: %v\n", err)
+		logging.Debugf("    错误: 更新下载缓存失败: %v\n", err)
 	}
 
 	return nil

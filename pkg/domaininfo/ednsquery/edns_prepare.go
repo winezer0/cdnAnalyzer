@@ -2,7 +2,7 @@ package ednsquery
 
 import (
 	"context"
-	"fmt"
+	"github.com/winezer0/cdnAnalyzer/pkg/logging"
 	"sync"
 	"time"
 
@@ -72,7 +72,7 @@ func preQueryDomains(ctx context.Context, domains []string, timeout time.Duratio
 				defer stepWg.Done()
 				cnameChains, finalDomain, cnameErr = dnsquery.LookupCNAMEChains(domain, defaultNS, timeout)
 				if cnameErr != nil {
-					fmt.Printf("failed to lookup [%v] CNAME chains: %v\n", domain, cnameErr)
+					logging.Debugf("failed to lookup [%v] CNAME chains: %v\n", domain, cnameErr)
 				}
 			}()
 
@@ -81,7 +81,7 @@ func preQueryDomains(ctx context.Context, domains []string, timeout time.Duratio
 				defer stepWg.Done()
 				nsServers, nsErr = dnsquery.LookupNSServers(domain, defaultNS, timeout)
 				if nsErr != nil {
-					fmt.Printf("failed to lookup [%v] NS servers: %v\n", domain, nsErr)
+					logging.Debugf("failed to lookup [%v] NS servers: %v\n", domain, nsErr)
 				}
 			}()
 
@@ -93,12 +93,12 @@ func preQueryDomains(ctx context.Context, domains []string, timeout time.Duratio
 			if cnameErr == nil && len(cnameChains) > 0 {
 				res.CNAMEChains = cnameChains
 				res.FinalDomain = finalDomain
-				//fmt.Printf("success to lookup [%v] Final Domain [%v] CNAME Chains: %v\n", domain, finalDomain, cnameChains)
+				//logging.Debugf("success to lookup [%v] Final Domain [%v] CNAME Chains: %v\n", domain, finalDomain, cnameChains)
 			}
 
 			if nsErr == nil && len(nsServers) > 0 {
 				res.NameServers = dnsquery.NSServersAddPort(nsServers)
-				//fmt.Printf("success to lookup [%v] NS servers: %v\n", domain, res.NameServers)
+				//logging.Debugf("success to lookup [%v] NS servers: %v\n", domain, res.NameServers)
 			}
 
 			// 防止在 context 被取消后继续发送结果

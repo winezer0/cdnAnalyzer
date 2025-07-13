@@ -1,12 +1,14 @@
 package docheck
 
 import (
-	"fmt"
+	"errors"
+	"os"
+
 	"github.com/winezer0/cdnAnalyzer/pkg/downfile"
 	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
+	"github.com/winezer0/cdnAnalyzer/pkg/logging"
 	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 	"gopkg.in/yaml.v3"
-	"os"
 )
 
 // LoadAppConfigFile 加载YAML配置文件
@@ -17,12 +19,12 @@ func LoadAppConfigFile(configFile string) (*AppConfig, error) {
 
 	data, err := os.ReadFile(configFile)
 	if err != nil {
-		return nil, fmt.Errorf("读取配置文件失败: %w", err)
+		return nil, errors.New("读取配置文件失败")
 	}
 
 	var appConfig AppConfig
 	if err := yaml.Unmarshal(data, &appConfig); err != nil {
-		return nil, fmt.Errorf("解析YAML配置文件失败: %w", err)
+		return nil, errors.New("解析YAML配置文件失败")
 	}
 	return &appConfig, nil
 }
@@ -66,25 +68,25 @@ func DBFilesIsExists(paths DBFilePaths) []string {
 	var missingPaths []string
 
 	if fileutils.IsNotExists(paths.ResolversFile) {
-		missingPaths = append(missingPaths, fmt.Sprintf("DNS解析服务器配置文件(resolvers-file) -> Not File [%s]", paths.ResolversFile))
+		missingPaths = append(missingPaths, "DNS解析服务器配置文件(resolvers-file) -> Not File")
 	}
 	if fileutils.IsNotExists(paths.CityMapFile) {
-		missingPaths = append(missingPaths, fmt.Sprintf("EDNS城市IP映射文件(city-map-file) -> Not File [%s]", paths.CityMapFile))
+		missingPaths = append(missingPaths, "EDNS城市IP映射文件(city-map-file) -> Not File")
 	}
 	if fileutils.IsNotExists(paths.AsnIpv4Db) {
-		missingPaths = append(missingPaths, fmt.Sprintf("IPv4 ASN数据库(asn-ipv4-db) -> Not File [%s]", paths.AsnIpv4Db))
+		missingPaths = append(missingPaths, "IPv4 ASN数据库(asn-ipv4-db) -> Not File")
 	}
 	if fileutils.IsNotExists(paths.AsnIpv6Db) {
-		missingPaths = append(missingPaths, fmt.Sprintf("IPv6 ASN数据库(asn-ipv6-db) -> Not File [%s]", paths.AsnIpv6Db))
+		missingPaths = append(missingPaths, "IPv6 ASN数据库(asn-ipv6-db) -> Not File")
 	}
 	if fileutils.IsNotExists(paths.Ipv4LocateDb) {
-		missingPaths = append(missingPaths, fmt.Sprintf("IPv4地理位置数据库(ipv4-locate-db) -> Not File [%s]", paths.Ipv4LocateDb))
+		missingPaths = append(missingPaths, "IPv4地理位置数据库(ipv4-locate-db) -> Not File")
 	}
 	if fileutils.IsNotExists(paths.Ipv6LocateDb) {
-		missingPaths = append(missingPaths, fmt.Sprintf("IPv6地理位置数据库(ipv6-locate-db) -> Not File [%s]", paths.Ipv6LocateDb))
+		missingPaths = append(missingPaths, "IPv6地理位置数据库(ipv6-locate-db) -> Not File")
 	}
 	if fileutils.IsNotExists(paths.CdnSource) {
-		missingPaths = append(missingPaths, fmt.Sprintf("CDN源数据配置文件(sources-json) -> Not File [%s]", paths.CdnSource))
+		missingPaths = append(missingPaths, "CDN源数据配置文件(sources-json) -> Not File")
 	}
 
 	return missingPaths
@@ -93,12 +95,12 @@ func DBFilesIsExists(paths DBFilePaths) []string {
 func LoadResolvers(resolversFile string, resolversNum int) ([]string, error) {
 	// 检查文件是否存在
 	if _, err := os.Stat(resolversFile); os.IsNotExist(err) {
-		return nil, fmt.Errorf("DNS解析服务器配置文件不存在: %s", resolversFile)
+		return nil, errors.New("DNS解析服务器配置文件不存在")
 	}
 
 	resolvers, err := fileutils.ReadTextToList(resolversFile)
 	if err != nil {
-		return nil, fmt.Errorf("加载DNS服务器失败: %w", err)
+		return nil, errors.New("加载DNS服务器失败")
 	}
 	resolvers = maputils.PickRandList(resolvers, resolversNum)
 	return resolvers, nil
@@ -107,15 +109,15 @@ func LoadResolvers(resolversFile string, resolversNum int) ([]string, error) {
 func LoadCityMap(cityMapFile string, randCityNum int) ([]map[string]string, error) {
 	// 检查文件是否存在
 	if _, err := os.Stat(cityMapFile); os.IsNotExist(err) {
-		return nil, fmt.Errorf("EDNS城市IP映射文件不存在: %s", cityMapFile)
+		return nil, errors.New("EDNS城市IP映射文件不存在")
 	}
 
 	cityMap, err := fileutils.ReadCSVToMap(cityMapFile)
 	if err != nil {
-		return nil, fmt.Errorf("读取城市IP映射失败: %w", err)
+		return nil, errors.New("读取城市IP映射失败")
 	}
 	selectedCityMap := maputils.PickRandMaps(cityMap, randCityNum)
-	//fmt.Printf("selectedCityMap: %v\n", selectedCityMap)
+	logging.Debugf("selectedCityMap: %v", selectedCityMap)
 	return selectedCityMap, nil
 }
 
@@ -125,6 +127,7 @@ func DownloadDbFiles(downItems []downfile.DownItem, storeDir string, proxyUrl st
 	dbPaths := GetDBPathsFromConfig(downItems, storeDir)
 	missedDB := DBFilesIsExists(dbPaths)
 	if len(missedDB) > 0 || updateDB {
+		logging.Warnf("Missing DB files, starting download: %v", missedDB)
 		// 更新数据库缓存记录文件
 		downfile.CleanupExpiredCache()
 
@@ -136,7 +139,7 @@ func DownloadDbFiles(downItems []downfile.DownItem, storeDir string, proxyUrl st
 		}
 		httpClient, err := downfile.CreateHTTPClient(clientConfig)
 		if err != nil {
-			errs = fmt.Errorf("Failed to create HTTP client: %v\n", err)
+			errs = errors.New("Failed to create HTTP client")
 		}
 
 		// 仅保留已启用的项
@@ -145,11 +148,11 @@ func DownloadDbFiles(downItems []downfile.DownItem, storeDir string, proxyUrl st
 		// 处理所有配置组
 		totalItems := len(downItems)
 		if totalItems > 0 {
-			//fmt.Printf("Start downloading the dependent files for the IP database, totalItems:[%v]...\n", totalItems)
+			logging.Debugf("Start downloading the dependent files for the IP database, totalItems:[%v]...", totalItems)
 			downedItems := downfile.ProcessDownItems(httpClient, downItems, storeDir, false, false, 3)
 			downfile.CleanupIncompleteDownloads(storeDir)
 			if downedItems != totalItems {
-				errs = fmt.Errorf("file download progress is missing:[%v/%v]", downedItems, totalItems)
+				errs = errors.New("file download progress is missing")
 			}
 		}
 	}

@@ -2,9 +2,11 @@ package fileutils
 
 import (
 	"fmt"
-	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
+	"github.com/winezer0/cdnAnalyzer/pkg/logging"
 	"os"
 	"strings"
+
+	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 )
 
 func WriteOutputToFile(data interface{}, outputType, outputFile string) error {
@@ -35,6 +37,7 @@ func WriteOutputToFile(data interface{}, outputType, outputFile string) error {
 		err = WriteAny(outputFile, maputils.AnyToTxtStr(data))
 
 	default:
+		//原样输出到stdout 不要进行修改
 		fmt.Println(maputils.AnyToTxtStr(data))
 		return nil
 	}
@@ -42,6 +45,6 @@ func WriteOutputToFile(data interface{}, outputType, outputFile string) error {
 	if err != nil {
 		return fmt.Errorf("写入 %s 失败: %w", outputType, err)
 	}
-	fmt.Printf("结果已写入%s文件: %s\n", outputType, outputFile)
+	logging.Debugf("结果已写入%s文件: %s\n", outputType, outputFile)
 	return nil
 }

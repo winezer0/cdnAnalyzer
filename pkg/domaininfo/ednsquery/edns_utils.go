@@ -1,6 +1,6 @@
 package ednsquery
 
-import "fmt"
+import "github.com/winezer0/cdnAnalyzer/pkg/logging"
 
 func mergeCityEDNSResultMap(cityEDNSResultMap CityEDNSResultMap) *EDNSResult {
 	if len(cityEDNSResultMap) == 0 {
@@ -89,15 +89,15 @@ func addStringsToSet(items []string, set map[string]struct{}) {
 
 func printEDNSResultMap(mergedAll map[string]*EDNSResult) {
 	for domain, merged := range mergedAll {
-		fmt.Printf("=== Merged DNSResult for %s ===\n", domain)
-		fmt.Printf("basic Domain: %s\n", merged.Domain)
-		fmt.Printf("Final Domain: %s\n", merged.FinalDomain)
-		fmt.Printf("Used Locations: %v\n", merged.Locations)
-		fmt.Printf("A Records: %v\n", merged.A)
-		fmt.Printf("AAAA Records: %v\n", merged.AAAA)
-		fmt.Printf("CNAME Records: %v\n", merged.CNAME)
-		fmt.Printf("Name Servers: %v\n", merged.NameServers)
-		fmt.Printf("CNAME Chain: %v\n", merged.CNAMEChains)
-		fmt.Printf("Errors: %v\n", merged.Errors)
+		logging.Debugf("=== Merged DNSResult for %s ===", domain)
+		logging.Debugf("basic Domain: %s", merged.Domain)
+		logging.Debugf("Final Domain: %s", merged.FinalDomain)
+		logging.Debugf("Used Locations: %v", merged.Locations)
+		logging.Debugf("A Records: %v", merged.A)
+		logging.Debugf("AAAA Records: %v", merged.AAAA)
+		logging.Debugf("CNAME Records: %v", merged.CNAME)
+		logging.Debugf("Name Servers: %v", merged.NameServers)
+		logging.Debugf("CNAME Chain: %v", merged.CNAMEChains)
+		logging.Debugf("Errors: %v", merged.Errors)
 	}
 }

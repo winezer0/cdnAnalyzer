@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/winezer0/cdnAnalyzer/pkg/logging"
 )
 
 // ExportToCSV 将数据库中的所有 ASN 条目导出为 CSV 文件
@@ -39,7 +41,7 @@ func (m *MMDBManager) ExportToCSV(outputPath string) error {
 			var record ASNRecord
 			ipNet, err := networks.Network(&record)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "解析网络段失败: %v\n", err)
+				logging.Warnf("解析网络段失败: %v", err)
 				continue
 			}
 
@@ -58,7 +60,7 @@ func (m *MMDBManager) ExportToCSV(outputPath string) error {
 		}
 	}
 
-	fmt.Printf("成功导出 ASN 数据到: %s\n", outputPath)
+	logging.Debugf("成功导出 ASN 数据到: %s", outputPath)
 	return nil
 }
 
@@ -83,11 +85,11 @@ func GetUniqueOrgNumbers(asnInfos []ASNInfo) []uint64 {
 // PrintASNInfo 打印ASN信息
 func PrintASNInfo(ipInfo *ASNInfo) {
 	if ipInfo == nil {
-		fmt.Println("ASN信息为空")
+		logging.Debugln("ASN信息为空")
 		return
 	}
 
-	fmt.Printf("IP: %15s | 版本: %d | 找到ASN: %v | ASN: %6d | 组织: %s\n",
+	logging.Debugf("IP: %15s | 版本: %d | 找到ASN: %v | ASN: %6d | 组织: %s",
 		ipInfo.IP,
 		ipInfo.IPVersion,
 		ipInfo.FoundASN,

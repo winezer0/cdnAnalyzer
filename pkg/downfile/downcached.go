@@ -3,6 +3,7 @@ package downfile
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/winezer0/cdnAnalyzer/pkg/logging"
 	"os"
 	"path/filepath"
 	"time"
@@ -39,13 +40,13 @@ func LoadDownloadCache() *DownloadCache {
 	// 读取缓存文件
 	data, err := os.ReadFile(cacheFilePath)
 	if err != nil {
-		fmt.Printf("警告: 读取缓存文件失败: %v\n", err)
+		logging.Debugf("警告: 读取缓存文件失败: %v\n", err)
 		return cache
 	}
 
 	// 解析JSON
 	if err := json.Unmarshal(data, cache); err != nil {
-		fmt.Printf("警告: 解析缓存文件失败: %v\n", err)
+		logging.Debugf("警告: 解析缓存文件失败: %v\n", err)
 		return &DownloadCache{
 			Files: make(map[string]time.Time),
 		}

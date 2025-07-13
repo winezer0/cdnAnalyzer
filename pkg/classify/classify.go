@@ -62,10 +62,10 @@ func (tc *TargetClassifier) Total() int {
 // ShowSummary 打印摘要信息
 func (tc *TargetClassifier) ShowSummary() {
 	total := tc.Total()
-	fmt.Printf("Total targets: %d\n", total)
-	fmt.Printf("IPEntries: %d (from URL: %d)\n", len(tc.IPEntries), countURLs(tc.IPEntries))
-	fmt.Printf("DomainEntry: %d (from URL: %d)\n", len(tc.DomainEntries), countURLs(tc.DomainEntries))
-	fmt.Printf("InvalidEntries: %d\n", len(tc.InvalidEntries))
+	fmt.Printf("Total targets: %d", total)
+	fmt.Printf("IPEntries: %d (from URL: %d)", len(tc.IPEntries), countURLs(tc.IPEntries))
+	fmt.Printf("DomainEntry: %d (from URL: %d)", len(tc.DomainEntries), countURLs(tc.DomainEntries))
+	fmt.Printf("InvalidEntries: %d", len(tc.InvalidEntries))
 }
 
 func ClassifyTargets(targets []string) *TargetClassifier {

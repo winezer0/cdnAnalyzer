@@ -1,13 +1,12 @@
 package docheck
 
 import (
-	"fmt"
 	"github.com/winezer0/cdnAnalyzer/internal/analyzer"
 	"github.com/winezer0/cdnAnalyzer/pkg/classify"
 	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/dnsquery"
 	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/querydomain"
 	"github.com/winezer0/cdnAnalyzer/pkg/ipinfo/queryip"
-	"os"
+	"github.com/winezer0/cdnAnalyzer/pkg/logging"
 )
 
 // QueryDomainInfo 进行域名信息解析
@@ -24,7 +23,7 @@ func QueryDomainInfo(dnsConfig *querydomain.DNSQueryConfig, domainEntries []clas
 		if result, ok := (*dnsResult)[domainEntry.FMT]; ok && result != nil {
 			checkInfo = PopulateDNSResult(domainEntry, result)
 		} else {
-			fmt.Printf("No DNS result for domain: %s\n", domainEntry.FMT)
+			logging.Warnf("No DNS result for domain: %s", domainEntry.FMT)
 			checkInfo = analyzer.NewDomainCheckInfo(domainEntry.RAW, domainEntry.FMT, domainEntry.FromUrl)
 		}
 		checkInfos = append(checkInfos, checkInfo)
@@ -37,8 +36,7 @@ func QueryIPInfo(ipDbConfig *queryip.IpDbConfig, checkInfos []*analyzer.CheckInf
 	// 初始化IP数据库引擎
 	ipEngines, err := queryip.InitDBEngines(ipDbConfig)
 	if err != nil {
-		fmt.Printf("初始化数据库失败: %v\n", err)
-		os.Exit(1)
+		logging.Fatalf("初始化数据库失败: %v", err)
 	}
 	defer ipEngines.Close()
 
@@ -47,7 +45,7 @@ func QueryIPInfo(ipDbConfig *queryip.IpDbConfig, checkInfos []*analyzer.CheckInf
 		if len(checkInfo.A) > 0 || len(checkInfo.AAAA) > 0 {
 			ipInfo, err := ipEngines.QueryIPInfo(checkInfo.A, checkInfo.AAAA)
 			if err != nil {
-				fmt.Printf("查询IP信息失败: %v\n", err)
+				logging.Warnf("查询IP信息失败: %v", err)
 			} else {
 				checkInfo.Ipv4Locate = ipInfo.IPv4Locations
 				checkInfo.Ipv4Asn = ipInfo.IPv4AsnInfos
