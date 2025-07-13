@@ -23,27 +23,27 @@ import (
 // CmdConfig 存储程序配置，使用结构体标签定义命令行参数
 type CmdConfig struct {
 	// 配置文件参数
-	ConfigFile   string `short:"c" long:"config-file" description:"config yaml file path" default:""`
-	UpdateConfig bool   `short:"C" long:"update-config" description:"updated config content by remote url"`
+	ConfigFile   string `short:"c" long:"config-file" description:"config yaml file path (default ~/cdnAnalyzer/config.yaml)" default:""`
+	UpdateConfig bool   `short:"C" long:"update-config" description:"updated config content by remote url (default false)"`
 
 	// 基本参数 覆盖app Config中的配置
 	Input     string `short:"i" long:"input" description:"input file or str list (separated by commas)"`
-	InputType string `short:"I" long:"input-type" description:"input data type: string/file/sys" default:"string" choice:"string" choice:"string" choice:"string"`
+	InputType string `short:"I" long:"input-type" description:"input data type: str/file/sys (default str)" default:"str" choice:"file" choice:"str" choice:"sys"`
 
 	// 输出配置参数 覆盖app Config中的配置
-	Output      string `short:"o" long:"output" description:"output file path" default:"analyser_output.json"`
-	OutputType  string `short:"O" long:"output-type" description:"output file type: csv/json/txt/sys" default:"sys" choice:"csv" choice:"json" choice:"txt" choice:"sys"`
-	OutputLevel int    `short:"l" long:"output-level" description:"Output verbosity level: 1=quiet, 2=default, 3=detail" default:"2" choice:"1" choice:"2" choice:"3"`
+	Output      string `short:"o" long:"output" description:"output file path (default result.json)" default:"result.json"`
+	OutputType  string `short:"O" long:"output-type" description:"output file type: csv/json/txt/sys (default sys)" default:"sys" choice:"csv" choice:"json" choice:"txt" choice:"sys"`
+	OutputLevel int    `short:"l" long:"output-level" description:"Output verbosity level: 1=quiet, 2=default, 3=detail (default 2)" default:"2" choice:"1" choice:"2" choice:"3"`
 	OutputNoCDN bool   `short:"n" long:"output-no-cdn" description:"only output Info where not CDN and not WAF."`
 
 	// 日志配置参数
-	LogLevel string `long:"log-level" description:"log level (debug, info, warn, error)" default:"error"`
+	LogLevel string `long:"log-level" description:"log level: debug/info/warn/error (default error" default:"error" choice:"debug" choice:"info" choice:"warn" choice:"error"`
 	LogFile  string `long:"log-file" description:"log file path (default: stdout)" default:"stdout"`
 
 	// 数据库更新配置
-	Proxy    string `short:"p" long:"proxy" description:"use the proxy URL down files (http|socks5)" default:""`
-	Folder   string `short:"d" long:"folder" description:"db files storage dir (default user directory)" default:""`
-	UpdateDB bool   `short:"u" long:"update-db" description:"Automatically update db files (will check interval)"`
+	Proxy    string `short:"p" long:"proxy" description:"use the proxy URL down files (support http|socks5)" default:""`
+	Folder   string `short:"d" long:"folder" description:"db files storage dir (default ~/cdnAnalyzer)" default:""`
+	UpdateDB bool   `short:"u" long:"update-db" description:"Auto update db files by interval (default: false)"`
 
 	// DNS 相关参数（新增）
 	DNSTimeout        int    `short:"t" long:"dns-timeout" description:"Cover Config, Set DNS query timeout in seconds" default:"0"`
@@ -94,6 +94,7 @@ func main() {
 	//初始化配置文件默认路径 存储到 cmdConfig.Folder 下
 	if cmdConfig.ConfigFile == "" {
 		cmdConfig.ConfigFile = fileutils.JoinPath(cmdConfig.Folder, "config.yaml")
+		logging.Debugf("Use default current config path: %v", cmdConfig.ConfigFile)
 	}
 
 	// 进行配置文件远程更新
@@ -103,6 +104,8 @@ func main() {
 		downfile.CleanupIncompleteDownloads(cmdConfig.Folder) //清理下载失败的数据
 		if err != nil {
 			logging.Fatalf("Failed to load <%s> -> error: %v\n", url, err)
+		} else {
+			logging.Debugf("Success update config from url: %v", url)
 		}
 	}
 
@@ -110,18 +113,23 @@ func main() {
 	if fileutils.IsEmptyFile(cmdConfig.ConfigFile) {
 		fileutils.MakeDirs(cmdConfig.ConfigFile, true)
 		fileutils.WriteAny(cmdConfig.ConfigFile, embeds.GetConfig())
+		logging.Debugf("Success creat config from embed: %v", cmdConfig.ConfigFile)
 	}
 
 	// 加载配置文件远程更新
 	appConfig, err := docheck.LoadAppConfigFile(cmdConfig.ConfigFile)
 	if err != nil || appConfig == nil {
 		logging.Fatalf("Failed to load the config: %v\n", err)
+	} else {
+		logging.Debugf("Success loaded config: %v", cmdConfig.ConfigFile)
 	}
 
 	// 获取并检查数据库文件路径
 	dbPaths, err := docheck.DownloadDbFiles(appConfig.DownloadItems, cmdConfig.Folder, cmdConfig.Proxy, cmdConfig.UpdateDB)
 	if err != nil {
-		logging.Fatalf("check and down db files failed: %v\n", err)
+		logging.Fatalf("Check and down db files failed: %v\n", err)
+	} else {
+		logging.Debugf("Success Check db files: %v", cmdConfig.Folder)
 	}
 
 	// 检查必要参数
@@ -138,16 +146,18 @@ func main() {
 
 	//加载dns解析服务器配置文件，用于dns解析调用
 	resolvers, err := docheck.LoadResolvers(dbPaths.ResolversFile, appConfig.ResolversNum)
-	logging.Debugf("rand resolvers: %v", resolvers)
 	if err != nil {
 		logging.Fatalf("Failed to load resolvers: %v", err)
+	} else {
+		logging.Debugf("Success get rand resolvers: %v", resolvers)
 	}
 
 	//加载本地EDNS城市IP信息
 	randCities, err := docheck.LoadCityMap(dbPaths.CityMapFile, appConfig.CityMapNUm)
-	logging.Debugf("rand cities: %v", randCities)
 	if err != nil {
 		logging.Fatalf("Failed to load city map: %v", err)
+	} else {
+		logging.Debugf("Success get rand cities: %v", randCities)
 	}
 
 	// 配置DNS查询参数
@@ -189,12 +199,16 @@ func main() {
 	err = fileutils.ReadJsonToStruct(dbPaths.CdnSource, cdnData)
 	if err != nil {
 		logging.Fatalf("Failed to load CDN source data: %v\n", err)
+	} else {
+		logging.Debugf("Success load CDN source data: %v", dbPaths.CdnSource)
 	}
 
 	//进行CDN CLOUD WAF 信息分析
 	checkResults, err := analyzer.CheckCDNBatch(cdnData, checkInfos)
 	if err != nil {
-		logging.Fatalf("CDN information analysis is abnormal: %v\n", err)
+		logging.Fatalf("Failed to analysis CDN info: %v\n", err)
+	} else {
+		logging.Debugf("Success analysis CDN info: %v", dbPaths.CdnSource)
 	}
 
 	//排除Cdn|WAF部分的结果
@@ -217,7 +231,9 @@ func main() {
 	}
 
 	// 处理输出类型
-	fileutils.WriteOutputToFile(outputData, cmdConfig.OutputType, cmdConfig.Output)
+	if err = fileutils.WriteOutputToFile(outputData, cmdConfig.OutputType, cmdConfig.Output); err != nil {
+		logging.Debugf("Write analysis results to [%v] occur error: %v", cmdConfig.Output, err)
+	}
 }
 
 // 使用命令行非默认值参数更新配置文件中的参数
@@ -266,12 +282,12 @@ func checkTargetInfo(target string, targetType string) ([]string, error) {
 		err     error
 	)
 
-	if target == "" && (targetType == "string" || targetType == "file") {
+	if target == "" && (targetType == "str" || targetType == "file") {
 		return nil, fmt.Errorf("the target must be specified")
 	}
 
 	switch targetType {
-	case "string":
+	case "str":
 		targets = strings.Split(target, ",")
 	case "file":
 		targets, err = fileutils.ReadTextToList(target)
