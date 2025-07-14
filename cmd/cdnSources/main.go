@@ -32,7 +32,7 @@ type Options struct {
 	SourcesConfig string `short:"c" description:"资源配置文件路径" default:"sources.yaml"`
 	DownloadDir   string `short:"d" description:"资源下载存储目录" default:"sources"`
 	SourcesPath   string `short:"o" description:"资源更新后的输出文件" default:"sources/sources.json"`
-	LogLevel      string `long:"log-level" description:"log level: debug/info/warn/error (default debug" default:"debug" choice:"debug" choice:"info" choice:"warn" choice:"error"`
+	LogLevel      string `long:"log-level" description:"log level: debug/info/warn/error (default debug)" default:"debug" choice:"debug" choice:"info" choice:"warn" choice:"error"`
 	LogFile       string `long:"log-file" description:"log file path (default: stdout)" default:""`
 }
 

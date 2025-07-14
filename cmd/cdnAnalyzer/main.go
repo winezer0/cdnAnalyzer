@@ -37,7 +37,7 @@ type CmdConfig struct {
 	OutputNoCDN bool   `short:"n" long:"output-no-cdn" description:"only output Info where not CDN and not WAF."`
 
 	// 日志配置参数
-	LogLevel string `long:"log-level" description:"log level: debug/info/warn/error (default error" default:"error" choice:"debug" choice:"info" choice:"warn" choice:"error"`
+	LogLevel string `long:"log-level" description:"log level: debug/info/warn/error (default error)" default:"error" choice:"debug" choice:"info" choice:"warn" choice:"error"`
 	LogFile  string `long:"log-file" description:"log file path (default: stdout)" default:""`
 
 	// 数据库更新配置
