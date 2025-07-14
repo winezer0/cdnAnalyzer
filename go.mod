@@ -13,7 +13,6 @@ require (
 )
 
 require (
-	github.com/stretchr/testify v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/mod v0.26.0 // indirect
 	golang.org/x/net v0.42.0 // indirect
