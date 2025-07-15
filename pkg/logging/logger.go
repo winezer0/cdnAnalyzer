@@ -55,7 +55,7 @@ func InitLoggerWithConfig(config LogConfig) error {
 	if !config.StdoutPrefix {
 		consoleEncoderConfig.TimeKey = ""
 		consoleEncoderConfig.LevelKey = ""
-		consoleEncoderConfig.CallerKey = ""
+		//consoleEncoderConfig.CallerKey = ""
 		consoleEncoderConfig.FunctionKey = ""
 	}
 
