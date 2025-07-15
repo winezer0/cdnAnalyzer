@@ -15,10 +15,28 @@ var (
 	sugar  *zap.SugaredLogger
 )
 
+// LogConfig 日志配置选项
+type LogConfig struct {
+	LogLevel     string // 日志级别
+	LogFile      string // 日志输出文件
+	StdoutPrefix bool   // 是否在控制台输出显示日志前缀（时间戳、级别等）
+}
+
 // InitLogger 初始化日志系统，支持 stdout 和文件同时输出
+// 默认控制台输出不显示前缀，文件输出保留完整信息
 func InitLogger(logLevel string, logFile string) error {
+	config := LogConfig{
+		LogLevel:     logLevel,
+		LogFile:      logFile,
+		StdoutPrefix: false, // 默认控制台不显示前缀
+	}
+	return InitLoggerWithConfig(config)
+}
+
+// InitLoggerWithConfig 使用配置初始化日志系统
+func InitLoggerWithConfig(config LogConfig) error {
 	var level zapcore.Level
-	switch strings.ToLower(logLevel) {
+	switch strings.ToLower(config.LogLevel) {
 	case "debug":
 		level = zapcore.DebugLevel
 	case "warn":
@@ -29,32 +47,45 @@ func InitLogger(logLevel string, logFile string) error {
 		level = zapcore.InfoLevel
 	}
 
-	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	// 控制台编码器配置
+	consoleEncoderConfig := zap.NewProductionEncoderConfig()
+	consoleEncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+
+	// 控制台输出不显示前缀
+	if !config.StdoutPrefix {
+		consoleEncoderConfig.TimeKey = ""
+		consoleEncoderConfig.LevelKey = ""
+		consoleEncoderConfig.CallerKey = ""
+		consoleEncoderConfig.FunctionKey = ""
+	}
+
+	// 文件编码器配置 - 始终保留完整信息
+	fileEncoderConfig := zap.NewProductionEncoderConfig()
+	fileEncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 
 	var cores []zapcore.Core
 
 	// 控制台输出
 	consoleCore := zapcore.NewCore(
-		zapcore.NewConsoleEncoder(encoderConfig),
+		zapcore.NewConsoleEncoder(consoleEncoderConfig),
 		zapcore.Lock(os.Stdout),
 		level,
 	)
 	cores = append(cores, consoleCore)
 
 	// 文件输出
-	if logFile != "" {
-		if err := ensureLogDir(logFile); err != nil {
+	if config.LogFile != "" {
+		if err := ensureLogDir(config.LogFile); err != nil {
 			return fmt.Errorf("failed to create log directory: %w", err)
 		}
 
-		file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		file, err := os.OpenFile(config.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			return fmt.Errorf("failed to open log file: %w", err)
 		}
 
 		fileCore := zapcore.NewCore(
-			zapcore.NewJSONEncoder(encoderConfig),
+			zapcore.NewJSONEncoder(fileEncoderConfig),
 			zapcore.AddSync(file),
 			level,
 		)
@@ -63,12 +94,15 @@ func InitLogger(logLevel string, logFile string) error {
 
 	core := zapcore.NewTee(cores...)
 
-	logger = zap.New(core, zap.AddCaller())
+	// 添加调用者信息，并设置跳过级别
+	opts := []zap.Option{zap.AddCaller(), zap.AddCallerSkip(1)}
+
+	logger = zap.New(core, opts...)
 	sugar = logger.Sugar()
 
 	sugar.Infow("Logger initialized",
-		"level", logLevel,
-		"output", logFile,
+		"level", config.LogLevel,
+		"output", config.LogFile,
 	)
 
 	return nil
