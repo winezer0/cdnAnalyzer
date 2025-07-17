@@ -36,10 +36,6 @@ type CmdConfig struct {
 	OutputLevel int    `short:"l" long:"output-level" description:"Output verbosity level: 1=quiet, 2=default, 3=detail (default 2)" default:"2" choice:"1" choice:"2" choice:"3"`
 	OutputNoCDN bool   `short:"n" long:"output-no-cdn" description:"only output Info where not CDN and not WAF."`
 
-	// 日志配置参数
-	LogLevel string `long:"log-level" description:"log level: debug/info/warn/error (default error)" default:"error" choice:"debug" choice:"info" choice:"warn" choice:"error"`
-	LogFile  string `long:"log-file" description:"log file path (default: stdout)" default:""`
-
 	// 数据库更新配置
 	Proxy    string `short:"p" long:"proxy" description:"use the proxy URL down files (support http|socks5)" default:""`
 	Folder   string `short:"d" long:"folder" description:"db files storage dir (default ~/cdnAnalyzer)" default:""`
@@ -53,6 +49,11 @@ type CmdConfig struct {
 	EDNSConcurrency   int    `short:"W" long:"edns-concurrency" description:"Cover Config, Set concurrent EDNS queries" default:"0"`
 	QueryEDNSCNAMES   string `short:"q" long:"query-ednscnames" description:"Cover Config, Set enable CNAME resolution via EDNS (allow:|false|true)" default:"" choice:"" choice:"false" choice:"true"`
 	QueryEDNSUseSysNS string `short:"s" long:"query-edns-use-sys-ns" description:"Cover Config, Set use system nameservers for EDNS (allow:|false|true)" default:"" choice:"" choice:"false" choice:"true"`
+
+	// 日志配置参数
+	LogFile       string `long:"lf" description:"log file path (default: only stdout)" default:""`
+	LogLevel      string `long:"ll" description:"log level: debug/info/warn/error (default error)" default:"error" choice:"debug" choice:"info" choice:"warn" choice:"error"`
+	ConsoleFormat string `long:"lc" description:"log console format, multiple choice T(time),L(level),C(caller),F(func),M(msg). Empty or off will disable." default:"T L C M"`
 }
 
 func main() {
@@ -80,7 +81,8 @@ func main() {
 	}
 
 	// 初始化日志记录器
-	if err := logging.InitLogger(cmdConfig.LogLevel, cmdConfig.LogFile); err != nil {
+	logCfg := logging.NewLogConfig(cmdConfig.LogLevel, cmdConfig.LogFile, cmdConfig.ConsoleFormat)
+	if err := logging.InitLogger(logCfg); err != nil {
 		fmt.Printf("Failed to initialize logger: %v\n", err)
 		os.Exit(1)
 	}

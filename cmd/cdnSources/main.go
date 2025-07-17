@@ -32,8 +32,11 @@ type Options struct {
 	SourcesConfig string `short:"c" description:"资源配置文件路径" default:"sources.yaml"`
 	DownloadDir   string `short:"d" description:"资源下载存储目录" default:"sources"`
 	SourcesPath   string `short:"o" description:"资源更新后的输出文件" default:"sources/sources.json"`
-	LogLevel      string `long:"log-level" description:"log level: debug/info/warn/error (default debug)" default:"debug" choice:"debug" choice:"info" choice:"warn" choice:"error"`
-	LogFile       string `long:"log-file" description:"log file path (default: stdout)" default:""`
+
+	// 日志配置参数
+	LogFile       string `long:"lf" description:"log file path (default: only stdout)" default:""`
+	LogLevel      string `long:"ll" description:"log level: debug/info/warn/error (default debug)" default:"debug" choice:"debug" choice:"info" choice:"warn" choice:"error"`
+	ConsoleFormat string `long:"lc" description:"log console format, multiple choice T(time),L(level),C(caller),F(func),M(msg). Empty or off will disable." default:"T L C M"`
 }
 
 func main() {
@@ -51,7 +54,8 @@ func main() {
 	}
 
 	// 初始化日志记录器
-	if err := logging.InitLogger(options.LogLevel, options.LogFile); err != nil {
+	logCfg := logging.NewLogConfig(options.LogLevel, options.LogFile, options.ConsoleFormat)
+	if err := logging.InitLogger(logCfg); err != nil {
 		fmt.Printf("Failed to initialize logger: %v\n", err)
 		os.Exit(1)
 	}
