@@ -69,8 +69,8 @@ func keysInMap(cnames []string, cnamesMap map[string][]string) (bool, string) {
 // buildIpRanger 构建一个 CIDR 查找器（ranger）用于快速判断 IP 是否在某组 CIDR 范围内
 func buildIpRanger(cidrList []string) cidranger.Ranger {
 	ranger := cidranger.NewPCTrieRanger()
-	for _, cdn := range cidrList {
-		_, network, err := net.ParseCIDR(cdn)
+	for _, cidr := range cidrList {
+		_, network, err := net.ParseCIDR(cidr)
 		if err != nil {
 			continue
 		}
