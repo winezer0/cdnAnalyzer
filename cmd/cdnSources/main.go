@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -153,32 +152,42 @@ func main() {
 	// 加载sources_foreign.json 数据的合并
 	sourceData := generate.TransferPDCdnCheckJson(sourcesPaths.SourcesForeignJson)
 
-	// 加载 sources_china.json
-	sourceChina := generate.TransferPDCdnCheckJson(sourcesPaths.SourcesChinaJson)
-
-	// 加载 sources_added.json
-	sourceAdded := generate.TransferPDCdnCheckJson(sourcesPaths.SourcesAddedJson)
-
 	// 加载 sources_provider.json
 	sourceProvider := generate.TransferProviderYAML(sourcesPaths.ProviderForeignYaml)
 
-	// 合并以上几种数据源
-	sourceMerge, _ := analyzer.CdnDataMergeSafe(*sourceData, *sourceChina, *sourceAdded, *cdnYamlTransData, *cdnKeysTransData, *sourceProvider)
+	// 合并以上几种旧的数据源
+	mergedCdnData, _ := analyzer.MergeCdnDataList(*sourceData, *cdnYamlTransData, *cdnKeysTransData, *sourceProvider)
+	if err != nil {
+		logging.Fatalf("Merge Cdn Data List (sourceData, cdnYamlTransData, cdnKeysTransData, sourceProvider) error: %+v.", err)
+	}
 
-	// 合并后的json重新转为CDNData结构体
-	sourceCdnData := analyzer.NewEmptyCDNData()
-	sourceMergeBytes, err := json.Marshal(sourceMerge)
-	json.Unmarshal(sourceMergeBytes, sourceCdnData)
+	// 加载 sources_china.json
+	chinaCdnData := analyzer.NewEmptyCDNData()
+	if fileutils.ReadJsonToStruct(sourcesPaths.SourcesChinaJson, chinaCdnData); err != nil {
+		logging.Errorf("Read Json [%s] To Struct error: %+v.", sourcesPaths.SourcesChinaJson, err)
+	}
+
+	//// 加载 sources_added.json
+	addedCdnData := analyzer.NewEmptyCDNData()
+	if fileutils.ReadJsonToStruct(sourcesPaths.SourcesAddedJson, addedCdnData); err != nil {
+		logging.Errorf("Read Json [%s] To Struct error: %+v.", sourcesPaths.SourcesAddedJson, err)
+	}
+
+	// 使用合并三种类型的数据
+	finalCdnData, err := analyzer.MergeCdnDataList(*mergedCdnData, *chinaCdnData, *addedCdnData)
+	if err != nil {
+		logging.Fatalf("Merge Cdn Data List (mergedCdnData, chinaCdnData, addedCdnData) error: %+v.", err)
+	}
 
 	// 添加未知供应商的CDN CNAME
 	cnameList, err := fileutils.ReadTextToList(sourcesPaths.UnknownCdnCname)
 	cleanedCnameList := cleanCnameList(cnameList)
-	analyzer.AddDataToCdnDataCategory(sourceCdnData, analyzer.CategoryCDN, analyzer.FieldCNAME, "UNKNOWN", cleanedCnameList)
+	analyzer.AddDataToCdnDataCategory(finalCdnData, analyzer.CategoryCDN, analyzer.FieldCNAME, "UNKNOWN", cleanedCnameList)
 
 	// 写入结构体到文件中去
-	err = fileutils.WriteSortedJson(sourcesPath, sourceCdnData)
+	err = fileutils.WriteSortedJson(sourcesPath, finalCdnData)
 	if err != nil {
-		logging.Errorf("数据文件[%v]生成失败 -> [%w]!!!", sourcesPath, err)
+		logging.Errorf("数据文件[%v]生成失败 -> [%+v]!!!", sourcesPath, err)
 	} else {
 		logging.Debugf("数据文件[%v]生成成功...", sourcesPath)
 	}

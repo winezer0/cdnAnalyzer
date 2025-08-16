@@ -38,15 +38,17 @@ func NormalizeASNList(asns []string) []string {
 	return result
 }
 
-// CdnDataMergeSafe 实现多个cdnData数据的合并
-func CdnDataMergeSafe(cdnDatas ...CDNData) (map[string]interface{}, error) {
+// MergeCdnDataList 实现多个cdnData数据的合并
+func MergeCdnDataList(cdnDataList ...CDNData) (*CDNData, error) {
+	mergedCdnData := NewEmptyCDNData()
 	var mergedMap map[string]interface{}
-	for _, cdnData := range cdnDatas {
+
+	for _, cdnData := range cdnDataList {
 		//转换为Json对象后进行通用合并操作
 		cdnDataString := maputils.AnyToJsonStr(cdnData)
 		cdnDataMap, err := maputils.ParseJSON(cdnDataString)
 		if err != nil {
-			return nil, err
+			return mergedCdnData, err
 		}
 
 		if mergedMap == nil {
@@ -55,7 +57,12 @@ func CdnDataMergeSafe(cdnDatas ...CDNData) (map[string]interface{}, error) {
 			mergedMap = maputils.DeepMerge(mergedMap, cdnDataMap)
 		}
 	}
-	return mergedMap, nil
+
+	//转换回对象格式
+	if err := maputils.ConvertMapsToStructs(mergedMap, mergedCdnData); err != nil {
+		return nil, err
+	}
+	return mergedCdnData, nil
 }
 
 // AddDataToCdnDataCategory 将 dataList 中的数据添加到 CDNData 的指定 Category 和字段中

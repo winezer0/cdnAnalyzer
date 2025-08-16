@@ -75,7 +75,7 @@ func TestMergeSameData(t *testing.T) {
 	//fileutils.WriteJson("sourceChina.json", sourceChina)
 
 	// 合并写入文件
-	sourceMerge, _ := analyzer.CdnDataMergeSafe(*sourceData, *sourceChina, *cdnYamlTransData, *cloudYamlTransData)
+	sourceMerge, _ := analyzer.MergeCdnDataList(*sourceData, *sourceChina, *cdnYamlTransData, *cloudYamlTransData)
 	fileutils.WriteJson("sources.json", sourceMerge)
 }
 
@@ -96,7 +96,7 @@ func TestMergeChinaCdnData(t *testing.T) {
 	sourceChina2 := TransferPDCdnCheckJson(sourceChinaJson2)
 
 	// 合并写入文件
-	sourceMerge, _ := analyzer.CdnDataMergeSafe(*sourceChina, *sourceChina2)
+	sourceMerge, _ := analyzer.MergeCdnDataList(*sourceChina, *sourceChina2)
 	fileutils.WriteJson("C:\\Users\\WINDOWS\\Desktop\\sources_china.json", sourceMerge)
 }
 

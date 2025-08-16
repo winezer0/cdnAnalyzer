@@ -2,6 +2,7 @@ package maputils
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -30,6 +31,28 @@ func GetMapsValuesUnique(maps []map[string]string) []string {
 		}
 	}
 	return values
+}
+
+// ConvertMapsToStructs 使用 JSON 序列化/反序列化的方式将  json map 数据结构转为任意的数据类型
+func ConvertMapsToStructs(source interface{}, target interface{}) error {
+	if source == nil {
+		return errors.New("source is nil")
+	}
+	if target == nil {
+		return errors.New("target is nil")
+	}
+
+	data, err := json.Marshal(source)
+	if err != nil {
+		return fmt.Errorf("marshal failed: %w", err)
+	}
+
+	err = json.Unmarshal(data, target)
+	if err != nil {
+		return fmt.Errorf("unmarshal failed: %w", err)
+	}
+
+	return nil
 }
 
 // ConvertStructsToMaps 将任意结构体切片转换为 map 切片
