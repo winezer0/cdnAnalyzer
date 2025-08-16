@@ -70,6 +70,12 @@ func main() {
 	parser.ShortDescription = "CDN Information Analysis Tool"
 	parser.LongDescription = "CDN Information Analysis Tool, Analysis Such as (Domain resolution|IP analysis|CDN|WAF|Cloud)."
 
+	// 如果没有提供任何参数，直接输出帮助信息
+	if len(os.Args) == 1 {
+		parser.WriteHelp(os.Stdout)
+		os.Exit(0)
+	}
+
 	// 解析命令行参数
 	if _, err := parser.Parse(); err != nil {
 		var flagsErr *flags.Error
