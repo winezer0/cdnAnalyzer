@@ -21,7 +21,7 @@ type SourcesFilePaths struct {
 	CdnKeysYaml         string
 	CdnDomainsYaml      string
 	SourcesChinaJson    string
-	SourcesChinaJson2   string
+	SourcesAddedJson    string
 	SourcesForeignJson  string
 	ProviderForeignYaml string
 	UnknownCdnCname     string
@@ -156,14 +156,14 @@ func main() {
 	// 加载 sources_china.json
 	sourceChina := generate.TransferPDCdnCheckJson(sourcesPaths.SourcesChinaJson)
 
-	// 加载 sources_china2.json
-	sourceChina2 := generate.TransferPDCdnCheckJson(sourcesPaths.SourcesChinaJson2)
+	// 加载 sources_added.json
+	sourceAdded := generate.TransferPDCdnCheckJson(sourcesPaths.SourcesAddedJson)
 
 	// 加载 sources_provider.json
 	sourceProvider := generate.TransferProviderYAML(sourcesPaths.ProviderForeignYaml)
 
 	// 合并以上几种数据源
-	sourceMerge, _ := analyzer.CdnDataMergeSafe(*sourceData, *sourceChina, *sourceChina2, *cdnYamlTransData, *cdnKeysTransData, *sourceProvider)
+	sourceMerge, _ := analyzer.CdnDataMergeSafe(*sourceData, *sourceChina, *sourceAdded, *cdnYamlTransData, *cdnKeysTransData, *sourceProvider)
 
 	// 合并后的json重新转为CDNData结构体
 	sourceCdnData := analyzer.NewEmptyCDNData()
@@ -218,7 +218,7 @@ func getSourcesPaths(downloadItems []downfile.DownItem) SourcesFilePaths {
 		case SourcesChinaJson:
 			paths.SourcesChinaJson = storePath
 		case SourcesAddedJson:
-			paths.SourcesChinaJson2 = storePath
+			paths.SourcesAddedJson = storePath
 		case ProviderForeignYaml:
 			paths.ProviderForeignYaml = storePath
 		case UnknownCdnCname:
