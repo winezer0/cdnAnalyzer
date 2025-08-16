@@ -22,7 +22,6 @@ download-items:
     filename: zxipv6wry.db
     download-urls:
       - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/zxipv6wry.db
-      - https://raw.githubusercontent.com/ZX-Inc/zxipdb-python/main/data/ipv6wry.db
       - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/zxipv6wry.db
     keep-updated: false
     enable: true
@@ -31,7 +30,6 @@ download-items:
     filename: geolite2-asn-ipv4.mmdb
     download-urls:
       - https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv4.mmdb
-      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/geolite2-asn-ipv4.mmdb
       - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/geolite2-asn-ipv4.mmdb
     keep-updated: true
     enable: true
@@ -40,7 +38,6 @@ download-items:
     filename: geolite2-asn-ipv6.mmdb
     download-urls:
       - https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv6.mmdb
-      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/geolite2-asn-ipv6.mmdb
       - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/geolite2-asn-ipv6.mmdb
     keep-updated: true
     enable: true
