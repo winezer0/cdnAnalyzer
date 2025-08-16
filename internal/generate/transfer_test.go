@@ -97,5 +97,11 @@ func TestMergeChinaCdnData(t *testing.T) {
 
 	// 合并写入文件
 	sourceMerge, _ := analyzer.CdnDataMergeSafe(*sourceChina, *sourceChina2)
-	fileutils.WriteJson("C:\\Users\\WINDOWS\\Desktop\\sources_china_final.json", sourceMerge)
+	fileutils.WriteJson("C:\\Users\\WINDOWS\\Desktop\\sources_china.json", sourceMerge)
+}
+
+func TestGenEmptyCdnData(t *testing.T) {
+	cdnData := analyzer.NewEmptyCDNData()
+	fileutils.WriteJson("C:\\Users\\WINDOWS\\Desktop\\sources_added.json", cdnData)
+
 }
