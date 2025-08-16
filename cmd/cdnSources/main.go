@@ -179,7 +179,7 @@ func main() {
 		logging.Fatalf("Merge Cdn Data List (mergedCdnData, chinaCdnData, addedCdnData) error: %+v.", err)
 	}
 
-	// 添加未知供应商的CDN CNAME
+	// 添加未知供应商的CDN CNAME 最后添加
 	cnameList, err := fileutils.ReadTextToList(sourcesPaths.UnknownCdnCname)
 	cleanedCnameList := cleanCnameList(cnameList)
 	analyzer.AddDataToCdnDataCategory(finalCdnData, analyzer.CategoryCDN, analyzer.FieldCNAME, "UNKNOWN", cleanedCnameList)

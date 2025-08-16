@@ -39,6 +39,14 @@ databases:
     keep-updated: true
     enable: true
 
+  # 其他开源库中获取到不精确的CDN域名信息
+  - module: unknown-cdn-cname
+    filename: unknown-cdn-cname.txt
+    download-urls:
+      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/unknown-cdn-cname.txt
+    keep-updated: true
+    enable: true
+
   # 本项目基本不需要修改的部分
   # 其他开源库中获取到的国内IP信息合并
   - module: cdn-sources-china
@@ -48,10 +56,4 @@ databases:
     keep-updated: false
     enable: true
 
-  # 其他开源库中获取到不精确的CDN域名信息
-  - module: unknown-cdn-cname
-    filename: unknown-cdn-cname.txt
-    download-urls:
-      - https://github.com/alwaystest18/cdnChecker/blob/master/cdn_cname
-    keep-updated: false
-    enable: true
+
