@@ -155,26 +155,27 @@ echo www.baidu.com | ./cdnAnalyzer -I sys
 
 `cdnAnalyzer` 整合了多个公开的数据源以提供准确的分析结果.
 
--   `qqwry.dat`: [metowolf/qqwry.dat](https://github.com/metowolf/qqwry.dat)
--   `zxipv6wry.db`: 内置
--   `geolite2-asn-ipv4.mmdb`: [sapics/ip-location-db](https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv4.mmdb)
--   `geolite2-asn-ipv6.mmdb`: [sapics/ip-location-db](https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv6.mmdb)
--   `dns-resolvers`: 自定义
--   `city_ip.csv`: 自定义
--   `nali cdn.yml`: [4ft35t/cdn](https://raw.githubusercontent.com/4ft35t/cdn/master/src/cdn.yml)
--   `cloud_keys.yml`: 自定义
--   `sources_china.json`: [hanbufei/isCdn](https://github.com/hanbufei/isCdn/blob/main/client/data/sources_china.json)
--   `sources_foreign.json`: [projectdiscovery/cdncheck](https://github.com/projectdiscovery/cdncheck/blob/main/sources_data.json)
--   `provider_foreign.yaml`: [projectdiscovery/cdncheck](https://github.com/projectdiscovery/cdncheck/blob/main/cmd/generate-index/provider.yaml)
--   `unknown-cdn-cname.txt`: [alwaystest18/cdnChecker](https://github.com/alwaystest18/cdnChecker/blob/master/cdn_cname)
--   `sources_china2.json`: [mabangde/cdncheck_cn](https://github.com/mabangde/cdncheck_cn/blob/main/sources_data.json)
+-   更新中 IPv4数据库 `qqwry.dat`: [metowolf/qqwry.dat](https://github.com/metowolf/qqwry.dat)
+-   已停止 IPv6数据库 `zxipv6wry.db`: [内置](https://github.com/winezer0/cdnAnalyzer/blob/main/assets/zxipv6wry.db)
+-   更新中 ASNv4数据库 `geolite2-asn-ipv4.mmdb`: [sapics/ip-location-db](https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv4.mmdb)
+-   更新中 ASNv6数据库`geolite2-asn-ipv6.mmdb`: [sapics/ip-location-db](https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv6.mmdb)
+-   维护中 DNS服务器 `dns-resolvers`: [自定义](https://github.com/winezer0/cdnAnalyzer/blob/main/assets/resolvers.txt)
+-   维护中 对应城市IP `city_ip.csv`: [自定义](https://github.com/winezer0/cdnAnalyzer/blob/main/assets/city_ip.csv)
+-   维护中 云资产关键字 `cloud_keys.yml`: [自定义](https://github.com/winezer0/cdnAnalyzer/blob/main/assets/cloud_keys.yml)
+-   更新中 CDN域名信息 `4ft35t cdn.yml`: [4ft35t/cdn](https://github.com/4ft35t/cdn/blob/master/src/cdn.yml)
+-   更新中 国外CDN信息 `sources_foreign.json`: [projectdiscovery/cdncheck](https://github.com/projectdiscovery/cdncheck/blob/main/sources_data.json)
+-   更新中 国外CDN信息 `provider_foreign.yaml`: [projectdiscovery/cdncheck](https://github.com/projectdiscovery/cdncheck/blob/main/cmd/generate-index/provider.yaml)
+-   已停止 国内CDN信息 `sources_china.json`: [hanbufei/isCdn](https://github.com/hanbufei/isCdn/blob/main/client/data/sources_china.json) 
+-   已停止 国内CDN信息 `sources_china2.json`: [mabangde/cdncheck_cn](https://github.com/mabangde/cdncheck_cn/blob/main/sources_data.json) **已合并到 sources_china.json**
+-   已停止 粗略CDN域名 `unknown-cdn-cname.txt`: [alwaystest18/cdnChecker](https://github.com/alwaystest18/cdnChecker/blob/master/cdn_cname) **已合并到 sources_china.json**
+-   更新中 用户提交信息 `sources_added.json`: [自定义](https://github.com/winezer0/cdnAnalyzer/blob/main/assets/sources_added.json) **由用户提交**
 
 ---
 
 ## TODO
 
--   [ ] 寻找更多的CDN数据源信息
--   [ ] 增加 CDN API 查询接口
+-   [ ] 实现CDN域名IP自动记录, 并提示用户上传到 Github
+-   [ ] 实现快速分析模式, 默认的DNS查询次数过多
 
 ## 开发或数据库参考
 cdncheck  | nali | nemo_go | ip-location-db 等等

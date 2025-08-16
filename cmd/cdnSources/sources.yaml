@@ -1,24 +1,10 @@
 databases:
-  - module: cdn-keys
-    filename: cloud_keys.yml
-    download-urls:
-      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/cloud_keys.yml
-    keep-updated: false
-    enable: true
-
+  # 其他项目维护的部分
   - module: cdn-domains
     filename: cdn.yml
     download-urls:
-      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/cdn.yml
-    keep-updated: false
-    enable: true
-
-  - module: cdn-sources-china
-    filename: sources_china.json
-    download-urls:
-      - https://github.com/hanbufei/isCdn/blob/main/client/data/sources_china.json
-#      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/sources_china.json
-    keep-updated: false
+      - https://github.com/4ft35t/cdn/blob/master/src/cdn.yml
+    keep-updated: true
     enable: true
 
   - module: cdn-sources-foreign
@@ -32,19 +18,40 @@ databases:
     filename: provider_foreign.yaml
     download-urls:
       - https://github.com/projectdiscovery/cdncheck/blob/main/cmd/generate-index/provider.yaml
+    keep-updated: true
+    enable: true
+
+
+  # 本项目维护的部分
+  # 部分云资产的描述关键字
+  - module: cdn-keys
+    filename: cloud_keys.yml
+    download-urls:
+      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/cloud_keys.yml
+    keep-updated: true
+    enable: true
+
+  # 用户主动提交的CDN资产信息
+  - module: cdn-sources-added
+    filename: sources_added.json
+    download-urls:
+      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/sources_added.json
+    keep-updated: true
+    enable: true
+
+  # 本项目基本不需要修改的部分
+  # 其他开源库中获取到的国内IP信息合并
+  - module: cdn-sources-china
+    filename: sources_china.json
+    download-urls:
+      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/sources_china.json
     keep-updated: false
     enable: true
 
+  # 其他开源库中获取到不精确的CDN域名信息
   - module: unknown-cdn-cname
     filename: unknown-cdn-cname.txt
     download-urls:
       - https://github.com/alwaystest18/cdnChecker/blob/master/cdn_cname
-    keep-updated: false
-    enable: true
-
-  - module: cdn-sources-china2
-    filename: sources_china2.json
-    download-urls:
-      - https://github.com/mabangde/cdncheck_cn/blob/main/sources_data.json
     keep-updated: false
     enable: true

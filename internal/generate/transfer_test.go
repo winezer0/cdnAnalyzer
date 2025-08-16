@@ -85,3 +85,17 @@ func TestTransferProviderYAML(t *testing.T) {
 	outFile := providerYaml + ".update.json"
 	fileutils.WriteJson(outFile, *sourceData)
 }
+
+func TestMergeChinaCdnData(t *testing.T) {
+	// 国内源：https://github.com/hanbufei/isCdn/blob/main/client/data/sources_china.json
+	sourceChinaJson := "C:\\Users\\WINDOWS\\Desktop\\sources_china.json"
+	sourceChina := TransferPDCdnCheckJson(sourceChinaJson)
+
+	// 国内源：https://github.com/mabangde/cdncheck_cn/blob/main/sources_data.json
+	sourceChinaJson2 := "C:\\Users\\WINDOWS\\Desktop\\sources_china2.json"
+	sourceChina2 := TransferPDCdnCheckJson(sourceChinaJson2)
+
+	// 合并写入文件
+	sourceMerge, _ := analyzer.CdnDataMergeSafe(*sourceChina, *sourceChina2)
+	fileutils.WriteJson("C:\\Users\\WINDOWS\\Desktop\\sources_china_final.json", sourceMerge)
+}

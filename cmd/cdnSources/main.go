@@ -191,7 +191,7 @@ func getSourcesPaths(downloadItems []downfile.DownItem) SourcesFilePaths {
 		CdnKeysYaml         = "cdn-keys"
 		CdnDomainsYaml      = "cdn-domains"
 		SourcesChinaJson    = "cdn-sources-china"
-		SourcesChinaJson2   = "cdn-sources-china2"
+		SourcesAddedJson    = "cdn-sources-added"
 		SourcesForeignJson  = "cdn-sources-foreign"
 		ProviderForeignYaml = "cdn-provider-foreign"
 		UnknownCdnCname     = "unknown-cdn-cname"
@@ -217,7 +217,7 @@ func getSourcesPaths(downloadItems []downfile.DownItem) SourcesFilePaths {
 			paths.SourcesForeignJson = storePath
 		case SourcesChinaJson:
 			paths.SourcesChinaJson = storePath
-		case SourcesChinaJson2:
+		case SourcesAddedJson:
 			paths.SourcesChinaJson2 = storePath
 		case ProviderForeignYaml:
 			paths.ProviderForeignYaml = storePath
