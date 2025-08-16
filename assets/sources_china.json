@@ -997,8 +997,9 @@
       ],
       "西部数码CDN": [
         "vhostgo.com",
+        "gotoip2.com",
+        "gotoip3.com",
         "gotoip55.com",
-        "vhostgo.com",
         "800cdn.com",
         "west.cn",
         "addlink.cn",
@@ -1367,7 +1368,7 @@
       ]
     },
     "ip": {
-      "知道创宇云安全 CDN": [
+      "知道创宇云安全CDN": [
         "119.39.205.0/24",
         "111.47.226.0/24",
         "193.112.250.0/24",
