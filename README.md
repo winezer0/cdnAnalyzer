@@ -6,11 +6,20 @@
 
 ## 免责声明
 
-继续阅读文章或使用工具视为您已同意NOVASEC免责声明: [NOVASEC免責聲明](https://mp.weixin.qq.com/s/iRWRVxkYu7Fx5unxA34I7g)
+继续阅读文章或使用工具视为您已同意《 NOVASEC免责声明》: [NOVASEC免责声明](https://mp.weixin.qq.com/s/iRWRVxkYu7Fx5unxA34I7g)
+
+
+## TODO
+-   [x] 整理 unknown-cdn-cname 资产和其他源数据
+-   [x] 实现已知CDN域名IP、疑似CDN域名自动分析脚本
+-   [ ] 将CDN信息脱敏后备份, 并节建立Issue允许用户上传疑似CDN信息用于补充CDN IP和CNAME数据库
+-   [ ] 优化代码 实现快速分析模式, 默认的DNS查询次数过多, 导致批量查询时回显较慢, 临时调节可以修改config.yaml中的超时/线程配置
+-   [ ] 优化代码 实现多个CDN数据源合并时，能够自动进行IP级去重操作,当前仅实现字符串去重
+-   [ ] 考虑优化数据源格式 增加service键,用于标记资产属于厂商的公共服务域名 (好像没什么用)
+
 
 ## 功能介绍
 
-- 使用 Go 语言编写，性能高效.
 - 支持多种输入格式：URL、域名、IP.
 - 全面分析：进行域名解析、IP分析，识别CDN、WAF、Cloud服务.
 - 自定义 DNS 服务器进行解析.
@@ -171,11 +180,6 @@ echo www.baidu.com | ./cdnAnalyzer -I sys
 -   更新中 用户提交信息 `sources_added.json`: [自定义](https://github.com/winezer0/cdnAnalyzer/blob/main/assets/sources_added.json) **由用户提交**
 
 ---
-
-## TODO
-
--   [ ] 实现CDN域名IP自动记录, 并提示用户上传到 Github
--   [ ] 实现快速分析模式, 默认的DNS查询次数过多
 
 ## 开发或数据库参考
 cdncheck  | nali | nemo_go | ip-location-db 等等
