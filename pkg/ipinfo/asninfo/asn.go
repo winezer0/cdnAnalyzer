@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
 	"sync"
 
 	"github.com/oschwald/maxminddb-golang"
@@ -12,15 +11,15 @@ import (
 
 // MMDBConfig 数据库配置结构
 type MMDBConfig struct {
-	IPv4Path             string
-	IPv6Path             string
+	// 使用统一的数据库路径，支持同时包含IPv4和IPv6数据的数据库
+	UnifiedDBPath        string
 	MaxConcurrentQueries int
 }
 
 // MMDBManager 数据库管理器
 type MMDBManager struct {
 	config    *MMDBConfig
-	mmDb      map[string]*maxminddb.Reader
+	mmDb      *maxminddb.Reader
 	queryChan chan struct{}
 	mu        sync.RWMutex
 }
@@ -32,7 +31,6 @@ func NewMMDBManager(config *MMDBConfig) *MMDBManager {
 	}
 	return &MMDBManager{
 		config:    config,
-		mmDb:      make(map[string]*maxminddb.Reader),
 		queryChan: make(chan struct{}, config.MaxConcurrentQueries),
 	}
 }
@@ -41,13 +39,14 @@ type ASNInfo struct {
 	IP                 string `json:"ip"`
 	IPVersion          int    `json:"ip_version"`
 	FoundASN           bool   `json:"found_asn"`
-	OrganisationNumber uint64 `json:"as_number"`
+	OrganisationNumber uint32 `json:"as_number"`
 	OrganisationName   string `json:"as_organisation"`
 }
 
+// ASNRecord 定义结构体映射MMDB中的ASN数据结构
 type ASNRecord struct {
-	AutonomousSystemNumber uint64 `maxminddb:"autonomous_system_number"`
-	AutonomousSystemOrg    string `maxminddb:"autonomous_system_organization"`
+	AutonomousSystemNumber       uint32 `maxminddb:"autonomous_system_number"`
+	AutonomousSystemOrganization string `maxminddb:"autonomous_system_organization"`
 }
 
 func NewASNInfo(ipString string, ipVersion int) *ASNInfo {
@@ -59,33 +58,24 @@ func (m *MMDBManager) InitMMDBConn() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// 定义要加载的数据库连接信息
-	dbPaths := map[string]string{
-		"ipv4": m.config.IPv4Path,
-		"ipv6": m.config.IPv6Path,
+	// 如果已存在连接，跳过
+	if m.mmDb != nil {
+		return nil
 	}
 
-	for connId, dbPath := range dbPaths {
-		// 如果已存在连接，跳过
-		if _, ok := m.mmDb[connId]; ok {
-			continue
-		}
-
-		// 检查文件是否存在
-		if _, err := os.Stat(dbPath); os.IsNotExist(err) {
-			return fmt.Errorf("数据库文件不存在: %s", dbPath)
-		}
-
-		// 打开数据库
-		conn, err := maxminddb.Open(dbPath)
-		if err != nil {
-			return fmt.Errorf("打开数据库失败 [%s]: %v", dbPath, err)
-		}
-
-		// 存入 map
-		m.mmDb[connId] = conn
+	// 检查文件是否存在
+	if _, err := os.Stat(m.config.UnifiedDBPath); os.IsNotExist(err) {
+		return fmt.Errorf("数据库文件不存在: %s", m.config.UnifiedDBPath)
 	}
 
+	// 打开数据库
+	conn, err := maxminddb.Open(m.config.UnifiedDBPath)
+	if err != nil {
+		return fmt.Errorf("打开数据库失败 [%s]: %v", m.config.UnifiedDBPath, err)
+	}
+
+	// 存入实例
+	m.mmDb = conn
 	return nil
 }
 
@@ -94,22 +84,20 @@ func (m *MMDBManager) Close() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	var lastErr error
-	for connectionId, conn := range m.mmDb {
-		if err := conn.Close(); err != nil {
-			lastErr = fmt.Errorf("关闭数据库失败 [%s]", connectionId)
-			continue
+	if m.mmDb != nil {
+		if err := m.mmDb.Close(); err != nil {
+			return fmt.Errorf("关闭数据库失败: %v", err)
 		}
-		delete(m.mmDb, connectionId)
+		m.mmDb = nil
 	}
-	return lastErr
+	return nil
 }
 
 // IsInitialized 检查数据库是否已初始化
 func (m *MMDBManager) IsInitialized() bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	return len(m.mmDb) > 0
+	return m.mmDb != nil
 }
 
 // FindASN 查询单个IP的ASN信息
@@ -137,13 +125,13 @@ func (m *MMDBManager) FindASN(ipStr string) *ASNInfo {
 
 	ipVersion := getIpVersion(ipStr)
 	asnInfo := NewASNInfo(ipStr, ipVersion)
-	connectionId := "ipv" + strconv.Itoa(ipVersion)
 
 	m.mu.RLock()
-	reader, ok := m.mmDb[connectionId]
+	reader := m.mmDb
 	m.mu.RUnlock()
 
-	if !ok {
+	// 如果数据库未初始化，返回空结果
+	if reader == nil {
 		return asnInfo
 	}
 
@@ -154,7 +142,7 @@ func (m *MMDBManager) FindASN(ipStr string) *ASNInfo {
 
 	if asnRecord.AutonomousSystemNumber > 0 {
 		asnInfo.OrganisationNumber = asnRecord.AutonomousSystemNumber
-		asnInfo.OrganisationName = asnRecord.AutonomousSystemOrg
+		asnInfo.OrganisationName = asnRecord.AutonomousSystemOrganization
 		asnInfo.FoundASN = true
 	}
 
@@ -162,51 +150,46 @@ func (m *MMDBManager) FindASN(ipStr string) *ASNInfo {
 }
 
 // ASNToIPRanges 通过ASN号反查所有IP段
-func (m *MMDBManager) ASNToIPRanges(targetASN uint64) ([]*net.IPNet, error) {
+func (m *MMDBManager) ASNToIPRanges(targetASN uint32) ([]*net.IPNet, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
+	if m.mmDb == nil {
+		return nil, fmt.Errorf("数据库未初始化")
+	}
+
 	var findIPs []*net.IPNet
-	connectionIds := []string{"ipv4", "ipv6"}
 
-	for _, connectionId := range connectionIds {
-		reader, ok := m.mmDb[connectionId]
-		if !ok {
-			continue
+	networks := m.mmDb.Networks()
+	for networks.Next() {
+		var record ASNRecord
+		ipNet, err := networks.Network(&record)
+		if err != nil {
+			return nil, fmt.Errorf("解析网络段失败: %v", err)
 		}
+		if record.AutonomousSystemNumber == targetASN {
+			findIPs = append(findIPs, ipNet)
+		}
+	}
 
-		networks := reader.Networks()
-		for networks.Next() {
-			var record ASNRecord
-			ipNet, err := networks.Network(&record)
-			if err != nil {
-				return nil, fmt.Errorf("解析网络段失败: %v", err)
-			}
-			if record.AutonomousSystemNumber == targetASN {
-				findIPs = append(findIPs, ipNet)
-			}
-		}
-
-		if err := networks.Err(); err != nil {
-			return nil, fmt.Errorf("遍历数据库时发生错误: %v", err)
-		}
+	if err := networks.Err(); err != nil {
+		return nil, fmt.Errorf("遍历数据库时发生错误: %v", err)
 	}
 
 	return findIPs, nil
 }
 
 // CountMMDBSize 统计数据库大小
-func (m *MMDBManager) CountMMDBSize(connectionId string) (int, error) {
+func (m *MMDBManager) CountMMDBSize() (int, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	reader, ok := m.mmDb[connectionId]
-	if !ok {
-		return 0, fmt.Errorf("数据库未找到: %s", connectionId)
+	if m.mmDb == nil {
+		return 0, fmt.Errorf("数据库未初始化")
 	}
 
 	count := 0
-	networks := reader.Networks()
+	networks := m.mmDb.Networks()
 	for networks.Next() {
 		count++
 	}

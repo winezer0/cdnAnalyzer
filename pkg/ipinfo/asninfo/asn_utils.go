@@ -28,36 +28,35 @@ func (m *MMDBManager) ExportToCSV(outputPath string) error {
 		return fmt.Errorf("写入表头失败: %v", err)
 	}
 
-	// 遍历 IPv4 和 IPv6 数据库
-	connectionIds := []string{"ipv4", "ipv6"}
-	for _, connectionId := range connectionIds {
-		reader, ok := m.mmDb[connectionId]
-		if !ok {
-			continue // 跳过未加载的数据库
+	m.mu.RLock()
+	reader := m.mmDb
+	m.mu.RUnlock()
+
+	if reader == nil {
+		return fmt.Errorf("数据库未初始化")
+	}
+
+	networks := reader.Networks()
+	for networks.Next() {
+		var record ASNRecord
+		ipNet, err := networks.Network(&record)
+		if err != nil {
+			logging.Errorf("解析网络段失败: %v", err)
+			continue
 		}
 
-		networks := reader.Networks()
-		for networks.Next() {
-			var record ASNRecord
-			ipNet, err := networks.Network(&record)
-			if err != nil {
-				logging.Errorf("解析网络段失败: %v", err)
-				continue
-			}
-
-			row := []string{
-				ipNet.String(),
-				fmt.Sprintf("%d", record.AutonomousSystemNumber),
-				record.AutonomousSystemOrg,
-			}
-			if err := writer.Write(row); err != nil {
-				return fmt.Errorf("写入数据行失败: %v", err)
-			}
+		row := []string{
+			ipNet.String(),
+			fmt.Sprintf("%d", record.AutonomousSystemNumber),
+			record.AutonomousSystemOrganization,
 		}
-
-		if err := networks.Err(); err != nil {
-			return fmt.Errorf("遍历数据库时发生错误: %v", err)
+		if err := writer.Write(row); err != nil {
+			return fmt.Errorf("写入数据行失败: %v", err)
 		}
+	}
+
+	if err := networks.Err(); err != nil {
+		return fmt.Errorf("遍历数据库时发生错误: %v", err)
 	}
 
 	logging.Debugf("成功导出 ASN 数据到: %s", outputPath)
@@ -65,9 +64,9 @@ func (m *MMDBManager) ExportToCSV(outputPath string) error {
 }
 
 // GetUniqueOrgNumbers 提取 FoundASN == true 的 OrganisationNumber，并去重
-func GetUniqueOrgNumbers(asnInfos []ASNInfo) []uint64 {
-	seen := make(map[uint64]bool)
-	var result []uint64
+func GetUniqueOrgNumbers(asnInfos []ASNInfo) []uint32 {
+	seen := make(map[uint32]bool)
+	var result []uint32
 
 	for _, info := range asnInfos {
 		if info.FoundASN {

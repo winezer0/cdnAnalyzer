@@ -6,10 +6,9 @@ import (
 )
 
 func TestMMDBManager_FindASN(t *testing.T) {
-	// 创建配置
+	// 创建配置 - 使用统一数据库路径
 	config := &MMDBConfig{
-		IPv4Path:             "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\geolite2-asn-ipv4.mmdb",
-		IPv6Path:             "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\geolite2-asn-ipv6.mmdb",
+		UnifiedDBPath:        "C:\\Users\\WINDOWS\\Desktop\\demo\\geolite2-asn.mmdb",
 		MaxConcurrentQueries: 100,
 	}
 
@@ -23,17 +22,11 @@ func TestMMDBManager_FindASN(t *testing.T) {
 	defer manager.Close()
 
 	// 测试数据库大小统计
-	ipv4DbSize, err := manager.CountMMDBSize("ipv4")
+	dbSize, err := manager.CountMMDBSize()
 	if err != nil {
-		t.Errorf("统计IPv4数据库大小失败: %v", err)
+		t.Errorf("统计数据库大小失败: %v", err)
 	}
-	t.Logf("IPv4数据库大小: %d", ipv4DbSize)
-
-	ipv6DbSize, err := manager.CountMMDBSize("ipv6")
-	if err != nil {
-		t.Errorf("统计IPv6数据库大小失败: %v", err)
-	}
-	t.Logf("IPv6数据库大小: %d", ipv6DbSize)
+	t.Logf("数据库大小: %d", dbSize)
 
 	// 定义测试IP列表
 	testIPs := []string{
@@ -59,17 +52,22 @@ func TestMMDBManager_FindASN(t *testing.T) {
 				continue
 			}
 
-			t.Logf("单个IP查询结果:")
-			PrintASNInfo(ipInfo)
+			// 直接打印结果，而不是依赖logging包
+			t.Logf("IP: %s | 版本: %d | 找到ASN: %v | ASN: %d | 组织: %s",
+				ipInfo.IP,
+				ipInfo.IPVersion,
+				ipInfo.FoundASN,
+				ipInfo.OrganisationNumber,
+				ipInfo.OrganisationName,
+			)
 		}
 	})
 }
 
 func TestMMDBManager_ASNToIPRanges(t *testing.T) {
-	// 创建配置
+	// 创建配置 - 使用统一数据库路径
 	config := &MMDBConfig{
-		IPv4Path:             "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\geolite2-asn-ipv4.mmdb",
-		IPv6Path:             "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\geolite2-asn-ipv6.mmdb",
+		UnifiedDBPath:        "C:\\Users\\WINDOWS\\Desktop\\demo\\geolite2-asn.mmdb",
 		MaxConcurrentQueries: 100,
 	}
 
@@ -98,8 +96,7 @@ func TestMMDBManager_ASNToIPRanges(t *testing.T) {
 
 func TestMMDBManager_BatchFindASN(t *testing.T) {
 	config := &MMDBConfig{
-		IPv4Path:             "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\geolite2-asn-ipv4.mmdb",
-		IPv6Path:             "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\geolite2-asn-ipv6.mmdb",
+		UnifiedDBPath:        "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\geolite2-asn.mmdb",
 		MaxConcurrentQueries: 100,
 	}
 
@@ -137,6 +134,7 @@ func TestMMDBManager_BatchFindASN(t *testing.T) {
 			continue
 		}
 
+		// 直接打印结果，而不是依赖logging包
 		t.Logf("IP: %s, 版本: %d, 找到ASN: %v, ASN: %d, 组织: %s",
 			result.IP, result.IPVersion, result.FoundASN, result.OrganisationNumber, result.OrganisationName)
 	}
