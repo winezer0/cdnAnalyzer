@@ -64,7 +64,7 @@ download-items:
     filename: ip2region_v4.xdb
     download-urls:
       - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v4.xdb
-    keep-updated: true
+    keep-updated: false
     enable: false
 
   - module: ip2region_v6
