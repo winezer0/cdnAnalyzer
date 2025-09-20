@@ -49,10 +49,10 @@ func GetDBPathsFromConfig(downloadItems []downfile.DownItem, storeDir string) DB
 			paths.CityMapFile = storePath
 		case ModuleAsnIPvx:
 			paths.AsnIpvxDb = storePath
-		case ModuleIPv4QQWry:
-			paths.Ipv4QQWryDb = storePath
-		case ModuleIPv6ZXWry:
-			paths.Ipv6ZXWryDb = storePath
+		case ModuleIPv4Locate:
+			paths.Ipv4LocateDb = storePath
+		case ModuleIPv6Locate:
+			paths.Ipv6LocateDb = storePath
 		case ModuleCDNSource:
 			paths.CdnSource = storePath
 		}
@@ -74,10 +74,10 @@ func DBFilesIsExists(paths DBFilePaths) []string {
 	if fileutils.IsNotExists(paths.AsnIpvxDb) {
 		missingPaths = append(missingPaths, "IPv4 ASN数据库(asn-ipv4-db) -> Not File")
 	}
-	if fileutils.IsNotExists(paths.Ipv4QQWryDb) {
+	if fileutils.IsNotExists(paths.Ipv4LocateDb) {
 		missingPaths = append(missingPaths, "IPv4地理位置数据库(ipv4-locate-db) -> Not File")
 	}
-	if fileutils.IsNotExists(paths.Ipv6ZXWryDb) {
+	if fileutils.IsNotExists(paths.Ipv6LocateDb) {
 		missingPaths = append(missingPaths, "IPv6地理位置数据库(ipv6-locate-db) -> Not File")
 	}
 	if fileutils.IsNotExists(paths.CdnSource) {
