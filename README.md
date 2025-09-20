@@ -9,6 +9,68 @@
 继续阅读文章或使用工具视为您已同意《 NOVASEC免责声明》: [NOVASEC免责声明](https://mp.weixin.qq.com/s/iRWRVxkYu7Fx5unxA34I7g)
 
 
+## 更新说明
+
+### 2025-09-20
+- 添加 IP2Region 支持，提供超大 IPv6 地址库，切换IPlocate 可参考或直接使用 config_ip2region.yaml (注意:新版需要更新配置文件)
+- 优化 geolite-asn 支持，将开始IPv6 ASN和IPv4 ASN 进行合并，只需要一个ASN文件
+
+
+### 当前支持的IP数据库类型
+
+1. **QQWry数据库** (默认IPv4数据库)
+   - 用于IPv4地址的地理位置查询
+   - 文件名: `qqwry.dat`
+   - 特点: 轻量级，更新频繁
+
+2. **ZXWry数据库** (默认IPv6数据库)
+   - 用于IPv6地址的地理位置查询
+   - 文件名: `zxipv6wry.db`
+   - 特点: 专门针对IPv6地址
+
+3. **IP2Region数据库** (可选)
+   - 代码库同时支持IPv4和IPv6地址查询
+   - 文件名: `ip2region_v4.xdb` 和 `ip2region_v6.xdb` (较大600M)
+   - 特点: IPv6数据更全, 例如:"2405:6f~00:c602::1": "中国|北京市|北京市|专线用户"
+
+### 如何切换数据库
+
+1. **使用IP2Region数据库**
+
+   修改配置文件 `config.yaml` 中的数据库ipv4locate|ipv6locate的实际下载URL部分
+   ```yaml
+   download-items:
+     # 启用IP2Region IPv4数据库
+     - module: ipv4locate
+       filename: ip2region_v4.xdb
+       download-urls:
+         - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v4.xdb
+
+     # 启用IP2Region IPv6数据库
+     - module: ipv6locate
+       filename: ip2region_v6.xdb
+       download-urls:
+         - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v6.xdb
+   ```
+
+2. **使用组合数据库（QQWry ipv4 + IP2Region ipv6)**
+
+   ```yaml
+   download-items:
+     # QQWry数据库 IP信息带有部分文字，可能有助于CDN判断
+     - module: ipv4locate
+       filename: qqwry.dat
+       download-urls:
+         - https://github.com/metowolf/qqwry.dat/releases/latest/download/qqwry.dat
+
+     # ip2region_v6.xdb 数据更全，但是文件更大
+     - module: ipv6locate
+       filename: ip2region_v6.xdb
+       download-urls:
+         - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v6.xdb
+   ```
+
+
 ## TODO
 -   [x] 整理 unknown-cdn-cname 资产和其他源数据
 -   [x] 实现已知CDN域名IP、疑似CDN域名自动分析脚本
@@ -163,7 +225,8 @@ echo www.baidu.com | ./cdnAnalyzer -I sys
 ## 数据源
 
 `cdnAnalyzer` 整合了多个公开的数据源以提供准确的分析结果.
-
+-   更新中 新增Ip2Region IPv4数据库 : [ip2region_v4.xdb](https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v4.xdb)
+-   更新中 新增Ip2Region IPv6数据库 : [ip2region_v6.xdb](https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v6.xdb) 600M+
 -   更新中 IPv4数据库 `qqwry.dat`: [metowolf/qqwry.dat](https://github.com/metowolf/qqwry.dat)
 -   已停止 IPv6数据库 `zxipv6wry.db`: [内置](https://github.com/winezer0/cdnAnalyzer/blob/main/assets/zxipv6wry.db)
 -   更新中 ASNvx数据库 `geolite2-asn.mmdb ipv4+-ipv6`: [sapics/ip-location-db](https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn.mmdb)
@@ -190,6 +253,3 @@ cdncheck  | nali | nemo_go | ip-location-db 等等
 **NOVASEC微信公众号** 或通过社交信息联系开发者 **【酒零】**
 
 ![NOVASEC0](https://raw.githubusercontent.com/winezer0/mypics/refs/heads/main/NOVASEC0.jpg)
-
-
-
