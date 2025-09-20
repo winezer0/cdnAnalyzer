@@ -4,6 +4,7 @@ go 1.23.10
 
 require (
 	github.com/jessevdk/go-flags v1.6.1
+	github.com/lionsoul2014/ip2region/binding/golang v0.0.0-20250919081619-7e599e05a08a
 	github.com/miekg/dns v1.1.67
 	github.com/oschwald/maxminddb-golang v1.13.1
 	github.com/yl2chen/cidranger v1.0.2

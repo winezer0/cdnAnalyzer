@@ -59,3 +59,17 @@ download-items:
       - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/sources.json
     keep-updated: true
     enable: true
+
+  - module: ip2region_v4
+    filename: ip2region_v4.xdb
+    download-urls:
+      - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v4.xdb
+    keep-updated: true
+    enable: false
+
+  - module: ip2region_v6
+    filename: ip2region_v6.xdb
+    download-urls:
+      - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v6.xdb
+    keep-updated: false
+    enable: false

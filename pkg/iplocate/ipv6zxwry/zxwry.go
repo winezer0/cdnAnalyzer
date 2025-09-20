@@ -1,4 +1,4 @@
-package ipv6info
+package ipv6zxwry
 
 // forked from https://github.com/zu1k/nali
 // ipv6db数据使用http://ip.zxinc.org的免费离线数据（更新到2021年）
@@ -8,11 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
+	"github.com/winezer0/cdnAnalyzer/pkg/iplocate"
+	"github.com/winezer0/cdnAnalyzer/pkg/iplocate/wry"
 	"net"
 	"strings"
 	"sync"
-
-	"github.com/winezer0/cdnAnalyzer/pkg/wry"
 )
 
 // Ipv6Location IPv6地理位置数据库管理器
@@ -20,6 +20,9 @@ type Ipv6Location struct {
 	wry.IPDB[uint64]
 	mu sync.RWMutex // 添加读写锁保护并发访问
 }
+
+// 确保 Ipv6Location 实现了 ipinfo.IPv6Info 接口
+var _ iplocate.IPv6Info = (*Ipv6Location)(nil)
 
 // NewIPv6Location 从文件路径创建新的IPv6地理位置数据库管理器
 func NewIPv6Location(filePath string) (*Ipv6Location, error) {

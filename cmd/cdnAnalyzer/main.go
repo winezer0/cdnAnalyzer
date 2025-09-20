@@ -3,20 +3,19 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/winezer0/cdnAnalyzer/pkg/queryip"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/jessevdk/go-flags"
 	"github.com/winezer0/cdnAnalyzer/internal/analyzer"
 	"github.com/winezer0/cdnAnalyzer/internal/docheck"
 	"github.com/winezer0/cdnAnalyzer/internal/embeds"
 	"github.com/winezer0/cdnAnalyzer/pkg/classify"
 	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/querydomain"
-	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
-	"github.com/winezer0/cdnAnalyzer/pkg/ipinfo/queryip"
-
-	"github.com/jessevdk/go-flags"
 	"github.com/winezer0/cdnAnalyzer/pkg/downfile"
+	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
 	"github.com/winezer0/cdnAnalyzer/pkg/logging"
 )
 

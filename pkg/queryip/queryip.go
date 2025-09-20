@@ -2,9 +2,9 @@ package queryip
 
 import (
 	"fmt"
-	"github.com/winezer0/cdnAnalyzer/pkg/ipinfo/asninfo"
-	"github.com/winezer0/cdnAnalyzer/pkg/ipinfo/ipv4info"
-	"github.com/winezer0/cdnAnalyzer/pkg/ipinfo/ipv6info"
+	"github.com/winezer0/cdnAnalyzer/pkg/asninfo"
+	"github.com/winezer0/cdnAnalyzer/pkg/iplocate/ipv4qqwry"
+	"github.com/winezer0/cdnAnalyzer/pkg/iplocate/ipv6zxwry"
 	"net"
 )
 
@@ -18,8 +18,8 @@ type IpDbConfig struct {
 // DBEngines 存储所有数据库引擎实例
 type DBEngines struct {
 	AsnEngine  *asninfo.MMDBManager
-	IPv4Engine *ipv4info.Ipv4Location
-	IPv6Engine *ipv6info.Ipv6Location
+	IPv4Engine *ipv4qqwry.Ipv4Location
+	IPv6Engine *ipv6zxwry.Ipv6Location
 }
 
 // IPDbInfo 存储IP解析的中间结果
@@ -43,14 +43,14 @@ func InitDBEngines(config *IpDbConfig) (*DBEngines, error) {
 	}
 
 	// 初始化IPv4地理位置数据库
-	ipv4Engine, err := ipv4info.NewIPv4Location(config.Ipv4LocateDb)
+	ipv4Engine, err := ipv4qqwry.NewIPv4Location(config.Ipv4LocateDb)
 	if err != nil {
 		asnManager.Close()
 		return nil, fmt.Errorf("初始化IPv4数据库失败: %w", err)
 	}
 
 	// 初始化IPv6地理位置数据库
-	ipv6Engine, err := ipv6info.NewIPv6Location(config.Ipv6LocateDb)
+	ipv6Engine, err := ipv6zxwry.NewIPv6Location(config.Ipv6LocateDb)
 	if err != nil {
 		asnManager.Close()
 		ipv4Engine.Close()
