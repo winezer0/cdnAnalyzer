@@ -189,9 +189,9 @@ func main() {
 
 	//对 checkInfos 中的IP数据进行分析
 	ipDbConfig := &queryip.IpDbConfig{
-		AsnIpvxDb:    dbPaths.AsnIpvxDb,
-		Ipv4LocateDb: dbPaths.Ipv4LocateDb,
-		Ipv6LocateDb: dbPaths.Ipv6LocateDb,
+		AsnIpvxDb:   dbPaths.AsnIpvxDb,
+		Ipv4QQWryDb: dbPaths.Ipv4QQWryDb,
+		Ipv6ZXWryDb: dbPaths.Ipv6ZXWryDb,
 	}
 
 	checkInfos = docheck.QueryIPInfo(ipDbConfig, checkInfos)

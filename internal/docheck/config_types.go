@@ -23,8 +23,8 @@ type DBFilePaths struct {
 	ResolversFile string
 	CityMapFile   string
 	AsnIpvxDb     string
-	Ipv4LocateDb  string
-	Ipv6LocateDb  string
+	Ipv4QQWryDb   string
+	Ipv6ZXWryDb   string
 	CdnSource     string
 }
 
@@ -32,9 +32,8 @@ type DBFilePaths struct {
 const (
 	ModuleDNSResolvers = "dns-resolvers"
 	ModuleEDNSCityIP   = "edns-city-ip"
-
-	ModuleIPv4Locate = "qqwry"
-	ModuleIPv6Locate = "zxipv6wry"
-	ModuleAsnIPvx    = "geolite2-asn"
-	ModuleCDNSource  = "cdn-sources"
+	ModuleIPv4QQWry    = "qqwry"
+	ModuleIPv6ZXWry    = "zxipv6wry"
+	ModuleAsnIPvx      = "geolite2-asn"
+	ModuleCDNSource    = "cdn-sources"
 )

@@ -10,16 +10,16 @@ import (
 
 // IpDbConfig 存储程序配置
 type IpDbConfig struct {
-	AsnIpvxDb    string
-	Ipv4LocateDb string
-	Ipv6LocateDb string
+	AsnIpvxDb   string
+	Ipv4QQWryDb string
+	Ipv6ZXWryDb string
 }
 
 // DBEngines 存储所有数据库引擎实例
 type DBEngines struct {
 	AsnEngine  *asninfo.MMDBManager
-	IPv4Engine *ipv4qqwry.Ipv4Location
-	IPv6Engine *ipv6zxwry.Ipv6Location
+	IPv4Engine *ipv4qqwry.Ipv4QQWry
+	IPv6Engine *ipv6zxwry.Ipv6ZXWry
 }
 
 // IPDbInfo 存储IP解析的中间结果
@@ -43,14 +43,14 @@ func InitDBEngines(config *IpDbConfig) (*DBEngines, error) {
 	}
 
 	// 初始化IPv4地理位置数据库
-	ipv4Engine, err := ipv4qqwry.NewIPv4Location(config.Ipv4LocateDb)
+	ipv4Engine, err := ipv4qqwry.NewIPv4Location(config.Ipv4QQWryDb)
 	if err != nil {
 		asnManager.Close()
 		return nil, fmt.Errorf("初始化IPv4数据库失败: %w", err)
 	}
 
 	// 初始化IPv6地理位置数据库
-	ipv6Engine, err := ipv6zxwry.NewIPv6Location(config.Ipv6LocateDb)
+	ipv6Engine, err := ipv6zxwry.NewIPv6Location(config.Ipv6ZXWryDb)
 	if err != nil {
 		asnManager.Close()
 		ipv4Engine.Close()

@@ -12,17 +12,17 @@ import (
 	"sync"
 )
 
-// Ipv4Location IPv4地理位置数据库管理器
-type Ipv4Location struct {
+// Ipv4QQWry IPv4地理位置数据库管理器
+type Ipv4QQWry struct {
 	wry.IPDB[uint32]
 	mu sync.RWMutex // 添加读写锁保护并发访问
 }
 
-// 确保 Ipv4Location 实现了 ipinfo.IPv4Info 接口
-var _ iplocate.IPv4Info = (*Ipv4Location)(nil)
+// 确保 Ipv4QQWry 实现了 ipinfo.IPv4Info 接口
+var _ iplocate.IPv4Info = (*Ipv4QQWry)(nil)
 
 // NewIPv4Location 从文件路径创建新的IPv4地理位置数据库管理器
-func NewIPv4Location(filePath string) (*Ipv4Location, error) {
+func NewIPv4Location(filePath string) (*Ipv4QQWry, error) {
 	if filePath == "" {
 		return nil, fmt.Errorf("IP数据库[%v]文件路径为空", filePath)
 	}
@@ -40,7 +40,7 @@ func NewIPv4Location(filePath string) (*Ipv4Location, error) {
 	start := binary.LittleEndian.Uint32(header[:4])
 	end := binary.LittleEndian.Uint32(header[4:])
 
-	return &Ipv4Location{
+	return &Ipv4QQWry{
 		IPDB: wry.IPDB[uint32]{
 			Data:     fileData,
 			OffLen:   3,
@@ -53,7 +53,7 @@ func NewIPv4Location(filePath string) (*Ipv4Location, error) {
 }
 
 // find 内部查询方法，返回详细结果
-func (db *Ipv4Location) find(query string) (result *wry.Result, err error) {
+func (db *Ipv4QQWry) find(query string) (result *wry.Result, err error) {
 	// 验证IP地址
 	ip := net.ParseIP(query)
 	if ip == nil {
@@ -81,7 +81,7 @@ func (db *Ipv4Location) find(query string) (result *wry.Result, err error) {
 }
 
 // Find 查询IPv4地址的地理位置信息
-func (db *Ipv4Location) Find(query string) string {
+func (db *Ipv4QQWry) Find(query string) string {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
 
@@ -95,7 +95,7 @@ func (db *Ipv4Location) Find(query string) string {
 }
 
 // BatchFind 批量查询多个IP地址
-func (db *Ipv4Location) BatchFind(queries []string) map[string]string {
+func (db *Ipv4QQWry) BatchFind(queries []string) map[string]string {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
 
@@ -155,7 +155,7 @@ func checkIPv4File(data []byte) bool {
 }
 
 // GetDatabaseInfo 获取数据库信息
-func (db *Ipv4Location) GetDatabaseInfo() map[string]interface{} {
+func (db *Ipv4QQWry) GetDatabaseInfo() map[string]interface{} {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
 
@@ -168,7 +168,7 @@ func (db *Ipv4Location) GetDatabaseInfo() map[string]interface{} {
 }
 
 // Close 关闭数据库连接（清理资源）
-func (db *Ipv4Location) Close() {
+func (db *Ipv4QQWry) Close() {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 

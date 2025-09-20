@@ -15,17 +15,17 @@ import (
 	"sync"
 )
 
-// Ipv6Location IPv6地理位置数据库管理器
-type Ipv6Location struct {
+// Ipv6ZXWry IPv6地理位置数据库管理器
+type Ipv6ZXWry struct {
 	wry.IPDB[uint64]
 	mu sync.RWMutex // 添加读写锁保护并发访问
 }
 
-// 确保 Ipv6Location 实现了 ipinfo.IPv6Info 接口
-var _ iplocate.IPv6Info = (*Ipv6Location)(nil)
+// 确保 Ipv6ZXWry 实现了 ipinfo.IPv6Info 接口
+var _ iplocate.IPv6Info = (*Ipv6ZXWry)(nil)
 
 // NewIPv6Location 从文件路径创建新的IPv6地理位置数据库管理器
-func NewIPv6Location(filePath string) (*Ipv6Location, error) {
+func NewIPv6Location(filePath string) (*Ipv6ZXWry, error) {
 	if filePath == "" {
 		return nil, fmt.Errorf("IP数据库[%v]文件路径为空", filePath)
 	}
@@ -47,7 +47,7 @@ func NewIPv6Location(filePath string) (*Ipv6Location, error) {
 	counts := binary.LittleEndian.Uint64(header[8:16])
 	end := start + counts*11
 
-	return &Ipv6Location{
+	return &Ipv6ZXWry{
 		IPDB: wry.IPDB[uint64]{
 			Data:     fileData,
 			OffLen:   offLen,
@@ -60,7 +60,7 @@ func NewIPv6Location(filePath string) (*Ipv6Location, error) {
 }
 
 // find 内部查询方法，返回详细结果
-func (db *Ipv6Location) find(query string) (result *wry.Result, err error) {
+func (db *Ipv6ZXWry) find(query string) (result *wry.Result, err error) {
 	// 验证IP地址
 	ip := net.ParseIP(query)
 	if ip == nil {
@@ -89,7 +89,7 @@ func (db *Ipv6Location) find(query string) (result *wry.Result, err error) {
 }
 
 // Find 查询IPv6地址的地理位置信息
-func (db *Ipv6Location) Find(query string) string {
+func (db *Ipv6ZXWry) Find(query string) string {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
 
@@ -103,7 +103,7 @@ func (db *Ipv6Location) Find(query string) string {
 }
 
 // BatchFind 批量查询多个IP地址
-func (db *Ipv6Location) BatchFind(queries []string) map[string]string {
+func (db *Ipv6ZXWry) BatchFind(queries []string) map[string]string {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
 
@@ -122,7 +122,7 @@ func (db *Ipv6Location) BatchFind(queries []string) map[string]string {
 }
 
 // GetDatabaseInfo 获取数据库信息
-func (db *Ipv6Location) GetDatabaseInfo() map[string]interface{} {
+func (db *Ipv6ZXWry) GetDatabaseInfo() map[string]interface{} {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
 
@@ -137,7 +137,7 @@ func (db *Ipv6Location) GetDatabaseInfo() map[string]interface{} {
 }
 
 // Close 关闭数据库连接（清理资源）
-func (db *Ipv6Location) Close() {
+func (db *Ipv6ZXWry) Close() {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
