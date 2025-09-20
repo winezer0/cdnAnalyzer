@@ -1,6 +1,8 @@
 package ednsquery
 
-import "github.com/winezer0/cdnAnalyzer/pkg/logging"
+import (
+	"github.com/winezer0/cdnAnalyzer/pkg/logging"
+)
 
 func mergeCityEDNSResultMap(cityEDNSResultMap CityEDNSResultMap) *EDNSResult {
 	if len(cityEDNSResultMap) == 0 {
@@ -12,6 +14,9 @@ func mergeCityEDNSResultMap(cityEDNSResultMap CityEDNSResultMap) *EDNSResult {
 		A:           nil,
 		AAAA:        nil,
 		CNAME:       nil,
+		NS:          nil,
+		MX:          nil,
+		TXT:         nil,
 		NameServers: nil,
 		CNAMEChains: nil,
 		Errors:      nil,
@@ -21,6 +26,8 @@ func mergeCityEDNSResultMap(cityEDNSResultMap CityEDNSResultMap) *EDNSResult {
 	aaaaSet := make(map[string]struct{})
 	cnameSet := make(map[string]struct{})
 	nsSet := make(map[string]struct{})
+	mxSet := make(map[string]struct{})
+	txtSet := make(map[string]struct{})
 	cnamesChainSet := make(map[string]struct{})
 	errorSet := make(map[string]struct{})
 	locationSet := make(map[string]struct{})
@@ -43,10 +50,13 @@ func mergeCityEDNSResultMap(cityEDNSResultMap CityEDNSResultMap) *EDNSResult {
 		// 合并 CNAME 链条
 		addStringsToSet(res.CNAMEChains, cnamesChainSet)
 
-		// 合并 A/AAAA/CNAME/错误
+		// 合并 A/AAAA/CNAME/NS/MX/TXT/错误
 		addStringsToSet(res.A, aSet)
 		addStringsToSet(res.AAAA, aaaaSet)
 		addStringsToSet(res.CNAME, cnameSet)
+		addStringsToSet(res.NS, nsSet)
+		addStringsToSet(res.MX, mxSet)
+		addStringsToSet(res.TXT, txtSet)
 		addStringsToSet(res.Errors, errorSet)
 	}
 
@@ -57,6 +67,9 @@ func mergeCityEDNSResultMap(cityEDNSResultMap CityEDNSResultMap) *EDNSResult {
 	mr.A = keys(aSet)
 	mr.AAAA = keys(aaaaSet)
 	mr.CNAME = keys(cnameSet)
+	mr.NS = keys(nsSet)
+	mr.MX = keys(mxSet)
+	mr.TXT = keys(txtSet)
 	mr.Errors = keys(errorSet)
 
 	return &mr
@@ -96,6 +109,9 @@ func printEDNSResultMap(mergedAll map[string]*EDNSResult) {
 		logging.Debugf("A Records: %v", merged.A)
 		logging.Debugf("AAAA Records: %v", merged.AAAA)
 		logging.Debugf("CNAME Records: %v", merged.CNAME)
+		logging.Debugf("NS Records: %v", merged.NS)
+		logging.Debugf("MX Records: %v", merged.MX)
+		logging.Debugf("TXT Records: %v", merged.TXT)
 		logging.Debugf("Name Servers: %v", merged.NameServers)
 		logging.Debugf("CNAME Chain: %v", merged.CNAMEChains)
 		logging.Debugf("Errors: %v", merged.Errors)

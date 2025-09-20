@@ -1,27 +1,26 @@
-package ipv6info
+package ipv4qqwry
 
 import (
 	"testing"
 )
 
-func TestIpv6Location_Find(t *testing.T) {
+func TestIpv4Location_Find(t *testing.T) {
 	// 集成测试：测试完整的查询流程
-	db, err := NewIPv6Location("C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\zxipv6wry.db")
+	db, err := NewIPv4Location("C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\qqwry.dat")
 	if err != nil {
 		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
 	}
 	defer db.Close()
 
-	// 测试一些常见的IPv6地址
+	// 测试一些常见的IP地址
 	testIPs := []string{
-		"2001:db8::1",
-		"2405:6f00:c602::1",
-		"2409:8c1e:75b0:1120::27",
-		"2402:3c00:1000:4::1",
-		"2408:8652:200::c101",
-		"2409:8900:103f:14f:d7e:cd36:11af:be83",
-		"fe80::5c12:27dc:93a4:3426",
-		"::1",
+		"8.8.8.8",
+		"119.29.29.52",
+		"114.114.114.114",
+		"223.5.5.5",
+		"1.1.1.1",
+		"208.67.222.222",
+		"266.67.222.222",
 	}
 
 	for _, ip := range testIPs {
@@ -30,26 +29,23 @@ func TestIpv6Location_Find(t *testing.T) {
 
 			// 记录结果用于调试
 			t.Logf("查询IP: %s -> 结果: %s", ip, result)
-
-			// 验证方法正常工作（不强制要求特定结果）
-			// 主要测试方法不会panic或返回异常
 		})
 	}
 }
 
-func TestIpv6Location_BatchFind(t *testing.T) {
-	db, err := NewIPv6Location("C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\zxipv6wry.db")
+func TestIpv4Location_BatchFind(t *testing.T) {
+	db, err := NewIPv4Location("C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\qqwry.dat")
 	if err != nil {
 		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
 	}
 	defer db.Close()
 
 	testIPs := []string{
-		"2001:db8::1",
-		"2405:6f00:c602::1",
-		"2409:8c1e:75b0:1120::27",
+		"8.8.8.8",
+		"119.29.29.52",
+		"114.114.114.114",
 		"invalid_ip",
-		"192.168.1.1",
+		"2001:db8::1",
 	}
 
 	results := db.BatchFind(testIPs)
@@ -63,8 +59,8 @@ func TestIpv6Location_BatchFind(t *testing.T) {
 	}
 }
 
-func TestIpv6Location_GetDatabaseInfo(t *testing.T) {
-	db, err := NewIPv6Location("C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\zxipv6wry.db")
+func TestIpv4Location_GetDatabaseInfo(t *testing.T) {
+	db, err := NewIPv4Location("C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\qqwry.dat")
 	if err != nil {
 		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
 	}
@@ -73,7 +69,7 @@ func TestIpv6Location_GetDatabaseInfo(t *testing.T) {
 	info := db.GetDatabaseInfo()
 
 	// 验证返回的信息包含必要的字段
-	requiredFields := []string{"ip_count", "index_start", "index_end", "data_size", "off_len", "ip_len"}
+	requiredFields := []string{"ip_count", "index_start", "index_end", "data_size"}
 	for _, field := range requiredFields {
 		if _, exists := info[field]; !exists {
 			t.Errorf("数据库信息缺少字段: %s", field)

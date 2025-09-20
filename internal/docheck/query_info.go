@@ -5,8 +5,8 @@ import (
 	"github.com/winezer0/cdnAnalyzer/pkg/classify"
 	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/dnsquery"
 	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/querydomain"
-	"github.com/winezer0/cdnAnalyzer/pkg/ipinfo/queryip"
 	"github.com/winezer0/cdnAnalyzer/pkg/logging"
+	"github.com/winezer0/cdnAnalyzer/pkg/queryip"
 )
 
 // QueryDomainInfo 进行域名信息解析

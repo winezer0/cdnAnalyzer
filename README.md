@@ -9,13 +9,80 @@
 继续阅读文章或使用工具视为您已同意《 NOVASEC免责声明》: [NOVASEC免责声明](https://mp.weixin.qq.com/s/iRWRVxkYu7Fx5unxA34I7g)
 
 
+## 更新说明
+
+### 2025-09-20
+- 添加 IP2Region 支持，提供超大 IPv6 地址库，切换IPlocate 可参考或直接使用 config_ip2region.yaml (注意:新版需要更新配置文件)
+- 优化 geolite-asn 支持，将开始IPv6 ASN和IPv4 ASN 进行合并，只需要一个ASN文件
+- 优化dns查询性能配置 默认关闭不再同时使用edns和dns查询，现在只需使用其中一种即可，建议dns查询，速度快
+
+注意：已对配置文件格式进行了更新，建议移除 C:\Users\%usernmae%\cdnAnalyzer\config.yaml, 避免配置未生效
+
+### 当前支持的IP数据库类型
+
+1. **QQWry数据库** (默认IPv4数据库)
+   - 用于IPv4地址的地理位置查询
+   - 文件名: `qqwry.dat`
+   - 特点: 轻量级，更新频繁
+
+2. **ZXWry数据库** (默认IPv6数据库)
+   - 用于IPv6地址的地理位置查询
+   - 文件名: `zxipv6wry.db`
+   - 特点: 专门针对IPv6地址
+
+3. **IP2Region数据库** (可选)
+   - 代码库同时支持IPv4和IPv6地址查询
+   - 文件名: `ip2region_v4.xdb` 和 `ip2region_v6.xdb` (较大600M)
+   - 特点: IPv6数据更全, 例如:"2405:6f~00:c602::1": "中国|北京市|北京市|专线用户"
+
+### 如何切换数据库
+
+1. **使用IP2Region数据库**
+
+   修改配置文件 `config.yaml` 中的数据库ipv4locate|ipv6locate的实际下载URL部分
+   ```yaml
+   download-items:
+     # 启用IP2Region IPv4数据库
+     - module: ipv4locate
+       filename: ip2region_v4.xdb
+       download-urls:
+         - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v4.xdb
+
+     # 启用IP2Region IPv6数据库
+     - module: ipv6locate
+       filename: ip2region_v6.xdb
+       download-urls:
+         - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v6.xdb
+   ```
+
+2. **使用组合数据库（QQWry ipv4 + IP2Region ipv6)**
+
+   ```yaml
+   download-items:
+     # QQWry数据库 IP信息带有部分文字，可能有助于CDN判断
+     - module: ipv4locate
+       filename: qqwry.dat
+       download-urls:
+         - https://github.com/metowolf/qqwry.dat/releases/latest/download/qqwry.dat
+
+     # ip2region_v6.xdb 数据更全，但是文件更大
+     - module: ipv6locate
+       filename: ip2region_v6.xdb
+       download-urls:
+         - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v6.xdb
+   ```
+
+
 ## TODO
 -   [x] 整理 unknown-cdn-cname 资产和其他源数据
 -   [x] 实现已知CDN域名IP、疑似CDN域名自动分析脚本
--   [ ] 将CDN信息脱敏后备份, 并节建立Issue允许用户上传疑似CDN信息用于补充CDN IP和CNAME数据库
--   [ ] 优化代码 实现快速分析模式, 默认的DNS查询次数过多, 导致批量查询时回显较慢, 临时调节可以修改config.yaml中的超时/线程配置
--   [ ] 优化代码 实现多个CDN数据源合并时，能够自动进行IP级去重操作,当前仅实现字符串去重
--   [ ] 考虑优化数据源格式 增加service键,用于标记资产属于厂商的公共服务域名 (好像没什么用)
+-   [x] 优化代码 实现快速分析模式, 默认的DNS查询次数过多, 导致批量查询时回显较慢, 临时调节可以修改config.yaml中的超时/线程配置
+
+[//]: # (-   [] 将CDN信息脱敏后备份, 并节建立Issue允许用户上传疑似CDN信息用于补充CDN IP和CNAME数据库)
+
+[//]: # (-   [ ] 优化代码 实现多个CDN数据源合并时，能够自动进行IP级去重操作,当前仅实现字符串去重)
+
+[//]: # (-   [ ] 考虑优化数据源格式 增加service键,用于标记资产属于厂商的公共服务域名 &#40;好像没什么用&#41;)
 
 
 ## 功能介绍
@@ -98,15 +165,15 @@ Usage: cdnAnalyzer [OPTIONS]
 
 这些参数会覆盖配置文件中的设置.
 
-| 参数 | 短格式 | 长格式 | 描述 | 默认值 |
-| :--- | :--- | :--- | :--- | :--- |
-| `DNSTimeout` | `-t` | `--dns-timeout` | DNS 查询超时时间 (秒) | `0` |
-| `ResolversNum` | `-r` | `--resolvers-num` | 使用的 resolver 数量 | `0` |
-| `CityMapNum` | `-m` | `--city-map-num` | 城市地图 worker 数量 | `0` |
-| `DNSConcurrency` | `-w` | `--dns-concurrency` | 并发 DNS 查询数 | `0` |
-| `EDNSConcurrency` | `-W` | `--edns-concurrency`| 并发 EDNS 查询数 | `0` |
-| `QueryEDNSCNAMES` | `-q` | `--query-ednscnames`| 是否启用通过 EDNS 解析 CNAME | `false` |
-| `QueryEDNSUseSysNS` | `-s` | `--query-edns-use-sys-ns`| 是否使用系统 DNS 服务器解析 EDNS | `false` |
+| 参数                | 短格式  | 长格式                  | 描述                         | 默认值     |
+|:------------------|:-----|:---------------------|:---------------------------|:--------|
+| `QueryMethod`     | `-q` | `--query-method`     | DNS 查询方法 dns/edns/both     | `dns`   |
+| `DNSTimeout`      | `-t` | `--dns-timeout`      | DNS 查询超时时间 (秒)             | `0`     |
+| `ResolversNum`    | `-r` | `--resolvers-num`    | 使用的 resolver 数量            | `0`     |
+| `CityMapNum`      | `-m` | `--city-map-num`     | 城市地图 worker 数量             | `0`     |
+| `DNSConcurrency`  | `-w` | `--dns-concurrency`  | 并发 DNS 查询数                 | `0`     |
+| `EDNSConcurrency` | `-W` | `--edns-concurrency` | 并发 EDNS 查询数                | `0`     |
+| `QueryEDNSCNAMES` | `-q` | `--query-ednscnames` | 是否启用通过 EDNS 解析 CNAME       | `false` |
 
 ### 使用示例
 
@@ -163,7 +230,8 @@ echo www.baidu.com | ./cdnAnalyzer -I sys
 ## 数据源
 
 `cdnAnalyzer` 整合了多个公开的数据源以提供准确的分析结果.
-
+-   更新中 新增Ip2Region IPv4数据库 : [ip2region_v4.xdb](https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v4.xdb)
+-   更新中 新增Ip2Region IPv6数据库 : [ip2region_v6.xdb](https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v6.xdb) 600M+
 -   更新中 IPv4数据库 `qqwry.dat`: [metowolf/qqwry.dat](https://github.com/metowolf/qqwry.dat)
 -   已停止 IPv6数据库 `zxipv6wry.db`: [内置](https://github.com/winezer0/cdnAnalyzer/blob/main/assets/zxipv6wry.db)
 -   更新中 ASNvx数据库 `geolite2-asn.mmdb ipv4+-ipv6`: [sapics/ip-location-db](https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn.mmdb)
@@ -190,6 +258,3 @@ cdncheck  | nali | nemo_go | ip-location-db 等等
 **NOVASEC微信公众号** 或通过社交信息联系开发者 **【酒零】**
 
 ![NOVASEC0](https://raw.githubusercontent.com/winezer0/mypics/refs/heads/main/NOVASEC0.jpg)
-
-
-

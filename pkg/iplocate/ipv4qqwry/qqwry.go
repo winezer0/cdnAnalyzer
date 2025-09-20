@@ -1,15 +1,15 @@
-package ipv4info
+package ipv4qqwry
 
 import (
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
+	"github.com/winezer0/cdnAnalyzer/pkg/iplocate"
+	"github.com/winezer0/cdnAnalyzer/pkg/iplocate/wry"
 	"net"
 	"strings"
 	"sync"
-
-	"github.com/winezer0/cdnAnalyzer/pkg/wry"
 )
 
 // Ipv4Location IPv4地理位置数据库管理器
@@ -17,6 +17,9 @@ type Ipv4Location struct {
 	wry.IPDB[uint32]
 	mu sync.RWMutex // 添加读写锁保护并发访问
 }
+
+// 确保 Ipv4Location 实现了 ipinfo.IPv4Info 接口
+var _ iplocate.IPv4Info = (*Ipv4Location)(nil)
 
 // NewIPv4Location 从文件路径创建新的IPv4地理位置数据库管理器
 func NewIPv4Location(filePath string) (*Ipv4Location, error) {

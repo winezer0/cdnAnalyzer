@@ -7,7 +7,6 @@ import (
 	"github.com/winezer0/cdnAnalyzer/pkg/classify"
 	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/dnsquery"
 	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/ednsquery"
-	"github.com/winezer0/cdnAnalyzer/pkg/logging"
 )
 
 // DNSQueryConfig 存储DNS查询配置
@@ -19,6 +18,7 @@ type DNSQueryConfig struct {
 	MaxEDNSConcurrency int
 	QueryEDNSCNAMES    bool
 	QueryEDNSUseSysNS  bool
+	QueryType          string // 新增：查询类型选项 dns, edns, both
 }
 
 // DNSProcessor DNS查询处理器
@@ -41,109 +41,70 @@ type DNSQueryResult struct {
 	DNSResult   *dnsquery.DNSResult
 }
 
-// Process 执行DNS查询并收集结果
+// Process 根据QueryType执行相应的DNS查询并收集结果
 func (pro *DNSProcessor) Process() *dnsquery.DomainDNSResultMap {
 	// 1. 收集所有域名
 	domains := classify.ExtractFMTsPtr(pro.DomainEntries)
-
-	// 2. 批量常规DNS查询
-	dnsResultMap := dnsquery.ResolveDNSWithResolversMulti(
-		domains,
-		nil, // recordTypes, nil表示默认类型
-		pro.DNSQueryConfig.Resolvers,
-		pro.DNSQueryConfig.Timeout,
-		pro.DNSQueryConfig.MaxDNSConcurrency,
-	)
-	// 合并为每域名一个DNSResult DomainDNSResultMap
-	domainDNSResultMap := dnsquery.MergeDomainResolverResultMap(dnsResultMap)
-
-	// 3. 批量EDNS查询
-	ednsResultMap := ednsquery.ResolveEDNSWithCities(
-		domains,
-		pro.DNSQueryConfig.CityMap,
-		pro.DNSQueryConfig.Timeout,
-		pro.DNSQueryConfig.MaxEDNSConcurrency,
-		pro.DNSQueryConfig.QueryEDNSCNAMES,
-		pro.DNSQueryConfig.QueryEDNSUseSysNS,
-	)
-	// 合并为每域名一个EDNSResult
-	domainEDNSResultMap := ednsquery.MergeDomainCityEDNSResultMap(ednsResultMap)
-
-	//合并 domainDNSResultMap 和 domainEDNSResultMap
-	domainDNSResultMap = MergeEDNSMapToDNSMap(domainDNSResultMap, domainEDNSResultMap)
-	return &domainDNSResultMap
-}
-
-// FastProcess 并行执行DNS和EDNS查询，并允许分别指定并发线程数
-func (pro *DNSProcessor) FastProcess() *dnsquery.DomainDNSResultMap {
-	domains := classify.ExtractFMTsPtr(pro.DomainEntries)
-
-	var finalDNSMap dnsquery.DomainDNSResultMap
-	var finalEDNSMap ednsquery.DomainEDNSResultMap
-
+	
+	// 根据QueryType决定执行哪种查询
+	var dnsResultMap dnsquery.DomainResolverDNSResultMap
+	var ednsResultMap ednsquery.DomainCityEDNSResultMap
+	
 	var wg sync.WaitGroup
-	wg.Add(2)
-
-	// DNS 查询 channel
-	dnsChan := make(chan dnsquery.DomainDNSResultMap, 1)
-	// EDNS 查询 channel
-	ednsChan := make(chan ednsquery.DomainEDNSResultMap, 1)
-
-	// 启动 DNS 查询 goroutine
-	go func() {
-		defer wg.Done()
-		defer func() {
-			if r := recover(); r != nil {
-				logging.Errorf("DNS goroutine panic: %v", r)
-				dnsChan <- dnsquery.DomainDNSResultMap{}
-			}
+	
+	// 判断是否需要执行DNS查询
+	if pro.DNSQueryConfig.QueryType == "dns" || pro.DNSQueryConfig.QueryType == "both" {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			dnsResultMap = dnsquery.ResolveDNSWithResolversMulti(
+				domains,
+				nil, // recordTypes, nil表示默认类型
+				pro.DNSQueryConfig.Resolvers,
+				pro.DNSQueryConfig.Timeout,
+				pro.DNSQueryConfig.MaxDNSConcurrency,
+			)
 		}()
-		resultMap := dnsquery.ResolveDNSWithResolversMulti(
-			domains,
-			nil,
-			pro.DNSQueryConfig.Resolvers,
-			pro.DNSQueryConfig.Timeout,
-			pro.DNSQueryConfig.MaxDNSConcurrency,
-		)
-		merged := dnsquery.MergeDomainResolverResultMap(resultMap)
-		dnsChan <- merged
-	}()
-
-	// 启动 EDNS 查询 goroutine
-	go func() {
-		defer wg.Done()
-		defer func() {
-			if r := recover(); r != nil {
-				logging.Errorf("EDNS goroutine panic: %v", r)
-				ednsChan <- ednsquery.DomainEDNSResultMap{}
-			}
-		}()
-		resultMap := ednsquery.ResolveEDNSWithCities(
-			domains,
-			pro.DNSQueryConfig.CityMap,
-			pro.DNSQueryConfig.Timeout,
-			pro.DNSQueryConfig.MaxEDNSConcurrency,
-			pro.DNSQueryConfig.QueryEDNSCNAMES,
-			pro.DNSQueryConfig.QueryEDNSUseSysNS,
-		)
-		merged := ednsquery.MergeDomainCityEDNSResultMap(resultMap)
-		ednsChan <- merged
-	}()
-
-	// 等待两个任务完成并关闭channel
-	go func() {
-		wg.Wait()
-		close(dnsChan)
-		close(ednsChan)
-	}()
-
-	// 阻塞等待结果
-	finalDNSMap = <-dnsChan
-	finalEDNSMap = <-ednsChan
-
-	// 合并结果（如果需要）
-	if len(finalEDNSMap) > 0 {
-		MergeEDNSMapToDNSMap(finalDNSMap, finalEDNSMap)
 	}
-	return &finalDNSMap
+	
+	// 判断是否需要执行EDNS查询
+	if pro.DNSQueryConfig.QueryType == "edns" || pro.DNSQueryConfig.QueryType == "both" {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			ednsResultMap = ednsquery.ResolveEDNSWithCities(
+				domains,
+				pro.DNSQueryConfig.CityMap,
+				pro.DNSQueryConfig.Timeout,
+				pro.DNSQueryConfig.MaxEDNSConcurrency,
+				pro.DNSQueryConfig.QueryEDNSCNAMES,
+				pro.DNSQueryConfig.QueryEDNSUseSysNS,
+			)
+		}()
+	}
+	
+	// 等待所有查询完成
+	wg.Wait()
+	
+	// 处理DNS查询结果
+	var domainDNSResultMap dnsquery.DomainDNSResultMap
+	if pro.DNSQueryConfig.QueryType == "dns" || pro.DNSQueryConfig.QueryType == "both" {
+		domainDNSResultMap = dnsquery.MergeDomainResolverResultMap(dnsResultMap)
+	} else {
+		// 如果没有执行DNS查询，初始化空的结果映射
+		domainDNSResultMap = make(dnsquery.DomainDNSResultMap)
+		for _, domain := range domains {
+			domainDNSResultMap[domain] = &dnsquery.DNSResult{
+				Error: make(map[string]string),
+			}
+		}
+	}
+	
+	// 如果执行了EDNS查询，合并结果
+	if pro.DNSQueryConfig.QueryType == "edns" || pro.DNSQueryConfig.QueryType == "both" {
+		domainEDNSResultMap := ednsquery.MergeDomainCityEDNSResultMap(ednsResultMap)
+		MergeEDNSMapToDNSMap(domainDNSResultMap, domainEDNSResultMap)
+	}
+	
+	return &domainDNSResultMap
 }

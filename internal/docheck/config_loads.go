@@ -2,6 +2,7 @@ package docheck
 
 import (
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/winezer0/cdnAnalyzer/pkg/downfile"
@@ -109,7 +110,7 @@ func LoadCityMap(cityMapFile string, randCityNum int) ([]map[string]string, erro
 
 	cityMap, err := fileutils.ReadCSVToMap(cityMapFile)
 	if err != nil {
-		return nil, errors.New("读取城市IP映射失败")
+		return nil, fmt.Errorf("加载EDNS城市IP映射文件失败: %v", err)
 	}
 	selectedCityMap := maputils.PickRandMaps(cityMap, randCityNum)
 	return selectedCityMap, nil

@@ -48,6 +48,7 @@ func MergeDomainResolverResultMap(resultMap DomainResolverDNSResultMap) DomainDN
 	merged := make(DomainDNSResultMap)
 	for domain, resolverMap := range resultMap {
 		mergedResult := mergeResolverResultMap(resolverMap)
+		OptimizeDNSResult(&mergedResult)
 		merged[domain] = &mergedResult
 	}
 	return merged
@@ -86,6 +87,9 @@ func OptimizeDNSResult(dnsResult *DNSResult) {
 		}
 	}
 	dnsResult.AAAA = newAAAA
+	
+	// 对CNAME记录进行排序以确保一致性
+	dnsResult.CNAME = maputils.UniqueMergeSlicesSorted(dnsResult.CNAME, nil)
 }
 
 // isDomain 判断给定字符串是否为域名

@@ -3,20 +3,19 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/winezer0/cdnAnalyzer/pkg/queryip"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/jessevdk/go-flags"
 	"github.com/winezer0/cdnAnalyzer/internal/analyzer"
 	"github.com/winezer0/cdnAnalyzer/internal/docheck"
 	"github.com/winezer0/cdnAnalyzer/internal/embeds"
 	"github.com/winezer0/cdnAnalyzer/pkg/classify"
 	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/querydomain"
-	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
-	"github.com/winezer0/cdnAnalyzer/pkg/ipinfo/queryip"
-
-	"github.com/jessevdk/go-flags"
 	"github.com/winezer0/cdnAnalyzer/pkg/downfile"
+	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
 	"github.com/winezer0/cdnAnalyzer/pkg/logging"
 )
 
@@ -42,13 +41,12 @@ type CmdConfig struct {
 	UpdateDB bool   `short:"u" long:"update-db" description:"Auto update db files by interval (default: false)"`
 
 	// DNS 相关参数（新增）
-	DNSTimeout        int    `short:"t" long:"dns-timeout" description:"Cover Config, Set DNS query timeout in seconds" default:"0"`
-	ResolversNum      int    `short:"r" long:"resolvers-num" description:"Cover Config, Set number of resolvers to use" default:"0"`
-	CityMapNum        int    `short:"m" long:"city-map-num" description:"Cover Config, Set number of city map workers" default:"0"`
-	DNSConcurrency    int    `short:"w" long:"dns-concurrency" description:"Cover Config, Set concurrent DNS queries" default:"0"`
-	EDNSConcurrency   int    `short:"W" long:"edns-concurrency" description:"Cover Config, Set concurrent EDNS queries" default:"0"`
-	QueryEDNSCNAMES   string `short:"q" long:"query-ednscnames" description:"Cover Config, Set enable CNAME resolution via EDNS (allow:|false|true)" default:"" choice:"" choice:"false" choice:"true"`
-	QueryEDNSUseSysNS string `short:"s" long:"query-edns-use-sys-ns" description:"Cover Config, Set use system nameservers for EDNS (allow:|false|true)" default:"" choice:"" choice:"false" choice:"true"`
+	QueryMethod     string `short:"q" long:"query-method" description:"Cover Config, Set dns query method:(allow:|dns|edns|both)" default:"" choice:"" choice:"dns" choice:"edns" choice:"both"`
+	DNSTimeout      int    `short:"t" long:"dns-timeout" description:"Cover Config, Set DNS query timeout in seconds" default:"0"`
+	ResolversNum    int    `short:"r" long:"resolvers-num" description:"Cover Config, Set number of resolvers to use" default:"0"`
+	CityMapNum      int    `short:"m" long:"city-map-num" description:"Cover Config, Set number of city map workers" default:"0"`
+	DNSConcurrency  int    `short:"w" long:"dns-concurrency" description:"Cover Config, Set concurrent DNS queries" default:"0"`
+	EDNSConcurrency int    `short:"W" long:"edns-concurrency" description:"Cover Config, Set concurrent EDNS queries" default:"0"`
 
 	// 日志配置参数
 	LogFile       string `long:"lf" description:"log file path (default: only stdout)" default:""`
@@ -177,6 +175,7 @@ func main() {
 		MaxEDNSConcurrency: appConfig.EDNSConcurrency,
 		QueryEDNSCNAMES:    appConfig.QueryEDNSCNAMES,
 		QueryEDNSUseSysNS:  appConfig.QueryEDNSUseSysNS,
+		QueryType:          appConfig.QueryMethod, // 添加查询类型配置
 	}
 
 	// 进行DNS解析
@@ -265,12 +264,8 @@ func updateAppConfig(appConfig *docheck.AppConfig, cmdConfig *CmdConfig) *dochec
 		appConfig.EDNSConcurrency = cmdConfig.EDNSConcurrency
 	}
 
-	if cmdConfig.QueryEDNSCNAMES != "" {
-		appConfig.QueryEDNSCNAMES = cmdConfig.QueryEDNSCNAMES == "true"
-	}
-
-	if cmdConfig.QueryEDNSUseSysNS != "" {
-		appConfig.QueryEDNSUseSysNS = cmdConfig.QueryEDNSUseSysNS == "true"
+	if cmdConfig.QueryMethod != "" {
+		appConfig.QueryMethod = cmdConfig.QueryMethod
 	}
 
 	// 确保并发数有一个合理的默认值，防止死锁
