@@ -39,13 +39,13 @@ type ASNInfo struct {
 	IP                 string `json:"ip"`
 	IPVersion          int    `json:"ip_version"`
 	FoundASN           bool   `json:"found_asn"`
-	OrganisationNumber uint32 `json:"as_number"`
+	OrganisationNumber uint64 `json:"as_number"`
 	OrganisationName   string `json:"as_organisation"`
 }
 
 // ASNRecord 定义结构体映射MMDB中的ASN数据结构
 type ASNRecord struct {
-	AutonomousSystemNumber       uint32 `maxminddb:"autonomous_system_number"`
+	AutonomousSystemNumber       uint64 `maxminddb:"autonomous_system_number"`
 	AutonomousSystemOrganization string `maxminddb:"autonomous_system_organization"`
 }
 
@@ -150,7 +150,7 @@ func (m *MMDBManager) FindASN(ipStr string) *ASNInfo {
 }
 
 // ASNToIPRanges 通过ASN号反查所有IP段
-func (m *MMDBManager) ASNToIPRanges(targetASN uint32) ([]*net.IPNet, error) {
+func (m *MMDBManager) ASNToIPRanges(targetASN uint64) ([]*net.IPNet, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 

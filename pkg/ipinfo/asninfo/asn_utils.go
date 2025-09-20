@@ -64,9 +64,9 @@ func (m *MMDBManager) ExportToCSV(outputPath string) error {
 }
 
 // GetUniqueOrgNumbers 提取 FoundASN == true 的 OrganisationNumber，并去重
-func GetUniqueOrgNumbers(asnInfos []ASNInfo) []uint32 {
-	seen := make(map[uint32]bool)
-	var result []uint32
+func GetUniqueOrgNumbers(asnInfos []ASNInfo) []uint64 {
+	seen := make(map[uint64]bool)
+	var result []uint64
 
 	for _, info := range asnInfos {
 		if info.FoundASN {
