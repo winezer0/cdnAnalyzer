@@ -2,10 +2,17 @@ package queryip
 
 import (
 	"fmt"
+	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
 	"github.com/winezer0/cdnAnalyzer/pkg/asninfo"
+	"github.com/winezer0/cdnAnalyzer/pkg/iplocate"
+	"github.com/winezer0/cdnAnalyzer/pkg/iplocate/ip2region"
 	"github.com/winezer0/cdnAnalyzer/pkg/iplocate/ipv4qqwry"
 	"github.com/winezer0/cdnAnalyzer/pkg/iplocate/ipv6zxwry"
+	"github.com/winezer0/cdnAnalyzer/pkg/logging"
+	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
 	"net"
+	"path/filepath"
+	"strings"
 )
 
 // IpDbConfig 存储程序配置
@@ -18,8 +25,8 @@ type IpDbConfig struct {
 // DBEngines 存储所有数据库引擎实例
 type DBEngines struct {
 	AsnEngine  *asninfo.MMDBManager
-	IPv4Engine *ipv4qqwry.Ipv4Location
-	IPv6Engine *ipv6zxwry.Ipv6Location
+	IPv4Engine iplocate.IPInfo // 使用统一接口
+	IPv6Engine iplocate.IPInfo // 使用统一接口
 }
 
 // IPDbInfo 存储IP解析的中间结果
@@ -32,6 +39,8 @@ type IPDbInfo struct {
 
 // InitDBEngines 初始化所有数据库引擎
 func InitDBEngines(config *IpDbConfig) (*DBEngines, error) {
+	logging.Debugf("init db engines config: %v", maputils.AnyToJsonStr(config))
+
 	// 初始化ASN数据库管理器
 	asnConfig := &asninfo.MMDBConfig{
 		AsnIpvxDb:            config.AsnIpvxDb,
@@ -43,18 +52,50 @@ func InitDBEngines(config *IpDbConfig) (*DBEngines, error) {
 	}
 
 	// 初始化IPv4地理位置数据库
-	ipv4Engine, err := ipv4qqwry.NewIPv4Location(config.Ipv4LocateDb)
-	if err != nil {
-		asnManager.Close()
-		return nil, fmt.Errorf("初始化IPv4数据库失败: %w", err)
+	var ipv4Engine iplocate.IPInfo
+	var err error
+
+	// 根据文件名判断使用哪种IPv4数据库实现
+	if strings.Contains(filepath.Base(config.Ipv4LocateDb), "ip2region") {
+		// 使用IP2Region IPv4数据库
+		ipv4Engine, err = ip2region.NewIP2Region(xdb.IPv4, config.Ipv4LocateDb)
+		if err != nil {
+			asnManager.Close()
+			logging.Debugf("初始化IPv4 IP2Region 数据库失败: %v", err)
+			return nil, fmt.Errorf("初始化IPv4 IP2Region 数据库失败: %w", err)
+		}
+	} else {
+		// 使用默认的QQWry IPv4数据库
+		ipv4Engine, err = ipv4qqwry.NewIPv4Location(config.Ipv4LocateDb)
+		if err != nil {
+			asnManager.Close()
+			logging.Debugf("初始化IPv4 QQWry 数据库失败，错误信息: %v", err)
+			return nil, fmt.Errorf("初始化IPv4 QQWry 数据库失败: %w", err)
+		}
 	}
 
 	// 初始化IPv6地理位置数据库
-	ipv6Engine, err := ipv6zxwry.NewIPv6Location(config.Ipv6LocateDb)
-	if err != nil {
-		asnManager.Close()
-		ipv4Engine.Close()
-		return nil, fmt.Errorf("初始化IPv6数据库失败: %w", err)
+	var ipv6Engine iplocate.IPInfo
+
+	// 根据文件名判断使用哪种IPv6数据库实现
+	if strings.Contains(filepath.Base(config.Ipv6LocateDb), "ip2region") {
+		// 使用IP2Region IPv6数据库
+		ipv6Engine, err = ip2region.NewIP2Region(xdb.IPv6, config.Ipv6LocateDb)
+		if err != nil {
+			asnManager.Close()
+			ipv4Engine.Close()
+			logging.Debugf("初始化IPv6 IP2Region 数据库失败: %v", err)
+			return nil, fmt.Errorf("初始化IPv6 IP2Region 数据库失败: %w", err)
+		}
+	} else {
+		// 使用默认的ZXWry IPv6数据库
+		ipv6Engine, err = ipv6zxwry.NewIPv6Location(config.Ipv6LocateDb)
+		if err != nil {
+			asnManager.Close()
+			ipv4Engine.Close()
+			logging.Debugf("初始化IPv6 ZXWry 数据库失败: %v", err)
+			return nil, fmt.Errorf("初始化IPv6 ZXWry 数据库失败: %w", err)
+		}
 	}
 
 	return &DBEngines{

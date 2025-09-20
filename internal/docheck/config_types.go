@@ -33,8 +33,8 @@ const (
 	ModuleDNSResolvers = "dns-resolvers"
 	ModuleEDNSCityIP   = "edns-city-ip"
 
-	ModuleIPv4Locate = "qqwry"
-	ModuleIPv6Locate = "zxipv6wry"
+	ModuleIPv4Locate = "ipv4locate"
+	ModuleIPv6Locate = "ipv6locate"
 	ModuleAsnIPvx    = "geolite2-asn"
 	ModuleCDNSource  = "cdn-sources"
 )
