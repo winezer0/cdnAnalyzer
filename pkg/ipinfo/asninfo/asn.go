@@ -12,7 +12,7 @@ import (
 // MMDBConfig 数据库配置结构
 type MMDBConfig struct {
 	// 使用统一的数据库路径，支持同时包含IPv4和IPv6数据的数据库
-	UnifiedDBPath        string
+	AsnIpvxDb            string
 	MaxConcurrentQueries int
 }
 
@@ -64,14 +64,14 @@ func (m *MMDBManager) InitMMDBConn() error {
 	}
 
 	// 检查文件是否存在
-	if _, err := os.Stat(m.config.UnifiedDBPath); os.IsNotExist(err) {
-		return fmt.Errorf("数据库文件不存在: %s", m.config.UnifiedDBPath)
+	if _, err := os.Stat(m.config.AsnIpvxDb); os.IsNotExist(err) {
+		return fmt.Errorf("数据库文件不存在: %s", m.config.AsnIpvxDb)
 	}
 
 	// 打开数据库
-	conn, err := maxminddb.Open(m.config.UnifiedDBPath)
+	conn, err := maxminddb.Open(m.config.AsnIpvxDb)
 	if err != nil {
-		return fmt.Errorf("打开数据库失败 [%s]: %v", m.config.UnifiedDBPath, err)
+		return fmt.Errorf("打开数据库失败 [%s]: %v", m.config.AsnIpvxDb, err)
 	}
 
 	// 存入实例

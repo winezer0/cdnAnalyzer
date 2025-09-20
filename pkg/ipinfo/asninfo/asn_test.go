@@ -8,7 +8,7 @@ import (
 func TestMMDBManager_FindASN(t *testing.T) {
 	// 创建配置 - 使用统一数据库路径
 	config := &MMDBConfig{
-		UnifiedDBPath:        "C:\\Users\\WINDOWS\\Desktop\\demo\\geolite2-asn.mmdb",
+		AsnIpvxDb:            "C:\\Users\\WINDOWS\\Desktop\\demo\\geolite2-asn.mmdb",
 		MaxConcurrentQueries: 100,
 	}
 
@@ -67,7 +67,7 @@ func TestMMDBManager_FindASN(t *testing.T) {
 func TestMMDBManager_ASNToIPRanges(t *testing.T) {
 	// 创建配置 - 使用统一数据库路径
 	config := &MMDBConfig{
-		UnifiedDBPath:        "C:\\Users\\WINDOWS\\Desktop\\demo\\geolite2-asn.mmdb",
+		AsnIpvxDb:            "C:\\Users\\WINDOWS\\Desktop\\demo\\geolite2-asn.mmdb",
 		MaxConcurrentQueries: 100,
 	}
 
@@ -96,7 +96,7 @@ func TestMMDBManager_ASNToIPRanges(t *testing.T) {
 
 func TestMMDBManager_BatchFindASN(t *testing.T) {
 	config := &MMDBConfig{
-		UnifiedDBPath:        "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\geolite2-asn.mmdb",
+		AsnIpvxDb:            "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\geolite2-asn.mmdb",
 		MaxConcurrentQueries: 100,
 	}
 

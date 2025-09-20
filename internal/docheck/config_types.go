@@ -22,8 +22,7 @@ type AppConfig struct {
 type DBFilePaths struct {
 	ResolversFile string
 	CityMapFile   string
-	AsnIpv4Db     string
-	AsnIpv6Db     string
+	AsnIpvxDb     string
 	Ipv4LocateDb  string
 	Ipv6LocateDb  string
 	CdnSource     string
@@ -36,7 +35,6 @@ const (
 
 	ModuleIPv4Locate = "qqwry"
 	ModuleIPv6Locate = "zxipv6wry"
-	ModuleAsnIPv4    = "geolite2-asn-ipv4"
-	ModuleAsnIPv6    = "geolite2-asn-ipv6"
+	ModuleAsnIPvx    = "geolite2-asn"
 	ModuleCDNSource  = "cdn-sources"
 )

@@ -166,8 +166,7 @@ echo www.baidu.com | ./cdnAnalyzer -I sys
 
 -   更新中 IPv4数据库 `qqwry.dat`: [metowolf/qqwry.dat](https://github.com/metowolf/qqwry.dat)
 -   已停止 IPv6数据库 `zxipv6wry.db`: [内置](https://github.com/winezer0/cdnAnalyzer/blob/main/assets/zxipv6wry.db)
--   更新中 ASNv4数据库 `geolite2-asn-ipv4.mmdb`: [sapics/ip-location-db](https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv4.mmdb)
--   更新中 ASNv6数据库`geolite2-asn-ipv6.mmdb`: [sapics/ip-location-db](https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv6.mmdb)
+-   更新中 ASNvx数据库 `geolite2-asn.mmdb ipv4+-ipv6`: [sapics/ip-location-db](https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn.mmdb)
 -   维护中 DNS服务器 `dns-resolvers`: [自定义](https://github.com/winezer0/cdnAnalyzer/blob/main/assets/resolvers.txt)
 -   维护中 对应城市IP `city_ip.csv`: [自定义](https://github.com/winezer0/cdnAnalyzer/blob/main/assets/city_ip.csv)
 -   维护中 云资产关键字 `cloud_keys.yml`: [自定义](https://github.com/winezer0/cdnAnalyzer/blob/main/assets/cloud_keys.yml)

@@ -190,8 +190,7 @@ func main() {
 
 	//对 checkInfos 中的IP数据进行分析
 	ipDbConfig := &queryip.IpDbConfig{
-		AsnIpv4Db:    dbPaths.AsnIpv4Db,
-		AsnIpv6Db:    dbPaths.AsnIpv6Db,
+		AsnIpvxDb:    dbPaths.AsnIpvxDb,
 		Ipv4LocateDb: dbPaths.Ipv4LocateDb,
 		Ipv6LocateDb: dbPaths.Ipv6LocateDb,
 	}

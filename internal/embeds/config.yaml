@@ -26,19 +26,11 @@ download-items:
     keep-updated: false
     enable: true
 
-  - module: geolite2-asn-ipv4
-    filename: geolite2-asn-ipv4.mmdb
+  - module: geolite2-asn
+    filename: geolite2-asn.mmdb
     download-urls:
-      - https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv4.mmdb
-      - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/geolite2-asn-ipv4.mmdb
-    keep-updated: true
-    enable: true
-
-  - module: geolite2-asn-ipv6
-    filename: geolite2-asn-ipv6.mmdb
-    download-urls:
-      - https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn-ipv6.mmdb
-      - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/geolite2-asn-ipv6.mmdb
+      - https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn.mmdb
+      - https://cdn.jsdelivr.net/gh/winezer0/cdnAnalyzer/assets/geolite2-asn.mmdb
     keep-updated: true
     enable: true
 

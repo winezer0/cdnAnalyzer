@@ -8,8 +8,7 @@ import (
 func TestQueryIP(t *testing.T) {
 	// 测试配置
 	config := &IpDbConfig{
-		AsnIpv4Db:    "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\geolite2-asn-ipv4.mmdb",
-		AsnIpv6Db:    "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\geolite2-asn-ipv6.mmdb",
+		AsnIpvxDb:    "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\geolite2-asn.mmdb",
 		Ipv4LocateDb: "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\qqwry.dat",
 		Ipv6LocateDb: "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\zxipv6wry.db",
 	}

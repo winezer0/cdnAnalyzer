@@ -10,8 +10,7 @@ import (
 
 // IpDbConfig 存储程序配置
 type IpDbConfig struct {
-	AsnIpv4Db    string
-	AsnIpv6Db    string
+	AsnIpvxDb    string
 	Ipv4LocateDb string
 	Ipv6LocateDb string
 }
@@ -35,8 +34,7 @@ type IPDbInfo struct {
 func InitDBEngines(config *IpDbConfig) (*DBEngines, error) {
 	// 初始化ASN数据库管理器
 	asnConfig := &asninfo.MMDBConfig{
-		IPv4Path:             config.AsnIpv4Db,
-		IPv6Path:             config.AsnIpv6Db,
+		AsnIpvxDb:            config.AsnIpvxDb,
 		MaxConcurrentQueries: 100,
 	}
 	asnManager := asninfo.NewMMDBManager(asnConfig)
