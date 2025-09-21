@@ -32,7 +32,7 @@ type CmdConfig struct {
 	// 输出配置参数 覆盖app Config中的配置
 	Output      string `short:"o" long:"output" description:"output file path (default result.json)" default:"result.json"`
 	OutputType  string `short:"O" long:"output-type" description:"output file type: csv/json/txt/sys (default sys)" default:"sys" choice:"csv" choice:"json" choice:"txt" choice:"sys"`
-	OutputLevel int    `short:"l" long:"output-level" description:"Output verbosity level: 1=quiet, 2=default, 3=detail (default 2)" default:"2" choice:"1" choice:"2" choice:"3"`
+	OutputLevel int    `short:"l" long:"output-level" description:"Output verbosity level: 1=quiet, 2=default, 3=detail (default 2)" default:"3" choice:"1" choice:"2" choice:"3"`
 	OutputNoCDN bool   `short:"n" long:"output-no-cdn" description:"only output Info where not CDN and not WAF."`
 
 	// 数据库更新配置
@@ -48,10 +48,11 @@ type CmdConfig struct {
 	EDNSConcurrency   int    `short:"W" long:"edns-concurrency" description:"Cover Config, Set concurrent EDNS queries" default:"0"`
 	QueryEDNSCNAMES   string `short:"q" long:"query-ednscnames" description:"Cover Config, Set enable CNAME resolution via EDNS (allow:|false|true)" default:"" choice:"" choice:"false" choice:"true"`
 	QueryEDNSUseSysNS string `short:"s" long:"query-edns-use-sys-ns" description:"Cover Config, Set use system nameservers for EDNS (allow:|false|true)" default:"" choice:"" choice:"false" choice:"true"`
+	QType             string `short:"Q" long:"qtype" description:"Query type: dns, edns, both (default both)" default:"both" choice:"dns" choice:"edns" choice:"both"`
 
 	// 日志配置参数
 	LogFile       string `long:"lf" description:"log file path (default: only stdout)" default:""`
-	LogLevel      string `long:"ll" description:"log level: debug/info/warn/error (default error)" default:"error" choice:"debug" choice:"info" choice:"warn" choice:"error"`
+	LogLevel      string `long:"ll" description:"log level: debug/info/warn/error (default error)" default:"debug" choice:"debug" choice:"info" choice:"warn" choice:"error"`
 	ConsoleFormat string `long:"lc" description:"log console format, multiple choice T(time),L(level),C(caller),F(func),M(msg). Empty or off will disable." default:"T L C M"`
 }
 
@@ -176,6 +177,7 @@ func main() {
 		MaxEDNSConcurrency: appConfig.EDNSConcurrency,
 		QueryEDNSCNAMES:    appConfig.QueryEDNSCNAMES,
 		QueryEDNSUseSysNS:  appConfig.QueryEDNSUseSysNS,
+		QueryType:          cmdConfig.QType, // 添加查询类型配置
 	}
 
 	// 进行DNS解析
