@@ -1,12 +1,13 @@
 # 基本参数
 # DNS并发和超时设置
-dns-timeout: 5
-resolvers-num: 5
-city-map-num: 5
-dns-concurrency: 8
-edns-concurrency: 8
-query-edns-cnames: true
+dns-timeout: 3
+resolvers-num: 3
+city-map-num: 3
+dns-concurrency: 10
+edns-concurrency: 10
+query-edns-cnames: false
 query-edns-use-sys-ns: false
+query-method: dns
 
 # 数据库路径配置
 download-items:
