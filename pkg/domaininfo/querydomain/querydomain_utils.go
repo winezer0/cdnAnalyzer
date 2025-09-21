@@ -19,6 +19,12 @@ func MergeEDNSMapToDNSMap(dnsMap dnsquery.DomainDNSResultMap, ednsMap ednsquery.
 		dnsResult.AAAA = maputils.UniqueMergeSlices(dnsResult.AAAA, ednsResult.AAAA)
 		// 合并 CNAME 记录
 		dnsResult.CNAME = maputils.UniqueMergeSlices(dnsResult.CNAME, ednsResult.CNAME)
+		// 合并 NS 记录
+		dnsResult.NS = maputils.UniqueMergeSlices(dnsResult.NS, ednsResult.NS)
+		// 合并 MX 记录
+		dnsResult.MX = maputils.UniqueMergeSlices(dnsResult.MX, ednsResult.MX)
+		// 合并 TXT 记录
+		dnsResult.TXT = maputils.UniqueMergeSlices(dnsResult.TXT, ednsResult.TXT)
 		// 合并 Errors
 		if dnsResult.Error == nil {
 			dnsResult.Error = make(map[string]string)

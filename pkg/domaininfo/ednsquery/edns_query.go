@@ -20,6 +20,9 @@ type EDNSResult struct {
 	A           []string // A 记录
 	AAAA        []string // AAAA 记录
 	CNAME       []string // CNAME 记录
+	NS          []string // NS 记录
+	MX          []string // MX 记录
+	TXT         []string // TXT 记录
 	Errors      []string // 错误信息
 	Locations   []string // 所有参与查询的 location（如 Beijing@8.8.8.8）
 }
@@ -29,7 +32,7 @@ type CityEDNSResultMap = map[string]*EDNSResult
 type DomainEDNSResultMap = map[string]*EDNSResult
 
 // eDNSMessage 创建并返回一个包含 EDNS（扩展 DNS）选项的 DNS 查询消息
-func eDNSMessage(domain, EDNSAddr string) *dns.Msg {
+func eDNSMessage(domain, EDNSAddr string, qType uint16) *dns.Msg {
 	e := new(dns.EDNS0_SUBNET) // EDNS
 	e.Code = dns.EDNS0SUBNET
 	e.Family = 1
@@ -44,18 +47,18 @@ func eDNSMessage(domain, EDNSAddr string) *dns.Msg {
 	o.SetUDPSize(dns.DefaultMsgSize)
 
 	m := new(dns.Msg)
-	m.SetQuestion(domain, dns.TypeA)
+	m.SetQuestion(domain, qType)
 	m.Extra = append(m.Extra, o)
 	return m
 }
 
 // ResolveEDNS 进行EDNS信息查询
-func ResolveEDNS(domain string, EDNSAddr string, dnsServer string, timeout time.Duration) EDNSResult {
+func ResolveEDNS(domain string, EDNSAddr string, dnsServer string, qType uint16, timeout time.Duration) EDNSResult {
 	domain = dns.Fqdn(domain)
 
 	Client := new(dns.Client)
 	Client.Timeout = timeout
-	dnsMsg := eDNSMessage(domain, EDNSAddr)
+	dnsMsg := eDNSMessage(domain, EDNSAddr, qType)
 
 	in, _, err := Client.Exchange(dnsMsg, dnsServer)
 	if err != nil {
@@ -67,6 +70,9 @@ func ResolveEDNS(domain string, EDNSAddr string, dnsServer string, timeout time.
 	var ipv4s []string
 	var ipv6s []string
 	var cnames []string
+	var nss []string
+	var mxs []string
+	var txts []string
 
 	for _, answer := range in.Answer {
 		switch answer.Header().Rrtype {
@@ -76,6 +82,21 @@ func ResolveEDNS(domain string, EDNSAddr string, dnsServer string, timeout time.
 			ipv6s = append(ipv6s, answer.(*dns.AAAA).AAAA.String())
 		case dns.TypeCNAME:
 			cnames = append(cnames, answer.(*dns.CNAME).Target)
+		case dns.TypeNS:
+			nss = append(nss, answer.(*dns.NS).Ns)
+		case dns.TypeMX:
+			mxs = append(mxs, fmt.Sprintf("%d %s", answer.(*dns.MX).Preference, answer.(*dns.MX).Mx))
+		case dns.TypeTXT:
+			for _, txt := range answer.(*dns.TXT).Txt {
+				txts = append(txts, txt)
+			}
+		}
+	}
+
+	// 处理权威部分的NS记录
+	for _, ns := range in.Ns {
+		if ns.Header().Rrtype == dns.TypeNS {
+			nss = append(nss, ns.(*dns.NS).Ns)
 		}
 	}
 
@@ -84,6 +105,9 @@ func ResolveEDNS(domain string, EDNSAddr string, dnsServer string, timeout time.
 		A:      ipv4s,
 		AAAA:   ipv6s,
 		CNAME:  cnames,
+		NS:     nss,
+		MX:     mxs,
+		TXT:    txts,
 	}
 }
 
@@ -125,46 +149,87 @@ func ResolveEDNSWithCities(
 				dnsServers = maputils.UniqueMergeSlices(dnsServers, pr.NameServers)
 			}
 
+			// 优化：为该域名创建一个专门的结果通道，以更好地管理并发
+			domainResultChan := make(chan struct {
+				key string
+				res *EDNSResult
+			}, len(dnsServers)*len(cities))
+
+			var domainWg sync.WaitGroup
+
 			// 为该域名下的所有 DNS 和 Location 提交子任务
 			for _, dnsServer := range dnsServers {
 				for _, cityEntry := range cities {
 					city := maputils.GetMapValue(cityEntry, "City")
 					cityIP := maputils.GetMapValue(cityEntry, "IP")
 
-					wg.Add(1)
+					domainWg.Add(1)
 					sem <- struct{}{} // 获取令牌
 
 					go func(dnsServer, city, cityIP string) {
-						defer wg.Done()
+						defer domainWg.Done()
 						defer func() { <-sem }() // 释放令牌
 
-						// 执行 EDNS 查询
-						res := ResolveEDNS(pr.FinalDomain, cityIP, dnsServer, timeout)
+						// 分别执行各种类型的EDNS查询
+						aResult := ResolveEDNS(pr.FinalDomain, cityIP, dnsServer, dns.TypeA, timeout)
+						aaaaResult := ResolveEDNS(pr.FinalDomain, cityIP, dnsServer, dns.TypeAAAA, timeout)
+						cnameResult := ResolveEDNS(pr.FinalDomain, cityIP, dnsServer, dns.TypeCNAME, timeout)
+						nsResult := ResolveEDNS(pr.FinalDomain, cityIP, dnsServer, dns.TypeNS, timeout)
+						mxResult := ResolveEDNS(pr.FinalDomain, cityIP, dnsServer, dns.TypeMX, timeout)
+						txtResult := ResolveEDNS(pr.FinalDomain, cityIP, dnsServer, dns.TypeTXT, timeout)
+
+						// 合并所有结果
+						allErrors := []string{}
+						allErrors = append(allErrors, aResult.Errors...)
+						allErrors = append(allErrors, aaaaResult.Errors...)
+						allErrors = append(allErrors, cnameResult.Errors...)
+						allErrors = append(allErrors, nsResult.Errors...)
+						allErrors = append(allErrors, mxResult.Errors...)
+						allErrors = append(allErrors, txtResult.Errors...)
 
 						// 构造 key
 						key := fmt.Sprintf("%s@%s", city, dnsServer)
 
 						// 构建完整的 EDNSResult
-						ednsRes := EDNSResult{
+						ednsRes := &EDNSResult{
 							Domain:      pr.Domain,
 							FinalDomain: pr.FinalDomain,
 							NameServers: dnsServers,
 							CNAMEChains: pr.CNAMEChains,
-							A:           res.A,
-							AAAA:        res.AAAA,
-							CNAME:       res.CNAME,
-							Errors:      res.Errors,
+							A:           aResult.A,
+							AAAA:        aaaaResult.AAAA,
+							CNAME:       cnameResult.CNAME,
+							NS:          nsResult.NS,
+							MX:          mxResult.MX,
+							TXT:         txtResult.TXT,
+							Errors:      allErrors,
 						}
 
-						// 写入结果
-						mu.Lock()
-						if _, exists := resultMap[pr.Domain]; !exists {
-							resultMap[pr.Domain] = make(CityEDNSResultMap)
-						}
-						resultMap[pr.Domain][key] = &ednsRes
-						mu.Unlock()
+						domainResultChan <- struct {
+							key string
+							res *EDNSResult
+						}{key: key, res: ednsRes}
 					}(dnsServer, city, cityIP)
 				}
+			}
+
+			// 等待该域名的所有查询完成
+			go func() {
+				domainWg.Wait()
+				close(domainResultChan)
+			}()
+
+			// 收集该域名的所有结果
+			mu.Lock()
+			if _, exists := resultMap[pr.Domain]; !exists {
+				resultMap[pr.Domain] = make(CityEDNSResultMap)
+			}
+			mu.Unlock()
+
+			for domainResult := range domainResultChan {
+				mu.Lock()
+				resultMap[pr.Domain][domainResult.key] = domainResult.res
+				mu.Unlock()
 			}
 		}(pre)
 	}
