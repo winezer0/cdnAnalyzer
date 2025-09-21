@@ -14,7 +14,7 @@
 ### 2025-09-20
 - 添加 IP2Region 支持，提供超大 IPv6 地址库，切换IPlocate 可参考或直接使用 config_ip2region.yaml (注意:新版需要更新配置文件)
 - 优化 geolite-asn 支持，将开始IPv6 ASN和IPv4 ASN 进行合并，只需要一个ASN文件
-
+- 优化dns查询性能配置 默认关闭不再同时使用edns和dns查询，现在只需使用其中一种即可，建议dns查询，速度快
 
 ### 当前支持的IP数据库类型
 
@@ -74,10 +74,13 @@
 ## TODO
 -   [x] 整理 unknown-cdn-cname 资产和其他源数据
 -   [x] 实现已知CDN域名IP、疑似CDN域名自动分析脚本
--   [ ] 将CDN信息脱敏后备份, 并节建立Issue允许用户上传疑似CDN信息用于补充CDN IP和CNAME数据库
--   [ ] 优化代码 实现快速分析模式, 默认的DNS查询次数过多, 导致批量查询时回显较慢, 临时调节可以修改config.yaml中的超时/线程配置
--   [ ] 优化代码 实现多个CDN数据源合并时，能够自动进行IP级去重操作,当前仅实现字符串去重
--   [ ] 考虑优化数据源格式 增加service键,用于标记资产属于厂商的公共服务域名 (好像没什么用)
+-   [x] 优化代码 实现快速分析模式, 默认的DNS查询次数过多, 导致批量查询时回显较慢, 临时调节可以修改config.yaml中的超时/线程配置
+
+[//]: # (-   [] 将CDN信息脱敏后备份, 并节建立Issue允许用户上传疑似CDN信息用于补充CDN IP和CNAME数据库)
+
+[//]: # (-   [ ] 优化代码 实现多个CDN数据源合并时，能够自动进行IP级去重操作,当前仅实现字符串去重)
+
+[//]: # (-   [ ] 考虑优化数据源格式 增加service键,用于标记资产属于厂商的公共服务域名 &#40;好像没什么用&#41;)
 
 
 ## 功能介绍
@@ -160,15 +163,15 @@ Usage: cdnAnalyzer [OPTIONS]
 
 这些参数会覆盖配置文件中的设置.
 
-| 参数 | 短格式 | 长格式 | 描述 | 默认值 |
-| :--- | :--- | :--- | :--- | :--- |
-| `DNSTimeout` | `-t` | `--dns-timeout` | DNS 查询超时时间 (秒) | `0` |
-| `ResolversNum` | `-r` | `--resolvers-num` | 使用的 resolver 数量 | `0` |
-| `CityMapNum` | `-m` | `--city-map-num` | 城市地图 worker 数量 | `0` |
-| `DNSConcurrency` | `-w` | `--dns-concurrency` | 并发 DNS 查询数 | `0` |
-| `EDNSConcurrency` | `-W` | `--edns-concurrency`| 并发 EDNS 查询数 | `0` |
-| `QueryEDNSCNAMES` | `-q` | `--query-ednscnames`| 是否启用通过 EDNS 解析 CNAME | `false` |
-| `QueryEDNSUseSysNS` | `-s` | `--query-edns-use-sys-ns`| 是否使用系统 DNS 服务器解析 EDNS | `false` |
+| 参数                | 短格式  | 长格式                  | 描述                         | 默认值     |
+|:------------------|:-----|:---------------------|:---------------------------|:--------|
+| `QueryMethod`     | `-q` | `--query-method`     | DNS 查询方法 dns/edns/both     | `dns`   |
+| `DNSTimeout`      | `-t` | `--dns-timeout`      | DNS 查询超时时间 (秒)             | `0`     |
+| `ResolversNum`    | `-r` | `--resolvers-num`    | 使用的 resolver 数量            | `0`     |
+| `CityMapNum`      | `-m` | `--city-map-num`     | 城市地图 worker 数量             | `0`     |
+| `DNSConcurrency`  | `-w` | `--dns-concurrency`  | 并发 DNS 查询数                 | `0`     |
+| `EDNSConcurrency` | `-W` | `--edns-concurrency` | 并发 EDNS 查询数                | `0`     |
+| `QueryEDNSCNAMES` | `-q` | `--query-ednscnames` | 是否启用通过 EDNS 解析 CNAME       | `false` |
 
 ### 使用示例
 
