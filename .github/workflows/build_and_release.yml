@@ -21,6 +21,12 @@ jobs:
           - goos: linux
             goarch: amd64
             artifact-name: cdnAnalyzer-linux-amd64
+          - goos: darwin
+            goarch: amd64
+            artifact-name: cdnAnalyzer-darwin-amd64
+          - goos: darwin
+            goarch: arm64
+            artifact-name: cdnAnalyzer-darwin-arm64
 
     steps:
     - name: Checkout code
