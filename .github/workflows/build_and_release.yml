@@ -98,9 +98,13 @@ jobs:
           ### 下载
           - Windows (AMD64): `cdnAnalyzer-windows-amd64.exe`
           - Linux (AMD64): `cdnAnalyzer-linux-amd64`
+          - macOS (Intel/AMD64): `cdnAnalyzer-darwin-amd64`
+          - macOS (Apple Silicon/ARM64): `cdnAnalyzer-darwin-arm64`
         files: |
           ./artifacts/cdnAnalyzer-windows-amd64.exe/cdnAnalyzer-windows-amd64.exe
           ./artifacts/cdnAnalyzer-linux-amd64/cdnAnalyzer-linux-amd64
+          ./artifacts/cdnAnalyzer-darwin-amd64/cdnAnalyzer-darwin-amd64
+          ./artifacts/cdnAnalyzer-darwin-arm64/cdnAnalyzer-darwin-arm64
         draft: false
         prerelease: false
       env:
