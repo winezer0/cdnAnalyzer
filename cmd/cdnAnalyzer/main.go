@@ -23,7 +23,7 @@ import (
 type CmdConfig struct {
 	// 配置文件参数
 	ConfigFile   string `short:"c" long:"config-file" description:"config yaml file path (default ~/cdnAnalyzer/config.yaml)" default:""`
-	UpdateConfig bool   `short:"C" long:"update-config" description:"updated config content by remote url (default false)"`
+	UpdateConfig bool   `short:"C" long:"update-config" description:"updated default config content by remote url (default false)"`
 
 	// 基本参数 覆盖app Config中的配置
 	Input     string `short:"i" long:"input" description:"input file or str list (separated by commas)"`
@@ -40,6 +40,9 @@ type CmdConfig struct {
 	Folder   string `short:"d" long:"folder" description:"db files storage dir (default ~/cdnAnalyzer)" default:""`
 	UpdateDB bool   `short:"u" long:"update-db" description:"Auto update db files by interval (default: false)"`
 
+	// 版本号输出
+	Version bool `short:"v" long:"version" description:"Show Program version and exit (default: false)"`
+
 	// DNS 相关参数（新增）
 	QueryMethod     string `short:"q" long:"query-method" description:"Cover Config, Set dns query method:(allow:|dns|edns|both)" default:"" choice:"" choice:"dns" choice:"edns" choice:"both"`
 	DNSTimeout      int    `short:"t" long:"dns-timeout" description:"Cover Config, Set DNS query timeout in seconds" default:"0"`
@@ -54,35 +57,22 @@ type CmdConfig struct {
 	ConsoleFormat string `long:"lc" description:"log console format, multiple choice T(time),L(level),C(caller),F(func),M(msg). Empty or off will disable." default:"T L C M"`
 }
 
+// 版本信息常量（根据实际情况修改）
+const (
+	AppName          = "cdnAnalyzer"
+	AppShortDesc     = "CDN Information Analysis Tool"
+	AppLongDesc      = "CDN Information Analysis Tool, Analysis Such as (Domain resolution|IP analysis|CDN|WAF|Cloud)."
+	DefaultConfigUrl = "https://raw.githubusercontent.com/winezer0/cdnAnalyzer/refs/heads/main/cmd/cdnAnalyzer/config.yaml"
+	AppVersion       = "0.5.2"
+	BuildDate        = "2025-10-19"
+)
+
 func main() {
 	// 定义配置并解析命令行参数
 	var cmdConfig = &CmdConfig{}
-	var appConfig = &docheck.AppConfig{}
 
-	// 使用 PassDoubleDash 选项强制使用 - 前缀
-	parser := flags.NewParser(cmdConfig, flags.Default)
-	parser.Name = "cdnAnalyzer"
-	parser.Usage = "[OPTIONS]"
-
-	// 添加描述信息
-	parser.ShortDescription = "CDN Information Analysis Tool"
-	parser.LongDescription = "CDN Information Analysis Tool, Analysis Such as (Domain resolution|IP analysis|CDN|WAF|Cloud)."
-
-	// 如果没有提供任何参数，直接输出帮助信息
-	if len(os.Args) == 1 {
-		parser.WriteHelp(os.Stdout)
-		os.Exit(0)
-	}
-
-	// 解析命令行参数
-	if _, err := parser.Parse(); err != nil {
-		var flagsErr *flags.Error
-		if errors.As(err, &flagsErr) && errors.Is(flagsErr.Type, flags.ErrHelp) {
-			os.Exit(0)
-		}
-		fmt.Printf("Error:%v\n", err)
-		os.Exit(1)
-	}
+	// 进行命令行参数解析
+	parseOSArgs2CmdConfig(cmdConfig)
 
 	// 初始化日志记录器
 	logCfg := logging.NewLogConfig(cmdConfig.LogLevel, cmdConfig.LogFile, cmdConfig.ConsoleFormat)
@@ -91,6 +81,13 @@ func main() {
 		os.Exit(1)
 	}
 	defer logging.Sync()
+
+	// 新增：判断是否需要显示版本信息
+	if cmdConfig.Version {
+		fmt.Printf("cdnAnalyzer version %s\n", AppVersion)
+		fmt.Printf("Build Date: %s\n", BuildDate)
+		os.Exit(0) // 显示后退出，不执行后续逻辑
+	}
 
 	// 初始化数据库文件默认存储目录
 	if cmdConfig.Folder == "" {
@@ -105,13 +102,12 @@ func main() {
 
 	// 进行配置文件远程更新
 	if cmdConfig.UpdateConfig {
-		url := "https://raw.githubusercontent.com/winezer0/cdnAnalyzer/refs/heads/main/cmd/cdnAnalyzer/config.yaml"
-		err := downfile.DownloadFileSimple(url, cmdConfig.Proxy, cmdConfig.ConfigFile)
+		err := downfile.DownloadFileSimple(DefaultConfigUrl, cmdConfig.Proxy, cmdConfig.ConfigFile)
 		downfile.CleanupIncompleteDownloads(cmdConfig.Folder) //清理下载失败的数据
 		if err != nil {
-			logging.Fatalf("Failed to load <%s> -> error: %v\n", url, err)
+			logging.Fatalf("Failed to load <%s> -> error: %v\n", DefaultConfigUrl, err)
 		} else {
-			logging.Debugf("Success update config from url: %v", url)
+			logging.Debugf("Success update config from DefaultConfigUrl: %v", DefaultConfigUrl)
 		}
 	}
 
@@ -123,6 +119,7 @@ func main() {
 	}
 
 	// 加载配置文件远程更新
+	var appConfig = &docheck.AppConfig{}
 	appConfig, err := docheck.LoadAppConfigFile(cmdConfig.ConfigFile)
 	if err != nil || appConfig == nil {
 		logging.Fatalf("Failed to load the config: %v\n", err)
@@ -240,6 +237,34 @@ func main() {
 	if err = fileutils.WriteOutputToFile(outputData, cmdConfig.OutputType, cmdConfig.Output); err != nil {
 		logging.Debugf("Write analysis results to [%v] occur error: %v", cmdConfig.Output, err)
 	}
+}
+
+func parseOSArgs2CmdConfig(cmdConfig *CmdConfig) *flags.Parser {
+	// 使用 PassDoubleDash 选项强制使用 - 前缀
+	parser := flags.NewParser(cmdConfig, flags.Default)
+	parser.Name = AppName
+	parser.Usage = "[OPTIONS]" //当用户执行 cdnAnalyzer --help 时，帮助信息的第一行会显示： Usage: cdnAnalyzer[OPTIONS]
+
+	// 添加描述信息
+	parser.ShortDescription = AppShortDesc
+	parser.LongDescription = AppLongDesc
+
+	// 如果没有提供任何参数，直接输出帮助信息
+	if len(os.Args) == 1 {
+		parser.WriteHelp(os.Stdout)
+		os.Exit(0)
+	}
+
+	// 解析命令行参数
+	if _, err := parser.Parse(); err != nil {
+		var flagsErr *flags.Error
+		if errors.As(err, &flagsErr) && errors.Is(flagsErr.Type, flags.ErrHelp) {
+			os.Exit(0)
+		}
+		fmt.Printf("Error:%v\n", err)
+		os.Exit(1)
+	}
+	return parser
 }
 
 // 使用命令行非默认值参数更新配置文件中的参数
