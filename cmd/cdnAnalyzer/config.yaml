@@ -12,32 +12,18 @@ query-method: dns
 # 数据库路径配置
 download-items:
   - module: ipv4locate
-    filename: qqwry.dat
+    filename: ip2region_v4.xdb
     download-urls:
-      - https://github.com/metowolf/qqwry.dat/releases/latest/download/qqwry.dat
+      - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v4.xdb
     keep-updated: true
     enable: true
 
   - module: ipv6locate
-    filename: zxipv6wry.db
+    filename: ip2region_v6.xdb
     download-urls:
-      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/zxipv6wry.db
-    keep-updated: false
+      - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v6.xdb
+    keep-updated: true
     enable: true
-
-#  - module: ipv4locate
-#    filename: ip2region_v4.xdb
-#    download-urls:
-#      - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v4.xdb
-#    keep-updated: true
-#    enable: true
-#
-#  - module: ipv6locate
-#    filename: ip2region_v6.xdb
-#    download-urls:
-#      - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v6.xdb
-#    keep-updated: false
-#    enable: true
 
   - module: geolite2-asn
     filename: geolite2-asn.mmdb
