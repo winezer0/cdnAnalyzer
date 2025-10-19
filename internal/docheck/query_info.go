@@ -1,12 +1,12 @@
 package docheck
 
 import (
-	"github.com/winezer0/cdnAnalyzer/internal/analyzer"
-	"github.com/winezer0/cdnAnalyzer/pkg/classify"
-	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/dnsquery"
-	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/querydomain"
-	"github.com/winezer0/cdnAnalyzer/pkg/logging"
-	"github.com/winezer0/cdnAnalyzer/pkg/queryip"
+	"github.com/winezer0/cdninfo/internal/analyzer"
+	"github.com/winezer0/cdninfo/pkg/classify"
+	"github.com/winezer0/cdninfo/pkg/domaininfo/dnsquery"
+	"github.com/winezer0/cdninfo/pkg/domaininfo/querydomain"
+	"github.com/winezer0/cdninfo/pkg/logging"
+	"github.com/winezer0/cdninfo/pkg/queryip"
 )
 
 // QueryDomainInfo 进行域名信息解析

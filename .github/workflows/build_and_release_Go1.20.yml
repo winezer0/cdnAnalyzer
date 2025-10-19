@@ -17,10 +17,10 @@ jobs:
         include:
           - goos: windows
             goarch: amd64
-            artifact-name: cdnAnalyzer-windows-amd64.exe
+            artifact-name: cdninfo-windows-amd64.exe
           - goos: linux
             goarch: amd64
-            artifact-name: cdnAnalyzer-linux-amd64
+            artifact-name: cdninfo-linux-amd64
 
     steps:
     - name: Checkout code
@@ -54,7 +54,7 @@ jobs:
         GOARCH: ${{ matrix.goarch }}
         CGO_ENABLED: 0
       run: |
-        go build -ldflags="-s -w -X main.Version=${{ github.event.inputs.version }}" -o ${{ matrix.artifact-name }} ./cmd/cdnAnalyzer/main.go
+        go build -ldflags="-s -w -X main.Version=${{ github.event.inputs.version }}" -o ${{ matrix.artifact-name }} ./cmd/cdninfo/main.go
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -88,7 +88,7 @@ jobs:
         tag_name: v${{ github.event.inputs.version }}-go1.20.14
         name: Release v${{ github.event.inputs.version }} (Go 1.20.14)
         body: |
-          ## cdnAnalyzer v${{ github.event.inputs.version }} (Go 1.20 build)
+          ## cdninfo v${{ github.event.inputs.version }} (Go 1.20 build)
           
           ### 构建信息
           - 版本号: ${{ github.event.inputs.version }}
@@ -97,11 +97,11 @@ jobs:
           - Go版本: 1.20.14
           
           ### 下载
-          - Windows (AMD64): `cdnAnalyzer-windows-amd64.exe`
-          - Linux (AMD64): `cdnAnalyzer-linux-amd64`
+          - Windows (AMD64): `cdninfo-windows-amd64.exe`
+          - Linux (AMD64): `cdninfo-linux-amd64`
         files: |
-          ./artifacts/cdnAnalyzer-windows-amd64.exe/cdnAnalyzer-windows-amd64.exe
-          ./artifacts/cdnAnalyzer-linux-amd64/cdnAnalyzer-linux-amd64
+          ./artifacts/cdninfo-windows-amd64.exe/cdninfo-windows-amd64.exe
+          ./artifacts/cdninfo-linux-amd64/cdninfo-linux-amd64
         draft: false
         prerelease: true
       env:

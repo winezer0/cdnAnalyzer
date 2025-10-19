@@ -1,4 +1,4 @@
-# cdnAnalyzer
+# cdninfo
 
 **CDN Check On Golang**
 
@@ -39,7 +39,7 @@
 
 1. **使用IP2Region数据库**
 
-   修改配置文件 `config.yaml` 中的数据库ipv4locate|ipv6locate的实际下载URL部分
+   修改配置文件 `cdninfo.yaml` 中的数据库ipv4locate|ipv6locate的实际下载URL部分
    ```yaml
    download-items:
      # 启用IP2Region IPv4数据库
@@ -76,7 +76,7 @@
 ## TODO
 -   [x] 整理 unknown-cdn-cname 资产和其他源数据
 -   [x] 实现已知CDN域名IP、疑似CDN域名自动分析脚本
--   [x] 优化代码 实现快速分析模式, 默认的DNS查询次数过多, 导致批量查询时回显较慢, 临时调节可以修改config.yaml中的超时/线程配置
+-   [x] 优化代码 实现快速分析模式, 默认的DNS查询次数过多, 导致批量查询时回显较慢, 临时调节可以修改 cdninfo.yaml中的超时/线程配置
 
 [//]: # (-   [] 将CDN信息脱敏后备份, 并节建立Issue允许用户上传疑似CDN信息用于补充CDN IP和CNAME数据库)
 
@@ -101,22 +101,22 @@
 ### 1. Go Install
 
 ```bash
-go install github.com/winezer0/cdnAnalyzer/cmd/cdnAnalyzer@latest
+go install github.com/winezer0/cdninfo/cmd/cdninfo@latest
 ```
 *安装可执行程序后, 需要补充依赖数据库文件, 可执行 `-u` 命令或手动下载解压 `assets` 目录.*
 
 ### 2. 源码安装
 
 ```bash
-git clone --depth 1 https://github.com/winezer0/cdnAnalyzer
-cd cdnAnalyzer
-go build -ldflags="-s -w" -o cdnAnalyzer.exe ./cmd/cdnAnalyzer/main.go
+git clone --depth 1 https://github.com/winezer0/cdninfo
+cd cdninfo
+go build -ldflags="-s -w" -o cdninfo.exe ./cmd/cdninfo/main.go
 ```
 
 ### 3. Release 安装
 
 从 Github Releases 页面下载预编译好的可执行文件：
-[https://github.com/winezer0/cdnAnalyzer/releases](https://github.com/winezer0/cdnAnalyzer/releases)
+[https://github.com/winezer0/cdninfo/releases](https://github.com/winezer0/cdninfo/releases)
 
 ---
 
@@ -124,10 +124,10 @@ go build -ldflags="-s -w" -o cdnAnalyzer.exe ./cmd/cdnAnalyzer/main.go
 
 ### 命令行参数
 
-`cdnAnalyzer` 支持丰富的命令行参数以自定义其行为.
+`cdninfo` 支持丰富的命令行参数以自定义其行为.
 
 ```
-Usage: cdnAnalyzer [OPTIONS]
+Usage: cdninfo [OPTIONS]
 ```
 
 #### **配置文件相关**
@@ -180,25 +180,25 @@ Usage: cdnAnalyzer [OPTIONS]
 #### 检查更新数据库
 ```bash
 # 从默认源更新
-./cdnAnalyzer -u
+./cdninfo -u
 
 # 通过代理下载数据库
-./cdnAnalyzer -p http://127.0.0.1:8080 -u
+./cdninfo -p http://127.0.0.1:8080 -u
 ```
 
 #### 分析目标
 ```bash
 # 分析单个目标，结果输出到控制台
-./cdnAnalyzer -i example.com
+./cdninfo -i example.com
 
 # 分析多个目标，结果输出到 JSON 文件
-./cdnAnalyzer -i example.com,google.com -o results.json -O json
+./cdninfo -i example.com,google.com -o results.json -O json
 
 # 从文件读取目标
-./cdnAnalyzer -i targets.txt -I file
+./cdninfo -i targets.txt -I file
 
 # 通过管道传入目标
-echo www.baidu.com | ./cdnAnalyzer -I sys
+echo www.baidu.com | ./cdninfo -I sys
 ```
 
 ---
@@ -229,22 +229,22 @@ echo www.baidu.com | ./cdnAnalyzer -I sys
 
 ## 数据源
 
-`cdnAnalyzer` 整合了多个公开的数据源以提供准确的分析结果.
+`cdninfo` 整合了多个公开的数据源以提供准确的分析结果.
 -   更新中 新增Ip2Region IPv4数据库 : [ip2region_v4.xdb](https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v4.xdb)
 -   更新中 新增Ip2Region IPv6数据库 : [ip2region_v6.xdb](https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v6.xdb) 600M+
 -   更新中 IPv4数据库 `qqwry.dat`: [metowolf/qqwry.dat](https://github.com/metowolf/qqwry.dat)
--   已停止 IPv6数据库 `zxipv6wry.db`: [内置](https://github.com/winezer0/cdnAnalyzer/blob/main/assets/zxipv6wry.db)
+-   已停止 IPv6数据库 `zxipv6wry.db`: [内置](https://github.com/winezer0/cdninfo/blob/main/assets/zxipv6wry.db)
 -   更新中 ASNvx数据库 `geolite2-asn.mmdb ipv4+-ipv6`: [sapics/ip-location-db](https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn.mmdb)
--   维护中 DNS服务器 `dns-resolvers`: [自定义](https://github.com/winezer0/cdnAnalyzer/blob/main/assets/resolvers.txt)
--   维护中 对应城市IP `city_ip.csv`: [自定义](https://github.com/winezer0/cdnAnalyzer/blob/main/assets/city_ip.csv)
--   维护中 云资产关键字 `cloud_keys.yml`: [自定义](https://github.com/winezer0/cdnAnalyzer/blob/main/assets/cloud_keys.yml)
+-   维护中 DNS服务器 `dns-resolvers`: [自定义](https://github.com/winezer0/cdninfo/blob/main/assets/resolvers.txt)
+-   维护中 对应城市IP `city_ip.csv`: [自定义](https://github.com/winezer0/cdninfo/blob/main/assets/city_ip.csv)
+-   维护中 云资产关键字 `cloud_keys.yml`: [自定义](https://github.com/winezer0/cdninfo/blob/main/assets/cloud_keys.yml)
 -   更新中 CDN域名信息 `4ft35t cdn.yml`: [4ft35t/cdn](https://github.com/4ft35t/cdn/blob/master/src/cdn.yml)
 -   更新中 国外CDN信息 `sources_foreign.json`: [projectdiscovery/cdncheck](https://github.com/projectdiscovery/cdncheck/blob/main/sources_data.json)
 -   更新中 国外CDN信息 `provider_foreign.yaml`: [projectdiscovery/cdncheck](https://github.com/projectdiscovery/cdncheck/blob/main/cmd/generate-index/provider.yaml)
 -   已停止 国内CDN信息 `sources_china.json`: [hanbufei/isCdn](https://github.com/hanbufei/isCdn/blob/main/client/data/sources_china.json) 
 -   已停止 国内CDN信息 `sources_china2.json`: [mabangde/cdncheck_cn](https://github.com/mabangde/cdncheck_cn/blob/main/sources_data.json) **已合并到 sources_china.json**
 -   已停止 粗略CDN域名 `unknown-cdn-cname.txt`: [alwaystest18/cdnChecker](https://github.com/alwaystest18/cdnChecker/blob/master/cdn_cname) **已合并到 sources_china.json**
--   更新中 用户提交信息 `sources_added.json`: [自定义](https://github.com/winezer0/cdnAnalyzer/blob/main/assets/sources_added.json) **由用户提交**
+-   更新中 用户提交信息 `sources_added.json`: [自定义](https://github.com/winezer0/cdninfo/blob/main/assets/sources_added.json) **由用户提交**
 
 ---
 

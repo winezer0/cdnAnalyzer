@@ -1,6 +1,6 @@
 package docheck
 
-import "github.com/winezer0/cdnAnalyzer/pkg/downfile"
+import "github.com/winezer0/cdninfo/pkg/downfile"
 
 // AppConfig 表示整个配置文件结构
 type AppConfig struct {

@@ -1,16 +1,28 @@
 package queryip
 
 import (
-	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
+	"github.com/winezer0/cdninfo/pkg/maputils"
+	"path/filepath"
+	"runtime"
 	"testing"
 )
 
+func getTestDBPath(dbname string) string {
+	_, currentFile, _, _ := runtime.Caller(0)
+	projectRoot := filepath.Join(filepath.Dir(currentFile), "..", "..")
+	return filepath.Join(projectRoot, "assets", dbname)
+}
+
 func TestQueryIP(t *testing.T) {
 	// 测试配置
+	asnIpvxDb := getTestDBPath("geolite2-asn.mmdb")
+	ipv4LocateDb := getTestDBPath("qqwry.dat")
+	ipv6LocateDb := getTestDBPath("zxipv6wry.db")
+	// 测试配置
 	config := &IpDbConfig{
-		AsnIpvxDb:    "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\geolite2-asn.mmdb",
-		Ipv4LocateDb: "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\qqwry.dat",
-		Ipv6LocateDb: "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\zxipv6wry.db",
+		AsnIpvxDb:    asnIpvxDb,
+		Ipv4LocateDb: ipv4LocateDb,
+		Ipv6LocateDb: ipv6LocateDb,
 	}
 
 	// 初始化数据库引擎

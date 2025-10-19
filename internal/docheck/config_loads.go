@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/winezer0/cdnAnalyzer/pkg/downfile"
-	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
-	"github.com/winezer0/cdnAnalyzer/pkg/logging"
-	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
+	"github.com/winezer0/cdninfo/pkg/downfile"
+	"github.com/winezer0/cdninfo/pkg/fileutils"
+	"github.com/winezer0/cdninfo/pkg/logging"
+	"github.com/winezer0/cdninfo/pkg/maputils"
 	"gopkg.in/yaml.v3"
 )
 

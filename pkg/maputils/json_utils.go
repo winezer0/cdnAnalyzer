@@ -3,7 +3,7 @@ package maputils
 import (
 	"encoding/json"
 
-	"github.com/winezer0/cdnAnalyzer/pkg/logging"
+	"github.com/winezer0/cdninfo/pkg/logging"
 )
 
 // TraverseJSON 遍历 JSON 的所有键和值，支持嵌套结构

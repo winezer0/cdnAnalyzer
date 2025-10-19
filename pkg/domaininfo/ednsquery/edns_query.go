@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
-	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
+	"github.com/winezer0/cdninfo/pkg/maputils"
 )
 
 // EDNSResult 存放最后格式化的结果

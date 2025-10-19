@@ -17,16 +17,16 @@ jobs:
         include:
           - goos: windows
             goarch: amd64
-            artifact-name: cdnAnalyzer-windows-amd64.exe
+            artifact-name: cdninfo-windows-amd64.exe
           - goos: linux
             goarch: amd64
-            artifact-name: cdnAnalyzer-linux-amd64
+            artifact-name: cdninfo-linux-amd64
           - goos: darwin
             goarch: amd64
-            artifact-name: cdnAnalyzer-darwin-amd64
+            artifact-name: cdninfo-darwin-amd64
           - goos: darwin
             goarch: arm64
-            artifact-name: cdnAnalyzer-darwin-arm64
+            artifact-name: cdninfo-darwin-arm64
 
     steps:
     - name: Checkout code
@@ -53,7 +53,7 @@ jobs:
         GOARCH: ${{ matrix.goarch }}
         CGO_ENABLED: 0
       run: |
-        go build -ldflags="-s -w -X main.Version=${{ github.event.inputs.version }}" -o ${{ matrix.artifact-name }} ./cmd/cdnAnalyzer/main.go
+        go build -ldflags="-s -w -X main.Version=${{ github.event.inputs.version }}" -o ${{ matrix.artifact-name }} ./cmd/cdninfo/main.go
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -93,7 +93,7 @@ jobs:
         tag_name: v${{ github.event.inputs.version }}
         name: Release v${{ github.event.inputs.version }}
         body: |
-          ## cdnAnalyzer v${{ github.event.inputs.version }}
+          ## cdninfo v${{ github.event.inputs.version }}
           
           ### 构建信息
           - 版本号: ${{ github.event.inputs.version }}
@@ -102,15 +102,15 @@ jobs:
           - Go版本: 1.23.x
           
           ### 下载
-          - Windows (AMD64): `cdnAnalyzer-windows-amd64.exe`
-          - Linux (AMD64): `cdnAnalyzer-linux-amd64`
-          - macOS (Intel/AMD64): `cdnAnalyzer-darwin-amd64`
-          - macOS (Apple Silicon/ARM64): `cdnAnalyzer-darwin-arm64`
+          - Windows (AMD64): `cdninfo-windows-amd64.exe`
+          - Linux (AMD64): `cdninfo-linux-amd64`
+          - macOS (Intel/AMD64): `cdninfo-darwin-amd64`
+          - macOS (Apple Silicon/ARM64): `cdninfo-darwin-arm64`
         files: |
-          ./artifacts/cdnAnalyzer-windows-amd64.exe/cdnAnalyzer-windows-amd64.exe
-          ./artifacts/cdnAnalyzer-linux-amd64/cdnAnalyzer-linux-amd64
-          ./artifacts/cdnAnalyzer-darwin-amd64/cdnAnalyzer-darwin-amd64
-          ./artifacts/cdnAnalyzer-darwin-arm64/cdnAnalyzer-darwin-arm64
+          ./artifacts/cdninfo-windows-amd64.exe/cdninfo-windows-amd64.exe
+          ./artifacts/cdninfo-linux-amd64/cdninfo-linux-amd64
+          ./artifacts/cdninfo-darwin-amd64/cdninfo-darwin-amd64
+          ./artifacts/cdninfo-darwin-arm64/cdninfo-darwin-arm64
         draft: false
         prerelease: false
       env:

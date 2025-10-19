@@ -2,13 +2,21 @@ package asninfo
 
 import (
 	"net"
+	"path/filepath"
+	"runtime"
 	"testing"
 )
 
+func getTestDBPath(dbname string) string {
+	_, currentFile, _, _ := runtime.Caller(0)
+	projectRoot := filepath.Join(filepath.Dir(currentFile), "..", "..")
+	return filepath.Join(projectRoot, "assets", dbname)
+}
 func TestMMDBManager_FindASN(t *testing.T) {
 	// 创建配置 - 使用统一数据库路径
+	ipvxDb := getTestDBPath("geolite2-asn.mmdb")
 	config := &MMDBConfig{
-		AsnIpvxDb:            "C:\\Users\\WINDOWS\\Desktop\\demo\\geolite2-asn.mmdb",
+		AsnIpvxDb:            ipvxDb,
 		MaxConcurrentQueries: 100,
 	}
 
@@ -66,8 +74,9 @@ func TestMMDBManager_FindASN(t *testing.T) {
 
 func TestMMDBManager_ASNToIPRanges(t *testing.T) {
 	// 创建配置 - 使用统一数据库路径
+	ipvxDb := getTestDBPath("geolite2-asn.mmdb")
 	config := &MMDBConfig{
-		AsnIpvxDb:            "C:\\Users\\WINDOWS\\Desktop\\demo\\geolite2-asn.mmdb",
+		AsnIpvxDb:            ipvxDb,
 		MaxConcurrentQueries: 100,
 	}
 
@@ -95,8 +104,9 @@ func TestMMDBManager_ASNToIPRanges(t *testing.T) {
 }
 
 func TestMMDBManager_BatchFindASN(t *testing.T) {
+	ipvxDb := getTestDBPath("geolite2-asn.mmdb")
 	config := &MMDBConfig{
-		AsnIpvxDb:            "C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\geolite2-asn.mmdb",
+		AsnIpvxDb:            ipvxDb,
 		MaxConcurrentQueries: 100,
 	}
 

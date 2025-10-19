@@ -2,7 +2,7 @@ package analyzer
 
 import (
 	"fmt"
-	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
+	"github.com/winezer0/cdninfo/pkg/maputils"
 	"strings"
 )
 

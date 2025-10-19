@@ -4,9 +4,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/winezer0/cdnAnalyzer/pkg/classify"
-	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/dnsquery"
-	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/ednsquery"
+	"github.com/winezer0/cdninfo/pkg/classify"
+	"github.com/winezer0/cdninfo/pkg/domaininfo/dnsquery"
+	"github.com/winezer0/cdninfo/pkg/domaininfo/ednsquery"
 )
 
 // DNSQueryConfig 存储DNS查询配置
@@ -45,13 +45,13 @@ type DNSQueryResult struct {
 func (pro *DNSProcessor) Process() *dnsquery.DomainDNSResultMap {
 	// 1. 收集所有域名
 	domains := classify.ExtractFMTsPtr(pro.DomainEntries)
-	
+
 	// 根据QueryType决定执行哪种查询
 	var dnsResultMap dnsquery.DomainResolverDNSResultMap
 	var ednsResultMap ednsquery.DomainCityEDNSResultMap
-	
+
 	var wg sync.WaitGroup
-	
+
 	// 判断是否需要执行DNS查询
 	if pro.DNSQueryConfig.QueryType == "dns" || pro.DNSQueryConfig.QueryType == "both" {
 		wg.Add(1)
@@ -66,7 +66,7 @@ func (pro *DNSProcessor) Process() *dnsquery.DomainDNSResultMap {
 			)
 		}()
 	}
-	
+
 	// 判断是否需要执行EDNS查询
 	if pro.DNSQueryConfig.QueryType == "edns" || pro.DNSQueryConfig.QueryType == "both" {
 		wg.Add(1)
@@ -82,10 +82,10 @@ func (pro *DNSProcessor) Process() *dnsquery.DomainDNSResultMap {
 			)
 		}()
 	}
-	
+
 	// 等待所有查询完成
 	wg.Wait()
-	
+
 	// 处理DNS查询结果
 	var domainDNSResultMap dnsquery.DomainDNSResultMap
 	if pro.DNSQueryConfig.QueryType == "dns" || pro.DNSQueryConfig.QueryType == "both" {
@@ -99,12 +99,32 @@ func (pro *DNSProcessor) Process() *dnsquery.DomainDNSResultMap {
 			}
 		}
 	}
-	
+
 	// 如果执行了EDNS查询，合并结果
 	if pro.DNSQueryConfig.QueryType == "edns" || pro.DNSQueryConfig.QueryType == "both" {
 		domainEDNSResultMap := ednsquery.MergeDomainCityEDNSResultMap(ednsResultMap)
 		MergeEDNSMapToDNSMap(domainDNSResultMap, domainEDNSResultMap)
 	}
-	
+
+	return &domainDNSResultMap
+}
+
+// FastProcess 快速处理DNS查询，仅执行基础DNS查询，不执行EDNS查询
+func (pro *DNSProcessor) FastProcess() *dnsquery.DomainDNSResultMap {
+	// 收集所有域名
+	domains := classify.ExtractFMTsPtr(pro.DomainEntries)
+
+	// 仅执行DNS查询
+	dnsResultMap := dnsquery.ResolveDNSWithResolversMulti(
+		domains,
+		nil, // recordTypes, nil表示默认类型
+		pro.DNSQueryConfig.Resolvers,
+		pro.DNSQueryConfig.Timeout,
+		pro.DNSQueryConfig.MaxDNSConcurrency,
+	)
+
+	// 合并结果
+	domainDNSResultMap := dnsquery.MergeDomainResolverResultMap(dnsResultMap)
+
 	return &domainDNSResultMap
 }

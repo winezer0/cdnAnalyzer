@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/miekg/dns"
 )
 
 func TestEDNSQuery(t *testing.T) {
 	domain := "www.baidu.com" // 替换为你要测试的域名
-	eDNSQueryResults := ResolveEDNS(domain, "175.1.238.1", "8.8.8.8:53", 5*time.Second)
+	eDNSQueryResults := ResolveEDNS(domain, "175.1.238.1", "8.8.8.8:53", dns.TypeA, 5*time.Second)
 
 	t.Logf("Query results for %s:", domain)
 	t.Logf("  A:    %v", eDNSQueryResults.A)

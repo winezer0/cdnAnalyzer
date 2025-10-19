@@ -1,4 +1,4 @@
-module github.com/winezer0/cdnAnalyzer
+module github.com/winezer0/cdninfo
 
 go 1.23.10
 

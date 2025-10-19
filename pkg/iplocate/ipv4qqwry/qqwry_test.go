@@ -1,12 +1,20 @@
 package ipv4qqwry
 
 import (
+	"path/filepath"
+	"runtime"
 	"testing"
 )
 
+func getTestDBPath(dbname string) string {
+	_, currentFile, _, _ := runtime.Caller(0)
+	projectRoot := filepath.Join(filepath.Dir(currentFile), "..", "..", "..")
+	return filepath.Join(projectRoot, "assets", dbname)
+}
 func TestIpv4Location_Find(t *testing.T) {
 	// 集成测试：测试完整的查询流程
-	db, err := NewIPv4Location("C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\qqwry.dat")
+	dbPath := getTestDBPath("qqwry.dat")
+	db, err := NewIPv4Location(dbPath)
 	if err != nil {
 		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
 	}
@@ -34,7 +42,8 @@ func TestIpv4Location_Find(t *testing.T) {
 }
 
 func TestIpv4Location_BatchFind(t *testing.T) {
-	db, err := NewIPv4Location("C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\qqwry.dat")
+	dbPath := getTestDBPath("qqwry.dat")
+	db, err := NewIPv4Location(dbPath)
 	if err != nil {
 		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
 	}
@@ -60,7 +69,8 @@ func TestIpv4Location_BatchFind(t *testing.T) {
 }
 
 func TestIpv4Location_GetDatabaseInfo(t *testing.T) {
-	db, err := NewIPv4Location("C:\\Users\\WINDOWS\\Desktop\\cdnAnalyzer\\assets\\qqwry.dat")
+	dbPath := getTestDBPath("qqwry.dat")
+	db, err := NewIPv4Location(dbPath)
 	if err != nil {
 		t.Skipf("跳过测试，因为无法加载数据库: %v", err)
 	}

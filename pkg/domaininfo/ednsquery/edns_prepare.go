@@ -2,11 +2,11 @@ package ednsquery
 
 import (
 	"context"
-	"github.com/winezer0/cdnAnalyzer/pkg/logging"
+	"github.com/winezer0/cdninfo/pkg/logging"
 	"sync"
 	"time"
 
-	"github.com/winezer0/cdnAnalyzer/pkg/domaininfo/dnsquery"
+	"github.com/winezer0/cdninfo/pkg/domaininfo/dnsquery"
 )
 
 type DomainPreQueryResult struct {

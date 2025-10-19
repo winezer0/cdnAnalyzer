@@ -27,7 +27,7 @@ databases:
   - module: cdn-keys
     filename: cloud_keys.yml
     download-urls:
-      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/cloud_keys.yml
+      - https://github.com/winezer0/cdninfo/blob/main/assets/cloud_keys.yml
     keep-updated: true
     enable: true
 
@@ -35,7 +35,7 @@ databases:
   - module: cdn-sources-added
     filename: sources_added.json
     download-urls:
-      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/sources_added.json
+      - https://github.com/winezer0/cdninfo/blob/main/assets/sources_added.json
     keep-updated: true
     enable: true
 
@@ -43,7 +43,7 @@ databases:
   - module: unknown-cdn-cname
     filename: unknown-cdn-cname.txt
     download-urls:
-      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/unknown-cdn-cname.txt
+      - https://github.com/winezer0/cdninfo/blob/main/assets/unknown-cdn-cname.txt
     keep-updated: true
     enable: true
 
@@ -52,7 +52,7 @@ databases:
   - module: cdn-sources-china
     filename: sources_china.json
     download-urls:
-      - https://github.com/winezer0/cdnAnalyzer/blob/main/assets/sources_china.json
+      - https://github.com/winezer0/cdninfo/blob/main/assets/sources_china.json
     keep-updated: false
     enable: true
 

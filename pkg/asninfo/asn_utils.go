@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/winezer0/cdnAnalyzer/pkg/logging"
+	"github.com/winezer0/cdninfo/pkg/logging"
 )
 
 // ExportToCSV 将数据库中的所有 ASN 条目导出为 CSV 文件

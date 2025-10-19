@@ -3,7 +3,7 @@ package downfile
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/winezer0/cdnAnalyzer/pkg/logging"
+	"github.com/winezer0/cdninfo/pkg/logging"
 	"os"
 	"path/filepath"
 	"time"

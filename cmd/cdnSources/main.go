@@ -6,13 +6,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/winezer0/cdnAnalyzer/internal/analyzer"
-	"github.com/winezer0/cdnAnalyzer/internal/generate"
-	"github.com/winezer0/cdnAnalyzer/pkg/logging"
+	"github.com/winezer0/cdninfo/internal/analyzer"
+	"github.com/winezer0/cdninfo/internal/generate"
+	"github.com/winezer0/cdninfo/pkg/logging"
 
 	"github.com/jessevdk/go-flags"
-	"github.com/winezer0/cdnAnalyzer/pkg/downfile"
-	"github.com/winezer0/cdnAnalyzer/pkg/fileutils"
+	"github.com/winezer0/cdninfo/pkg/downfile"
+	"github.com/winezer0/cdninfo/pkg/fileutils"
 )
 
 // SourcesFilePaths 存储所有依赖文件路径

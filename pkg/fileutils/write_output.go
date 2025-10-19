@@ -2,11 +2,11 @@ package fileutils
 
 import (
 	"fmt"
-	"github.com/winezer0/cdnAnalyzer/pkg/logging"
+	"github.com/winezer0/cdninfo/pkg/logging"
 	"os"
 	"strings"
 
-	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
+	"github.com/winezer0/cdninfo/pkg/maputils"
 )
 
 func WriteOutputToFile(data interface{}, outputType, outputFile string) error {

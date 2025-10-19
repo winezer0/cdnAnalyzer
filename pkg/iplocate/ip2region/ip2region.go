@@ -3,7 +3,7 @@ package ip2region
 import (
 	"fmt"
 	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
-	"github.com/winezer0/cdnAnalyzer/pkg/iplocate"
+	"github.com/winezer0/cdninfo/pkg/iplocate"
 	"sync"
 )
 

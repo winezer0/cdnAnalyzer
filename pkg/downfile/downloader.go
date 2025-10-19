@@ -2,7 +2,7 @@ package downfile
 
 import (
 	"fmt"
-	"github.com/winezer0/cdnAnalyzer/pkg/logging"
+	"github.com/winezer0/cdninfo/pkg/logging"
 	"io"
 	"net/http"
 	"os"

@@ -1,7 +1,7 @@
 package querydomain
 
 import (
-	"github.com/winezer0/cdnAnalyzer/pkg/classify"
+	"github.com/winezer0/cdninfo/pkg/classify"
 	"testing"
 	"time"
 )

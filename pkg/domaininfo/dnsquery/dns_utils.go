@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/miekg/dns"
-	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
+	"github.com/winezer0/cdninfo/pkg/maputils"
 	"net"
 	"regexp"
 	"strings"
@@ -87,7 +87,7 @@ func OptimizeDNSResult(dnsResult *DNSResult) {
 		}
 	}
 	dnsResult.AAAA = newAAAA
-	
+
 	// 对CNAME记录进行排序以确保一致性
 	dnsResult.CNAME = maputils.UniqueMergeSlicesSorted(dnsResult.CNAME, nil)
 }

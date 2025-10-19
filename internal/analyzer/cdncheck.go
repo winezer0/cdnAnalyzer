@@ -1,8 +1,8 @@
 package analyzer
 
 import (
-	"github.com/winezer0/cdnAnalyzer/pkg/asninfo"
-	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
+	"github.com/winezer0/cdninfo/pkg/asninfo"
+	"github.com/winezer0/cdninfo/pkg/maputils"
 	"sync"
 )
 

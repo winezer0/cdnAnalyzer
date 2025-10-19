@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/winezer0/cdnAnalyzer/pkg/maputils"
+	"github.com/winezer0/cdninfo/pkg/maputils"
 
 	"github.com/miekg/dns"
 )
