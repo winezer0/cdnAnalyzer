@@ -1,154 +1,58 @@
 package main
 
 import (
-	"errors"
-	"fmt"
-	"github.com/winezer0/cdninfo/pkg/queryip"
+	"github.com/winezer0/cdninfo/internal/config"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/jessevdk/go-flags"
+	"github.com/winezer0/ipinfo/pkg/queryip"
+
 	"github.com/winezer0/cdninfo/internal/analyzer"
 	"github.com/winezer0/cdninfo/internal/docheck"
-	"github.com/winezer0/cdninfo/internal/embeds"
 	"github.com/winezer0/cdninfo/pkg/classify"
 	"github.com/winezer0/cdninfo/pkg/domaininfo/querydomain"
-	"github.com/winezer0/cdninfo/pkg/downfile"
 	"github.com/winezer0/cdninfo/pkg/fileutils"
-	"github.com/winezer0/cdninfo/pkg/logging"
-)
-
-// CmdConfig 存储程序配置，使用结构体标签定义命令行参数
-type CmdConfig struct {
-	// 配置文件参数
-	ConfigFile   string `short:"c" long:"config-file" description:"config yaml file path (default ~/isecdb/cdninfo.yaml)" default:""`
-	UpdateConfig bool   `short:"C" long:"update-config" description:"updated default config content by remote url (default false)"`
-
-	// 基本参数 覆盖app Config中的配置
-	Input     string `short:"i" long:"input" description:"input file or str list (separated by commas)"`
-	InputType string `short:"I" long:"input-type" description:"input data type: str/file/sys (default str)" default:"str" choice:"file" choice:"str" choice:"sys"`
-
-	// 输出配置参数 覆盖app Config中的配置
-	Output      string `short:"o" long:"output" description:"output file path (default result.json)" default:"result.json"`
-	OutputType  string `short:"O" long:"output-type" description:"output file type: csv/json/txt/sys (default sys)" default:"sys" choice:"csv" choice:"json" choice:"txt" choice:"sys"`
-	OutputLevel int    `short:"l" long:"output-level" description:"Output verbosity level: 1=quiet, 2=default, 3=detail (default 2)" default:"2" choice:"1" choice:"2" choice:"3"`
-	OutputNoCDN bool   `short:"n" long:"output-no-cdn" description:"only output Info where not CDN and not WAF."`
-
-	// 数据库更新配置
-	Proxy    string `short:"p" long:"proxy" description:"use the proxy URL down files (support http|socks5)" default:""`
-	Folder   string `short:"d" long:"folder" description:"db files storage dir (default ~/isecdb)" default:""`
-	UpdateDB bool   `short:"u" long:"update-db" description:"Auto update db files by interval (default: false)"`
-
-	// 版本号输出
-	Version bool `short:"v" long:"version" description:"Show Program version and exit (default: false)"`
-
-	// DNS 相关参数（新增）
-	QueryMethod     string `short:"q" long:"query-method" description:"Cover Config, Set dns query method:(allow:|dns|edns|both)" default:"" choice:"" choice:"dns" choice:"edns" choice:"both"`
-	DNSTimeout      int    `short:"t" long:"dns-timeout" description:"Cover Config, Set DNS query timeout in seconds" default:"0"`
-	ResolversNum    int    `short:"r" long:"resolvers-num" description:"Cover Config, Set number of resolvers to use" default:"0"`
-	CityMapNum      int    `short:"m" long:"city-map-num" description:"Cover Config, Set number of city map workers" default:"0"`
-	DNSConcurrency  int    `short:"w" long:"dns-concurrency" description:"Cover Config, Set concurrent DNS queries" default:"0"`
-	EDNSConcurrency int    `short:"W" long:"edns-concurrency" description:"Cover Config, Set concurrent EDNS queries" default:"0"`
-
-	// 日志配置参数
-	LogFile       string `long:"lf" description:"log file path (default: only stdout)" default:""`
-	LogLevel      string `long:"ll" description:"log level: debug/info/warn/error (default error)" default:"error" choice:"debug" choice:"info" choice:"warn" choice:"error"`
-	ConsoleFormat string `long:"lc" description:"log console format, multiple choice T(time),L(level),C(caller),F(func),M(msg). Empty or off will disable." default:"T L C M"`
-}
-
-// 版本信息常量（根据实际情况修改）
-const (
-	AppName          = "cdninfo"
-	AppShortDesc     = "CDN Information Analysis Tool"
-	AppLongDesc      = "CDN Information Analysis Tool, Analysis Such as (Domain resolution|IP analysis|CDN|WAF|Cloud)."
-	DefaultConfigUrl = "https://raw.githubusercontent.com/winezer0/cdninfo/refs/heads/main/cmd/cdninfo/cdninfo.yaml"
-	AppVersion       = "0.5.2"
-	BuildDate        = "2025-10-19"
+	"github.com/winezer0/xutils/logging"
 )
 
 func main() {
-	// 定义配置并解析命令行参数
-	var cmdConfig = &CmdConfig{}
-
-	// 进行命令行参数解析
-	parseOSArgs2CmdConfig(cmdConfig)
-
-	// 初始化日志记录器
-	logCfg := logging.NewLogConfig(cmdConfig.LogLevel, cmdConfig.LogFile, cmdConfig.ConsoleFormat)
-	if err := logging.InitLogger(logCfg); err != nil {
-		fmt.Printf("Failed to initialize logger: %v\n", err)
-		os.Exit(1)
-	}
+	// 定义命令行参数
+	// 打印命令行输入配置
+	opts, _ := InitOptionsArgs(0)
 	defer logging.Sync()
 
-	// 新增：判断是否需要显示版本信息
-	if cmdConfig.Version {
-		fmt.Printf("cdninfo version %s\n", AppVersion)
-		fmt.Printf("Build Date: %s\n", BuildDate)
-		os.Exit(0) // 显示后退出，不执行后续逻辑
-	}
-
-	// 初始化数据库文件默认存储目录
-	if cmdConfig.Folder == "" {
-		cmdConfig.Folder = fileutils.GetUserSubDir("isecdb")
-	}
-
-	//初始化配置文件默认路径 存储到 cmdConfig.Folder 下
-	if cmdConfig.ConfigFile == "" {
-		cmdConfig.ConfigFile = fileutils.JoinPath(cmdConfig.Folder, "cdninfo.yaml")
-		logging.Debugf("Use default current config path: %v", cmdConfig.ConfigFile)
-	}
-
-	// 进行配置文件远程更新
-	if cmdConfig.UpdateConfig {
-		err := downfile.DownloadFileSimple(DefaultConfigUrl, cmdConfig.Proxy, cmdConfig.ConfigFile)
-		downfile.CleanupIncompleteDownloads(cmdConfig.Folder) //清理下载失败的数据
-		if err != nil {
-			logging.Fatalf("Failed to load <%s> -> error: %v\n", DefaultConfigUrl, err)
-		} else {
-			logging.Debugf("Success update config from DefaultConfigUrl: %v", DefaultConfigUrl)
-		}
-	}
-
-	//生成默认配置文件
-	if fileutils.IsEmptyFile(cmdConfig.ConfigFile) {
-		fileutils.MakeDirs(cmdConfig.ConfigFile, true)
-		fileutils.WriteAny(cmdConfig.ConfigFile, embeds.GetConfig())
-		logging.Debugf("Success creat config from embed: %v", cmdConfig.ConfigFile)
-	}
-
 	// 加载配置文件远程更新
-	var appConfig = &docheck.AppConfig{}
-	appConfig, err := docheck.LoadAppConfigFile(cmdConfig.ConfigFile)
+	var appConfig = &config.AppConfig{}
+	appConfig, err := config.LoadConfig(opts.ConfigFile)
 	if err != nil || appConfig == nil {
 		logging.Fatalf("Failed to load the config: %v\n", err)
 	} else {
-		logging.Debugf("Success loaded config: %v", cmdConfig.ConfigFile)
+		logging.Debugf("Success loaded config: %v", opts.ConfigFile)
 	}
 
 	// 获取并检查数据库文件路径
-	dbPaths, err := docheck.DownloadDbFiles(appConfig.DownloadItems, cmdConfig.Folder, cmdConfig.Proxy, cmdConfig.UpdateDB)
+	dbPathsInfo, err := downloadDbFiles(appConfig.DownloadItems, opts.StoreDB, opts.UpdateDB, opts.ProxyUrl)
 	if err != nil {
 		logging.Fatalf("Check and down db files failed: %v\n", err)
 	} else {
-		logging.Debugf("Success Check db files: %v", cmdConfig.Folder)
+		logging.Debugf("Success Check db files: %v", opts.StoreDB)
 	}
 
 	// 检查必要参数
-	targets, err := checkTargetInfo(cmdConfig.Input, strings.ToLower(cmdConfig.InputType))
+	targets, err := parseTargetFomat(opts.Input, strings.ToLower(opts.InputType))
 	if err != nil {
-		logging.Fatalf("target [%s] loading failed: %v\n", cmdConfig.Input, err)
+		logging.Fatalf("target [%s] loading failed: %v\n", opts.Input, err)
 	}
 
 	//使用cmd配置更新配置文件中的某些配置
-	appConfig = updateAppConfig(appConfig, cmdConfig)
+	appConfig = updateAppConfigByOpts(appConfig, opts)
 
 	// 分类输入数据为 IP Domain InvalidEntries
 	classifier := classify.ClassifyTargets(targets)
 
 	//加载dns解析服务器配置文件，用于dns解析调用
-	resolvers, err := docheck.LoadResolvers(dbPaths.ResolversFile, appConfig.ResolversNum)
+	resolvers, err := config.LoadResolvers(dbPathsInfo.ResolversFile, appConfig.ResolversNum)
 	if err != nil {
 		logging.Fatalf("Failed to load resolvers: %v", err)
 	} else {
@@ -156,7 +60,7 @@ func main() {
 	}
 
 	//加载本地EDNS城市IP信息
-	randCities, err := docheck.LoadCityMap(dbPaths.CityMapFile, appConfig.CityMapNUm)
+	randCities, err := config.LoadCityMap(dbPathsInfo.CityMapFile, appConfig.CityMapNUm)
 	if err != nil {
 		logging.Fatalf("Failed to load city map: %v", err)
 	} else {
@@ -185,25 +89,25 @@ func main() {
 	}
 
 	//对 checkInfos 中的IP数据进行分析
-	ipDbConfig := &queryip.IpDbConfig{
-		AsnIpvxDb:    dbPaths.AsnIpvxDb,
-		Ipv4LocateDb: dbPaths.Ipv4LocateDb,
-		Ipv6LocateDb: dbPaths.Ipv6LocateDb,
+	ipDbConfig := &queryip.IPDbConfig{
+		AsnIpvxDb:    dbPathsInfo.AsnIpvxDb,
+		Ipv4LocateDb: dbPathsInfo.Ipv4LocateDb,
+		Ipv6LocateDb: dbPathsInfo.Ipv6LocateDb,
 	}
 
 	checkInfos = docheck.QueryIPInfo(ipDbConfig, checkInfos)
 
 	// 加载sources.json配置文件
-	if _, err := os.Stat(dbPaths.CdnSource); os.IsNotExist(err) {
-		logging.Fatalf("Error: The CDN source data not exist.: %s\n", dbPaths.CdnSource)
+	if _, err := os.Stat(dbPathsInfo.CdnSource); os.IsNotExist(err) {
+		logging.Fatalf("Error: The CDN source data not exist.: %s\n", dbPathsInfo.CdnSource)
 	}
 
 	cdnData := analyzer.NewEmptyCDNData()
-	err = fileutils.ReadJsonToStruct(dbPaths.CdnSource, cdnData)
+	err = fileutils.ReadJsonToStruct(dbPathsInfo.CdnSource, cdnData)
 	if err != nil {
 		logging.Fatalf("Failed to load CDN source data: %v\n", err)
 	} else {
-		logging.Debugf("Success load CDN source data: %v", dbPaths.CdnSource)
+		logging.Debugf("Success load CDN source data: %v", dbPathsInfo.CdnSource)
 	}
 
 	//进行CDN CLOUD WAF 信息分析
@@ -211,17 +115,17 @@ func main() {
 	if err != nil {
 		logging.Fatalf("Failed to analysis CDN info: %v\n", err)
 	} else {
-		logging.Debugf("Success analysis CDN info: %v", dbPaths.CdnSource)
+		logging.Debugf("Success analysis CDN info: %v", dbPathsInfo.CdnSource)
 	}
 
 	//排除Cdn|WAF部分的结果
-	if cmdConfig.OutputNoCDN {
+	if opts.OutputNoCDN {
 		checkResults = analyzer.FilterNoCdnNoWaf(checkResults)
 	}
 
 	// 处理输出详细程度
 	var outputData interface{}
-	switch cmdConfig.OutputLevel {
+	switch opts.OutputLevel {
 	case 1:
 		// 仅输出fmt部分的内容
 		outputData = analyzer.GetFmtList(checkResults)
@@ -234,114 +138,7 @@ func main() {
 	}
 
 	// 处理输出类型
-	if err = fileutils.WriteOutputToFile(outputData, cmdConfig.OutputType, cmdConfig.Output); err != nil {
-		logging.Debugf("Write analysis results to [%v] occur error: %v", cmdConfig.Output, err)
+	if err = fileutils.WriteOutputToFile(outputData, opts.OutputType, opts.Output); err != nil {
+		logging.Debugf("Write analysis results to [%v] occur error: %v", opts.Output, err)
 	}
-}
-
-func parseOSArgs2CmdConfig(cmdConfig *CmdConfig) *flags.Parser {
-	// 使用 PassDoubleDash 选项强制使用 - 前缀
-	parser := flags.NewParser(cmdConfig, flags.Default)
-	parser.Name = AppName
-	parser.Usage = "[OPTIONS]" //当用户执行 cdninfo --help 时，帮助信息的第一行会显示： Usage: cdninfo[OPTIONS]
-
-	// 添加描述信息
-	parser.ShortDescription = AppShortDesc
-	parser.LongDescription = AppLongDesc
-
-	// 如果没有提供任何参数，直接输出帮助信息
-	if len(os.Args) == 1 {
-		parser.WriteHelp(os.Stdout)
-		os.Exit(0)
-	}
-
-	// 解析命令行参数
-	if _, err := parser.Parse(); err != nil {
-		var flagsErr *flags.Error
-		if errors.As(err, &flagsErr) && errors.Is(flagsErr.Type, flags.ErrHelp) {
-			os.Exit(0)
-		}
-		fmt.Printf("Error:%v\n", err)
-		os.Exit(1)
-	}
-	return parser
-}
-
-// 使用命令行非默认值参数更新配置文件中的参数
-func updateAppConfig(appConfig *docheck.AppConfig, cmdConfig *CmdConfig) *docheck.AppConfig {
-	if cmdConfig.DNSTimeout > 0 {
-		appConfig.DNSTimeOut = cmdConfig.DNSTimeout
-	}
-
-	if cmdConfig.ResolversNum > 0 {
-		appConfig.ResolversNum = cmdConfig.ResolversNum
-	}
-
-	if cmdConfig.CityMapNum > 0 {
-		appConfig.CityMapNUm = cmdConfig.CityMapNum
-	}
-
-	if cmdConfig.DNSConcurrency > 0 {
-		appConfig.DNSConcurrency = cmdConfig.DNSConcurrency
-	}
-
-	if cmdConfig.EDNSConcurrency > 0 {
-		appConfig.EDNSConcurrency = cmdConfig.EDNSConcurrency
-	}
-
-	if cmdConfig.QueryMethod != "" {
-		appConfig.QueryMethod = cmdConfig.QueryMethod
-	}
-
-	// 确保并发数有一个合理的默认值，防止死锁
-	if appConfig.DNSConcurrency <= 0 {
-		appConfig.DNSConcurrency = 10
-	}
-	if appConfig.EDNSConcurrency <= 0 {
-		appConfig.EDNSConcurrency = 10
-	}
-	return appConfig
-}
-
-func checkTargetInfo(target string, targetType string) ([]string, error) {
-	var (
-		targets []string
-		err     error
-	)
-
-	if target == "" && (targetType == "str" || targetType == "file") {
-		return nil, fmt.Errorf("the target must be specified")
-	}
-
-	switch targetType {
-	case "str":
-		targets = strings.Split(target, ",")
-	case "file":
-		targets, err = fileutils.ReadTextToList(target)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load the target file: %v", err)
-		}
-	case "sys":
-		targets, err = fileutils.ReadPipeToList()
-		if err != nil {
-			return nil, fmt.Errorf("failed to load the system pipe: %v", err)
-		}
-	default:
-		return nil, fmt.Errorf("unsupported target type: %s", targetType)
-	}
-
-	// 过滤空字符串
-	filtered := make([]string, 0, len(targets))
-	for _, t := range targets {
-		t = strings.TrimSpace(t)
-		if t != "" {
-			filtered = append(filtered, t)
-		}
-	}
-
-	if len(filtered) == 0 {
-		return nil, fmt.Errorf("no valid target has been entered")
-	}
-
-	return filtered, nil
 }

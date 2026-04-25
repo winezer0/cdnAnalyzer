@@ -15,21 +15,21 @@ download-items:
     filename: ip2region_v4.xdb
     download-urls:
       - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v4.xdb
-    keep-updated: true
+    keep-updated: 7d
     enable: true
 
   - module: ipv6locate
     filename: ip2region_v6.xdb
     download-urls:
       - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v6.xdb
-    keep-updated: true
+    keep-updated: 7d
     enable: true
 
   - module: geolite2-asn
     filename: geolite2-asn.mmdb
     download-urls:
       - https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn.mmdb
-    keep-updated: true
+    keep-updated: 7d
     enable: true
 
   - module: dns-resolvers

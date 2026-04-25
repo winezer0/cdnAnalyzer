@@ -2,7 +2,7 @@ package ednsquery
 
 import (
 	"context"
-	"github.com/winezer0/cdninfo/pkg/logging"
+	"github.com/winezer0/xutils/logging"
 	"sync"
 	"time"
 

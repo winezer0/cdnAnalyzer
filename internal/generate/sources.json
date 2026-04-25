@@ -6290,8 +6290,8 @@
       ],
       "上海云盾": [
         "hwwsdns.cn",
-        "yunduncdn.com",
-        "yunduns.com"
+        "yunduns.com",
+        "yunduncdn.com"
       ],
       "上海云盾 (YUNDUN)": [
         "hcnamedns.com"
@@ -6802,13 +6802,13 @@
         "astcdn.com"
       ],
       "帝联科技": [
+        "globalcdn.cn",
         "fastcdn.com",
-        "dlgslb.cn",
         "flxdns.com",
         "ewcache.com",
-        "tlgslb.com",
-        "globalcdn.cn",
-        "dnion.com"
+        "dnion.com",
+        "dlgslb.cn",
+        "tlgslb.com"
       ],
       "广东浩云长盛网络": [
         "hy-clouds.cn",
@@ -6875,13 +6875,13 @@
         "sinajs.cn"
       ],
       "方能 CDN": [
-        "funnullv[1-2][0-9].com",
         "funnull0[12].vip",
+        "funnullv[89].com",
         "funnull3[135].com",
         "fnvip100.com",
-        "funnullv[89].com",
-        "fn0[1-3].vip",
-        "funnull.org"
+        "funnullv[1-2][0-9].com",
+        "funnull.org",
+        "fn0[1-3].vip"
       ],
       "易通锐进（Akamai 中国）由网宿承接": [
         "tl88.net"
@@ -7159,11 +7159,11 @@
         "dnsv1.com",
         "tencdns.net",
         "tdnsv5.com",
-        "cdn-go.cn",
         "tdnsv1[0-5].com",
-        "tdnsstic[1-4].cn.com",
         "dnsv1.com.cn",
+        "tdnsstic[1-4].cn.com",
         "dnse[0-5].com",
+        "cdn-go.cn",
         "tdnsv[1-9].com"
       ],
       "腾讯云 DDoS 防护": [

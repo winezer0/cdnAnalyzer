@@ -1,7 +1,7 @@
 package analyzer
 
 import (
-	"github.com/winezer0/cdninfo/pkg/asninfo"
+	"github.com/winezer0/ipinfo/pkg/asninfo"
 )
 
 // CheckInfo 用于保存资产结果时间的类型

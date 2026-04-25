@@ -5,8 +5,7 @@ import (
 	"github.com/winezer0/cdninfo/pkg/classify"
 	"github.com/winezer0/cdninfo/pkg/domaininfo/dnsquery"
 	"github.com/winezer0/cdninfo/pkg/domaininfo/querydomain"
-	"github.com/winezer0/cdninfo/pkg/logging"
-	"github.com/winezer0/cdninfo/pkg/queryip"
+	"github.com/winezer0/xutils/logging"
 )
 
 // QueryDomainInfo 进行域名信息解析
@@ -28,33 +27,6 @@ func QueryDomainInfo(dnsConfig *querydomain.DNSQueryConfig, domainEntries []clas
 		}
 		checkInfos = append(checkInfos, checkInfo)
 	}
-	return checkInfos
-}
-
-// QueryIPInfo 进行IP信息查询
-func QueryIPInfo(ipDbConfig *queryip.IpDbConfig, checkInfos []*analyzer.CheckInfo) []*analyzer.CheckInfo {
-	// 初始化IP数据库引擎
-	ipEngines, err := queryip.InitDBEngines(ipDbConfig)
-	if err != nil {
-		logging.Fatalf("初始化数据库失败: %v", err)
-	}
-	defer ipEngines.Close()
-
-	//对 checkInfos 中的A/AAAA记录进行IP信息查询，并赋值回去
-	for _, checkInfo := range checkInfos {
-		if len(checkInfo.A) > 0 || len(checkInfo.AAAA) > 0 {
-			ipInfo, err := ipEngines.QueryIPInfo(checkInfo.A, checkInfo.AAAA)
-			if err != nil {
-				logging.Warnf("查询IP信息失败: %v", err)
-			} else {
-				checkInfo.Ipv4Locate = ipInfo.IPv4Locations
-				checkInfo.Ipv4Asn = ipInfo.IPv4AsnInfos
-				checkInfo.Ipv6Locate = ipInfo.IPv6Locations
-				checkInfo.Ipv6Asn = ipInfo.IPv6AsnInfos
-			}
-		}
-	}
-
 	return checkInfos
 }
 

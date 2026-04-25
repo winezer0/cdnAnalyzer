@@ -1,8 +1,8 @@
 package analyzer
 
 import (
-	"github.com/winezer0/cdninfo/pkg/asninfo"
 	"github.com/winezer0/cdninfo/pkg/maputils"
+	"github.com/winezer0/ipinfo/pkg/asninfo"
 	"sync"
 )
 
@@ -28,8 +28,8 @@ func checkCDN(cdnData *CDNData, checkInfo *CheckInfo) (CheckResult, error) {
 	cnameList := checkInfo.CNAME
 	ipList := maputils.UniqueMergeSlices(checkInfo.A, checkInfo.AAAA)
 	asnList := maputils.UniqueMergeAnySlices(
-		asninfo.GetUniqueOrgNumbers(checkInfo.Ipv4Asn),
-		asninfo.GetUniqueOrgNumbers(checkInfo.Ipv6Asn),
+		getUniqueOrgNumbers(checkInfo.Ipv4Asn),
+		getUniqueOrgNumbers(checkInfo.Ipv6Asn),
 	)
 	ipLocateList := maputils.UniqueMergeSlices(
 		maputils.GetMapsValuesUnique(checkInfo.Ipv4Locate),
@@ -66,6 +66,25 @@ func checkCDN(cdnData *CDNData, checkInfo *CheckInfo) (CheckResult, error) {
 	}
 
 	return checkResult, nil
+}
+
+func getUniqueOrgNumbers(asnInfos []asninfo.ASNInfo) []uint64 {
+	seen := make(map[uint64]struct{})
+	result := make([]uint64, 0, len(asnInfos))
+
+	for _, info := range asnInfos {
+		if !info.FoundASN {
+			continue
+		}
+		if _, ok := seen[info.OrganisationNumber]; ok {
+			continue
+		}
+
+		seen[info.OrganisationNumber] = struct{}{}
+		result = append(result, info.OrganisationNumber)
+	}
+
+	return result
 }
 
 func CheckCDNBatch(cdnData *CDNData, checkInfos []*CheckInfo) ([]CheckResult, error) {

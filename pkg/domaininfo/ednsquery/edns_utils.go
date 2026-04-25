@@ -1,7 +1,7 @@
 package ednsquery
 
 import (
-	"github.com/winezer0/cdninfo/pkg/logging"
+	"github.com/winezer0/xutils/logging"
 )
 
 func mergeCityEDNSResultMap(cityEDNSResultMap CityEDNSResultMap) *EDNSResult {

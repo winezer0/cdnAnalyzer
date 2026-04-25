@@ -15,7 +15,7 @@ download-items:
     filename: qqwry.dat
     download-urls:
       - https://github.com/metowolf/qqwry.dat/releases/latest/download/qqwry.dat
-    keep-updated: true
+    keep-updated: false
     enable: true
 
   - module: ipv6locate
@@ -29,21 +29,21 @@ download-items:
   #    filename: ip2region_v4.xdb
   #    download-urls:
   #      - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v4.xdb
-  #    keep-updated: true
+  #    keep-updated: 7d
   #    enable: true
   #
   #  - module: ipv6locate
   #    filename: ip2region_v6.xdb
   #    download-urls:
   #      - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v6.xdb
-  #    keep-updated: false
+  #    keep-updated: 7d
   #    enable: true
 
   - module: geolite2-asn
     filename: geolite2-asn.mmdb
     download-urls:
       - https://github.com/sapics/ip-location-db/blob/main/geolite2-asn-mmdb/geolite2-asn.mmdb
-    keep-updated: true
+    keep-updated: 7d
     enable: true
 
   - module: dns-resolvers
@@ -64,5 +64,5 @@ download-items:
     filename: sources.json
     download-urls:
       - https://github.com/winezer0/cdninfo/blob/main/assets/sources.json
-    keep-updated: true
+    keep-updated: 3d
     enable: true

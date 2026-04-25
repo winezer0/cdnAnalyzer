@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/miekg/dns"
-	"github.com/winezer0/cdninfo/pkg/maputils"
 	"net"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/miekg/dns"
+	"github.com/winezer0/cdninfo/pkg/maputils"
 )
 
 // nsServerAddPort 为dns服务器IP补充53端口
@@ -167,7 +168,7 @@ func GetSystemDefaultAddress() (addr string) {
 	resolver.PreferGo = true
 	resolver.Dial = func(ctx context.Context, network, address string) (net.Conn, error) {
 		addr = address
-		return nil, fmt.Errorf(address)
+		return nil, fmt.Errorf("address: %s", address)
 	}
 	_, _ = resolver.LookupHost(context.Background(), "Addr")
 	return addr

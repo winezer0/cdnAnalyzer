@@ -8,15 +8,15 @@ import (
 
 	"github.com/winezer0/cdninfo/internal/analyzer"
 	"github.com/winezer0/cdninfo/internal/generate"
-	"github.com/winezer0/cdninfo/pkg/logging"
+	"github.com/winezer0/downutils/downutils"
+	"github.com/winezer0/xutils/logging"
 
 	"github.com/jessevdk/go-flags"
-	"github.com/winezer0/cdninfo/pkg/downfile"
 	"github.com/winezer0/cdninfo/pkg/fileutils"
 )
 
-// SourcesFilePaths 存储所有依赖文件路径
-type SourcesFilePaths struct {
+// SourcesFilePathInfo 存储所有依赖文件路径
+type SourcesFilePathInfo struct {
 	CdnKeysYaml         string
 	CdnDomainsYaml      string
 	SourcesChinaJson    string
@@ -26,109 +26,134 @@ type SourcesFilePaths struct {
 	UnknownCdnCname     string
 }
 
+// 版本信息常量(根据实际情况修改)
+const (
+	AppName      = "cdnsources"
+	AppShortDesc = "cdn auto sources update"
+	AppLongDesc  = "cdn auto sources update"
+	AppVersion   = "0.0.3"
+	BuildDate    = "2026-04-27"
+)
+
 // Options 命令行参数选项
 type Options struct {
 	SourcesConfig string `short:"c" description:"资源配置文件路径" default:"sources.yaml"`
-	DownloadDir   string `short:"d" description:"资源下载存储目录" default:"sources"`
-	SourcesPath   string `short:"o" description:"资源更新后的输出文件" default:"sources/sources.json"`
+	SourcesOut    string `short:"o" description:"资源更新后的输出文件" default:"sources/sources.json"`
 
+	// 下载配置参数
+	DownloadDir string `short:"d" description:"资源下载存储目录" default:"sources"`
+	NoProgress  bool   `long:"no-progress" description:"不显示下载进度条"`
+	UpdateForce bool   `long:"update-force" description:"强制更新，忽略更新策略"`
+	EnableForce bool   `long:"enable-force" description:"强制启用，忽略Enable字段"`
+	ProxyURL    string `long:"proxy-url" description:"代理URL" default:""`
+
+	Version bool `short:"v" long:"version" description:"显示版本信息"`
 	// 日志配置参数
 	LogFile       string `long:"lf" description:"log file path (default: only stdout)" default:""`
 	LogLevel      string `long:"ll" description:"log level: debug/info/warn/error (default debug)" default:"debug" choice:"debug" choice:"info" choice:"warn" choice:"error"`
 	ConsoleFormat string `long:"lc" description:"log console format, multiple choice T(time),L(level),C(caller),F(func),M(msg). Empty or off will disable." default:"T L C M"`
 }
 
-func main() {
-	// 定义命令行参数
-	var options Options
-	parser := flags.NewParser(&options, flags.Default)
-	_, err := parser.Parse()
-	if err != nil {
+// InitOptionsArgs 常用的工具函数，解析parser和logging配置
+func InitOptionsArgs(minimumParams int) (*Options, *flags.Parser) {
+	opts := &Options{}
+	parser := flags.NewParser(opts, flags.Default)
+	parser.Name = AppName
+	parser.Usage = "[OPTIONS]"
+	parser.ShortDescription = AppShortDesc
+	parser.LongDescription = AppLongDesc
+
+	// 命令行参数数量检查 指不包含程序名本身的参数数量
+	if minimumParams > 0 && len(os.Args)-1 < minimumParams {
+		parser.WriteHelp(os.Stdout)
+		os.Exit(0)
+	}
+
+	// 命令行参数解析检查
+	if _, err := parser.Parse(); err != nil {
 		var flagsErr *flags.Error
 		if errors.As(err, &flagsErr) && errors.Is(flagsErr.Type, flags.ErrHelp) {
 			os.Exit(0)
 		}
-		fmt.Printf("Error parsing flags: %v\n", err)
+		fmt.Printf("Error:%v\n", err)
 		os.Exit(1)
 	}
 
-	// 初始化日志记录器
-	logCfg := logging.NewLogConfig(options.LogLevel, options.LogFile, options.ConsoleFormat)
-	if err := logging.InitLogger(logCfg); err != nil {
+	// 版本号输出
+	if opts.Version {
+		fmt.Printf("%s version %s\n", AppName, AppVersion)
+		fmt.Printf("Build Date: %s\n", BuildDate)
+		os.Exit(0)
+	}
+
+	// 初始化日志器
+	logCfg := logging.NewLogConfig(opts.LogLevel, opts.LogFile, opts.ConsoleFormat)
+	if err := logging.InitDefaultLogger(logCfg); err != nil {
 		fmt.Printf("Failed to initialize logger: %v\n", err)
 		os.Exit(1)
 	}
+
+	if opts.SourcesConfig == "" {
+		logging.Errorf("config file path is empty")
+		os.Exit(1)
+	}
+
+	return opts, parser
+}
+
+func main() {
+	// 定义命令行参数
+	// 打印命令行输入配置
+	opts, _ := InitOptionsArgs(0)
 	defer logging.Sync()
 
-	sourcesConfig := options.SourcesConfig
-	downloadDir := options.DownloadDir
-	sourcesPath := options.SourcesPath
-
-	//1、实现相关配置文件自动下载
-	downloadConfig, err := downfile.LoadConfig(sourcesConfig)
+	// 加载并验证配置文件
+	downConfig, err := downutils.LoadConfig(opts.SourcesConfig)
 	if err != nil {
-		logging.Errorf("加载配置文件失败: %v", err)
+		logging.Errorf("failed to load config: %v", err)
 		return
 	}
-	logging.Debugf("加载配置文件成功: %v", downloadConfig)
+	logging.Debugf("加载配置文件成功: %v", downConfig)
 
-	// 清理过期缓存记录
-	downfile.CacheFileName = ".sources_cache.json"
-	downfile.CleanupExpiredCache()
+	// 显示配置信息
+	displayOptions(opts)
 
-	// 创建HTTP客户端配置
-	clientConfig := &downfile.ClientConfig{
-		ConnectTimeout: 10,
-		IdleTimeout:    10,
-		ProxyURL:       "",
+	// 构建下载选项
+	downOptions := &downutils.DownOptions{
+		OutputForce:    opts.DownloadDir,
+		UpdateForce:    opts.UpdateForce,
+		EnableForce:    opts.EnableForce,
+		ShowProgress:   !opts.NoProgress,
+		ProxyURL:       opts.ProxyURL,
+		MaxRetries:     3,
+		MaxConcurrent:  1,
+		MaxSpeed:       0,
+		ConnectTimeout: 30,
+		IdleTimeout:    30,
 	}
 
-	// 创建HTTP客户端
-	httpClient, err := downfile.CreateHTTPClient(clientConfig)
+	// 执行下载流程
+	result, err := downutils.ExecuteDownloads(downOptions, downConfig)
 	if err != nil {
-		logging.Errorf("创建HTTP客户端失败: %v", err)
+		logging.Errorf("download failed: %v", err)
 		return
 	}
 
-	// 提取每个配置组中需要下载的内容
-	var downItems []downfile.DownItem
-	for _, items := range downloadConfig {
+	// 显示下载结果
+	downutils.DisplayDownloadResult(result)
+
+	// 从下载配置中提取文件路径信息
+	var downItems []downutils.DownItem
+	for _, items := range downConfig {
 		downItems = append(downItems, items...)
-	}
-
-	// 下载所有配置
-	if len(downItems) > 0 {
-		logging.Debugf("总计需要下载的文件数量:[%v]", len(downItems))
-		downfile.ProcessDownItems(httpClient, downItems, downloadDir, false, false, 3)
-	} else {
-		logging.Debug("未发现需要下载的文件")
-		return
-	}
-
-	// 清理未完成的下载文件
-	downfile.CleanupIncompleteDownloads(downloadDir)
-
-	// 格式化 downItems 中的物理路径
-	absDir, err := fileutils.GetAbsolutePath(downloadDir)
-	if err != nil {
-		logging.Errorf("获取目录[%v]的绝对路径出现错误: %v", absDir, err)
-		return
-	} else {
-		logging.Debugf("DownDir:[%v] -> AbsPath:[%v]", downloadDir, absDir)
-	}
-
-	for index, downedItem := range downItems {
-		absPath := downfile.GetItemFilePath(downedItem.FileName, absDir)
-		logging.Debugf("FileName:[%v] -> AbsPath:[%v]", downedItem.FileName, absPath)
-		downedItem.FileName = absPath
-		downItems[index] = downedItem
 	}
 
 	//检查是否存在未下载的依赖文件
 	var missingPaths []string
-	for _, downedItem := range downItems {
-		if fileutils.IsNotExists(downedItem.FileName) {
-			missingPaths = append(missingPaths, fmt.Sprintf("Not File [%s]", downedItem.FileName))
+	for _, item := range downItems {
+		finalPath := downutils.GetDownItemFinalPath(item.FileName, item.StorageDir, downOptions.OutputForce)
+		if fileutils.IsNotExists(finalPath) {
+			missingPaths = append(missingPaths, fmt.Sprintf("Not File [%s]", finalPath))
 		}
 	}
 
@@ -139,7 +164,7 @@ func main() {
 		logging.Debug("所有必须依赖文件已经下载完成.")
 	}
 
-	sourcesPaths := getSourcesPaths(downItems)
+	sourcesPaths := getSourcesPaths(downItems, opts.DownloadDir)
 	logging.Debugf("sourcesPaths: %v.", sourcesPaths)
 
 	// 合并已下载的数据库文件到source
@@ -185,16 +210,16 @@ func main() {
 	analyzer.AddDataToCdnDataCategory(finalCdnData, analyzer.CategoryCDN, analyzer.FieldCNAME, "UNKNOWN", cleanedCnameList)
 
 	// 写入结构体到文件中去
-	err = fileutils.WriteSortedJson(sourcesPath, finalCdnData)
+	err = fileutils.WriteSortedJson(opts.SourcesOut, finalCdnData)
 	if err != nil {
-		logging.Errorf("数据文件[%v]生成失败 -> [%+v]!!!", sourcesPath, err)
+		logging.Errorf("数据文件[%v]生成失败 -> [%+v]!!!", opts.SourcesOut, err)
 	} else {
-		logging.Debugf("数据文件[%v]生成成功...", sourcesPath)
+		logging.Debugf("数据文件[%v]生成成功...", opts.SourcesOut)
 	}
 }
 
 // getSourcesPaths 从downloadItems中获取数据库文件路径
-func getSourcesPaths(downloadItems []downfile.DownItem) SourcesFilePaths {
+func getSourcesPaths(downloadItems []downutils.DownItem, outputForceDir string) SourcesFilePathInfo {
 	// 数据库文件名常量
 	const (
 		CdnKeysYaml         = "cdn-keys"
@@ -207,7 +232,7 @@ func getSourcesPaths(downloadItems []downfile.DownItem) SourcesFilePaths {
 	)
 
 	// 初始化空路径
-	paths := SourcesFilePaths{}
+	paths := SourcesFilePathInfo{}
 	if downloadItems == nil || len(downloadItems) == 0 {
 		return paths
 	}
@@ -215,7 +240,7 @@ func getSourcesPaths(downloadItems []downfile.DownItem) SourcesFilePaths {
 	// 遍历下载配置，根据 module 名称查找对应的文件路径
 	for _, item := range downloadItems {
 		module := item.Module
-		storePath := item.FileName
+		storePath := downutils.GetModuleFinalPath(module, downloadItems, outputForceDir)
 		// 根据module名称匹配数据库类型
 		switch module {
 		case CdnKeysYaml:
@@ -235,6 +260,19 @@ func getSourcesPaths(downloadItems []downfile.DownItem) SourcesFilePaths {
 		}
 	}
 	return paths
+}
+
+// displayOptions 显示配置信息
+func displayOptions(opts *Options) {
+	logging.Infof("Configuration loaded:")
+	logging.Infof("  SourcesConfig: %s", opts.SourcesConfig)
+	logging.Infof("  DownloadDir: %s", opts.DownloadDir)
+	logging.Infof("  SourcesPath: %s", opts.SourcesOut)
+	logging.Infof("  NoProgress: %v", opts.NoProgress)
+	logging.Infof("  OutputForce: %s", opts.DownloadDir)
+	logging.Infof("  UpdateForce: %v", opts.UpdateForce)
+	logging.Infof("  EnableForce: %v", opts.EnableForce)
+	logging.Infof("  ProxyURL: %s", opts.ProxyURL)
 }
 
 // 遍历列表，清理每个元素

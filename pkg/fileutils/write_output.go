@@ -2,7 +2,7 @@ package fileutils
 
 import (
 	"fmt"
-	"github.com/winezer0/cdninfo/pkg/logging"
+	"github.com/winezer0/xutils/logging"
 	"os"
 	"strings"
 
