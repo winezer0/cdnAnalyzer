@@ -6,7 +6,7 @@ import (
 	"github.com/winezer0/cdninfo/pkg/domaininfo/dnsquery"
 	"github.com/winezer0/cdninfo/pkg/domaininfo/querydomain"
 	"github.com/winezer0/cdninfo/pkg/logging"
-	"github.com/winezer0/cdninfo/pkg/queryip"
+	"github.com/winezer0/ipinfo/pkg/queryip"
 )
 
 // QueryDomainInfo 进行域名信息解析
@@ -31,8 +31,25 @@ func QueryDomainInfo(dnsConfig *querydomain.DNSQueryConfig, domainEntries []clas
 	return checkInfos
 }
 
+func convertIPLocationsToMap(locations []queryip.IPLocation) []map[string]string {
+	if len(locations) == 0 {
+		return nil
+	}
+
+	result := make([]map[string]string, 0, len(locations))
+	for _, loc := range locations {
+		locationStr := ""
+		if loc.IPLocate != nil {
+			locationStr = loc.IPLocate.Location
+		}
+		result = append(result, map[string]string{loc.IP: locationStr})
+	}
+
+	return result
+}
+
 // QueryIPInfo 进行IP信息查询
-func QueryIPInfo(ipDbConfig *queryip.IpDbConfig, checkInfos []*analyzer.CheckInfo) []*analyzer.CheckInfo {
+func QueryIPInfo(ipDbConfig *queryip.IPDbConfig, checkInfos []*analyzer.CheckInfo) []*analyzer.CheckInfo {
 	// 初始化IP数据库引擎
 	ipEngines, err := queryip.InitDBEngines(ipDbConfig)
 	if err != nil {
@@ -47,9 +64,9 @@ func QueryIPInfo(ipDbConfig *queryip.IpDbConfig, checkInfos []*analyzer.CheckInf
 			if err != nil {
 				logging.Warnf("查询IP信息失败: %v", err)
 			} else {
-				checkInfo.Ipv4Locate = ipInfo.IPv4Locations
+				checkInfo.Ipv4Locate = convertIPLocationsToMap(ipInfo.IPv4Locations)
 				checkInfo.Ipv4Asn = ipInfo.IPv4AsnInfos
-				checkInfo.Ipv6Locate = ipInfo.IPv6Locations
+				checkInfo.Ipv6Locate = convertIPLocationsToMap(ipInfo.IPv6Locations)
 				checkInfo.Ipv6Asn = ipInfo.IPv6AsnInfos
 			}
 		}
