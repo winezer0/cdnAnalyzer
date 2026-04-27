@@ -37,6 +37,10 @@
 
 ### 如何切换数据库
 
+当前使用 ipinfo 包实现支持多种IP、ASN数据库格式 mmdb ipdb xdb dat db 等多种格式
+
+ipinfo 包项目地址 https://github.com/winezer0/ipinfo
+
 1. **使用IP2Region数据库**
 
    修改配置文件 `cdninfo.yaml` 中的数据库ipv4locate|ipv6locate的实际下载URL部分
