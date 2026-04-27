@@ -136,23 +136,23 @@ Usage: cdninfo [OPTIONS]
 
 #### **配置文件相关**
 
-| 参数 | 短格式 | 长格式 | 描述 |
-| :--- | :--- | :--- | :--- |
-| `ConfigFile` | `-c` | `--config-file` | 指定配置文件路径 (YAML) |
-| `UpdateConfig` | `-C` | `--update-config` | 从远程 URL 更新配置内容 |
+| 参数 | 短格式 | 长格式 | 描述 | 默认值 |
+| :--- | :--- | :--- | :--- | :--- |
+| `ConfigFile` | `-c` | `--config-file` | 指定配置文件路径 (YAML) | `~/isecdb/cdninfo.yaml` |
+| `GenerateConfig` | `-g` | `--gen` | 生成默认配置文件到指定路径 | - |
 
 #### **输入相关**
 
 | 参数 | 短格式 | 长格式 | 描述 | 默认值 |
 | :--- | :--- | :--- | :--- | :--- |
 | `Input` | `-i` | `--input` | 输入目标，支持文件或逗号分隔的字符串 | 必填 (除非使用`-I sys`)|
-| `InputType` | `-I` | `--input-type` | 输入类型: `string`(直接输入)/`file`(文件)/`sys`(stdin) | `string` |
+| `InputType` | `-I` | `--input-type` | 输入类型: `str`(直接输入)/`file`(文件)/`sys`(stdin) | `str`|
 
 #### **输出相关**
 
 | 参数 | 短格式 | 长格式 | 描述 | 默认值 |
 | :--- | :--- | :--- | :--- | :--- |
-| `Output` | `-o` | `--output` | 输出文件路径 | `analyser_output.json` |
+| `Output` | `-o` | `--output` | 输出文件路径 | `result.json` |
 | `OutputType` | `-O` | `--output-type` | 输出文件类型: `csv`/`json`/`txt`/`sys` | `sys` |
 | `OutputLevel` | `-l` | `--output-level` | 输出详细级别：1=安静 / 2=默认 / 3=详细 | `2` |
 | `OutputNoCDN` | `-n` | `--output-no-cdn` | 只输出非 CDN/WAF 的信息 | `false` |
@@ -162,7 +162,7 @@ Usage: cdninfo [OPTIONS]
 | 参数 | 短格式 | 长格式 | 描述 | 默认值 |
 | :--- | :--- | :--- | :--- | :--- |
 | `Proxy` | `-p` | `--proxy` | 使用代理下载文件 (支持 http/socks5) | - |
-| `Folder` | `-d` | `--folder` | 数据库存储目录 (默认为用户目录) | 用户主目录 |
+| `StoreDB` | `-d` | `--store` | 数据库存储目录 (默认为用户目录) | `~/isecdb` |
 | `UpdateDB` | `-u` | `--update-db` | 自动更新数据库文件 (定期检查) | `false` |
 
 #### **DNS 相关参数**
@@ -171,13 +171,12 @@ Usage: cdninfo [OPTIONS]
 
 | 参数                | 短格式  | 长格式                  | 描述                         | 默认值     |
 |:------------------|:-----|:---------------------|:---------------------------|:--------|
-| `QueryMethod`     | `-q` | `--query-method`     | DNS 查询方法 dns/edns/both     | `dns`   |
+| `QueryMethod`     | `-q` | `--query-method`     | DNS 查询方法: dns/edns/both    | -       |
 | `DNSTimeout`      | `-t` | `--dns-timeout`      | DNS 查询超时时间 (秒)             | `0`     |
-| `ResolversNum`    | `-r` | `--resolvers-num`    | 使用的 resolver 数量            | `0`     |
-| `CityMapNum`      | `-m` | `--city-map-num`     | 城市地图 worker 数量             | `0`     |
-| `DNSConcurrency`  | `-w` | `--dns-concurrency`  | 并发 DNS 查询数                 | `0`     |
-| `EDNSConcurrency` | `-W` | `--edns-concurrency` | 并发 EDNS 查询数                | `0`     |
-| `QueryEDNSCNAMES` | `-q` | `--query-ednscnames` | 是否启用通过 EDNS 解析 CNAME       | `false` |
+| `ResolversNum`    | `-r` | `--resolvers-num`    | 使用的 resolver 数量              | `0`     |
+| `CityMapNum`      | `-m` | `--city-map-num`     | 城市地图 worker 数量              | `0`     |
+| `DNSConcurrency`  | `-w` | `--dns-concurrency`  | 并发 DNS 查询数                  | `0`     |
+| `EDNSConcurrency` | `-W` | `--edns-concurrency` | 并发 EDNS 查询数                 | `0`     |
 
 ### 使用示例
 
