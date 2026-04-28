@@ -14,8 +14,8 @@ const (
 	AppName      = "cdninfo"
 	AppShortDesc = "CDN Information Analysis Tool"
 	AppLongDesc  = "CDN Information Analysis Tool, Analysis Such as (Domain resolution|IP analysis|CDN|WAF|Cloud)."
-	AppVersion   = "0.6.1"
-	BuildDate    = "2026-04-26"
+	AppVersion   = "0.6.2"
+	BuildDate    = "2026-04-28"
 )
 
 // Options 存储程序配置，使用结构体标签定义命令行参数
