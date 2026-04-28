@@ -8,8 +8,12 @@
 
 继续阅读文章或使用工具视为您已同意《 NOVASEC免责声明》: [NOVASEC免责声明](https://mp.weixin.qq.com/s/iRWRVxkYu7Fx5unxA34I7g)
 
-
 ## 更新说明
+### 2026-04-28
+- 添加 mmdb ipdb dat xdb 等后缀格式的ip数据库支持
+- 添加 mmdb、csv等后缀格式的ip asn数据库支持
+- 更多类型数据库欢迎他提供数据源到 ipinfo 项目
+- ipinfo 包项目地址 https://github.com/winezer0/ipinfo
 
 ### 2025-09-20
 - 添加 IP2Region 支持，提供超大 IPv6 地址库，切换IPlocate 可参考或直接使用 config_ip2region.yaml (注意:新版需要更新配置文件)
@@ -19,31 +23,30 @@
 注意：已对配置文件格式进行了更新，建议移除 C:\Users\%usernmae%\cdnAnalyzer\config.yaml, 避免配置未生效
 
 ### 当前支持的IP数据库类型
-
-1. **QQWry数据库** (默认IPv4数据库)
-   - 用于IPv4地址的地理位置查询
-   - 文件名: `qqwry.dat`
-   - 特点: 轻量级，更新频繁
-
-2. **ZXWry数据库** (默认IPv6数据库)
-   - 用于IPv6地址的地理位置查询
-   - 文件名: `zxipv6wry.db`
-   - 特点: 专门针对IPv6地址
-
-3. **IP2Region数据库** (可选)
+1. **IP2Region数据库** (推荐)
    - 代码库同时支持IPv4和IPv6地址查询
-   - 文件名: `ip2region_v4.xdb` 和 `ip2region_v6.xdb` (较大600M)
+   - 文件名: `ip2region_v4.xdb` 和 `ip2region_v6.xdb`
    - 特点: IPv6数据更全, 例如:"2405:6f~00:c602::1": "中国|北京市|北京市|专线用户"
+
+2 **QQWry数据库** (默认IPv4数据库)
+    - 用于IPv4地址的地理位置查询
+    - 文件名: `qqwry.dat`
+    - 特点: 轻量级，更新频繁
+
+3. **ZXWry数据库** (默认IPv6数据库)
+    - 用于IPv6地址的地理位置查询
+    - 文件名: `zxipv6wry.db`
+    - 特点: 专门针对IPv6地址
+    - 
+4. **mmdb 数据库** (可选)
+    - 文件名: dbip-city-ipv4.mmdb  dbip-city-ipv6.mmdb 
+    - 文件名: geolite2-city-ipv4.mmdb geolite2-city-ipv6.mmdb
 
 ### 如何切换数据库
 
-当前使用 ipinfo 包实现支持多种IP、ASN数据库格式 mmdb ipdb xdb dat db 等多种格式
-
-ipinfo 包项目地址 https://github.com/winezer0/ipinfo
-
 1. **使用IP2Region数据库**
 
-   修改配置文件 `cdninfo.yaml` 中的数据库ipv4locate|ipv6locate的实际下载URL部分
+   修改配置文件中的数据库ipv4locate|ipv6locate的filename和实际下载URL部分，不要修改 module 名称
    ```yaml
    download-items:
      # 启用IP2Region IPv4数据库
@@ -59,34 +62,10 @@ ipinfo 包项目地址 https://github.com/winezer0/ipinfo
          - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v6.xdb
    ```
 
-2. **使用组合数据库（QQWry ipv4 + IP2Region ipv6)**
-
-   ```yaml
-   download-items:
-     # QQWry数据库 IP信息带有部分文字，可能有助于CDN判断
-     - module: ipv4locate
-       filename: qqwry.dat
-       download-urls:
-         - https://github.com/metowolf/qqwry.dat/releases/latest/download/qqwry.dat
-
-     # ip2region_v6.xdb 数据更全，但是文件更大
-     - module: ipv6locate
-       filename: ip2region_v6.xdb
-       download-urls:
-         - https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v6.xdb
-   ```
-
-
 ## TODO
 -   [x] 整理 unknown-cdn-cname 资产和其他源数据
 -   [x] 实现已知CDN域名IP、疑似CDN域名自动分析脚本
 -   [x] 优化代码 实现快速分析模式, 默认的DNS查询次数过多, 导致批量查询时回显较慢, 临时调节可以修改 cdninfo.yaml中的超时/线程配置
-
-[//]: # (-   [] 将CDN信息脱敏后备份, 并节建立Issue允许用户上传疑似CDN信息用于补充CDN IP和CNAME数据库)
-
-[//]: # (-   [ ] 优化代码 实现多个CDN数据源合并时，能够自动进行IP级去重操作,当前仅实现字符串去重)
-
-[//]: # (-   [ ] 考虑优化数据源格式 增加service键,用于标记资产属于厂商的公共服务域名 &#40;好像没什么用&#41;)
 
 
 ## 功能介绍
@@ -95,9 +74,9 @@ ipinfo 包项目地址 https://github.com/winezer0/ipinfo
 - 全面分析：进行域名解析、IP分析，识别CDN、WAF、Cloud服务.
 - 自定义 DNS 服务器进行解析.
 - 支持通过 EDNS 和自定义城市IP进行精准地域解析.
-- 通过 ASN、纯真IP库、IPv6数据库识别IP归属信息.
+- 通过 ASN、多种IPv4库、IPv6数据库识别IP归属信息.
 - 丰富的输出格式：CSV、JSON、TXT、标准输出.
-- 数据库自动更新：自动从网络下载最新的IP和CDN数据库.
+- 数据库更新配置：支持配置为周期性网络下载最新的IP和CDN数据库.
 - CDN数据源自动更新：通过 Github Actions 每天自动更新.
 
 ## 安装方式
@@ -114,7 +93,7 @@ go install github.com/winezer0/cdninfo/cmd/cdninfo@latest
 ```bash
 git clone --depth 1 https://github.com/winezer0/cdninfo
 cd cdninfo
-go build -ldflags="-s -w" -o cdninfo.exe ./cmd/cdninfo/main.go
+go build -ldflags="-s -w" -o cdninfo.exe ./cmd/cdninfo/
 ```
 
 ### 3. Release 安装
@@ -159,11 +138,11 @@ Usage: cdninfo [OPTIONS]
 
 #### **数据库更新相关**
 
-| 参数 | 短格式 | 长格式 | 描述 | 默认值 |
-| :--- | :--- | :--- | :--- | :--- |
-| `Proxy` | `-p` | `--proxy` | 使用代理下载文件 (支持 http/socks5) | - |
-| `StoreDB` | `-d` | `--store` | 数据库存储目录 (默认为用户目录) | `~/isecdb` |
-| `UpdateDB` | `-u` | `--update-db` | 自动更新数据库文件 (定期检查) | `false` |
+| 参数 | 短格式 | 长格式        | 描述 | 默认值 |
+| :--- | :--- |:-----------| :--- | :--- |
+| `Proxy` | `-p` | `--proxy`  | 使用代理下载文件 (支持 http/socks5) | - |
+| `StoreDB` | `-d` | `--store`  | 数据库存储目录 (默认为用户目录) | `~/isecdb` |
+| `UpdateDB` | `-u` | `--update` | 自动更新数据库文件 (定期检查) | `false` |
 
 #### **DNS 相关参数**
 
