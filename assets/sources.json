@@ -24,8 +24,8 @@
       "360 云 CDN (由奇虎 360 运营)": [
         "qihucdn.com",
         "60cdn.com",
-        "qh-cdn.com",
-        "360cdn.com"
+        "360cdn.com",
+        "qh-cdn.com"
       ],
       "360 云加速 CDN": [
         "qss-lb.com",
@@ -43,14 +43,14 @@
       ],
       "Akamai CDN": [
         "akamai.net",
-        "akamaitech.net",
-        "edgekey.net",
-        "akamaiedge.net",
-        "akadns.net",
-        "edgesuite.net",
-        "ytcdn.net",
-        "akamaitechnologies.com",
         "akamaized.net",
+        "akamaitech.net",
+        "edgesuite.net",
+        "akamaitechnologies.com",
+        "ytcdn.net",
+        "edgekey.net",
+        "akadns.net",
+        "akamaiedge.net",
         "akamaihd.net",
         "akamai.com",
         "akamai-staging.net",
@@ -82,8 +82,8 @@
         "worldssl.net"
       ],
       "CDN77": [
-        "cdn77.net",
-        "cdn77.org"
+        "cdn77.org",
+        "cdn77.net"
       ],
       "CDNIFY": [
         "cdnify.io"
@@ -92,11 +92,11 @@
         "cdnsun.net"
       ],
       "CDNetworks": [
+        "panthercdn.com",
+        "cdngc.net",
         "gccdn.net",
         "cdnga.net",
-        "gccdn.cn",
-        "panthercdn.com",
-        "cdngc.net"
+        "gccdn.cn"
       ],
       "CacheFly CDN": [
         "cachefly.net"
@@ -163,8 +163,8 @@
         "incapdns.net"
       ],
       "Instart CDN": [
-        "inscname.net",
-        "insnw.net"
+        "insnw.net",
+        "inscname.net"
       ],
       "Internap CDN": [
         "internapcdn.net"
@@ -176,10 +176,10 @@
         "lswcdn.net"
       ],
       "Limelight Network": [
-        "lldns.net",
-        "llnwd.net",
         "unud.net",
-        "llnwi.net"
+        "llnwi.net",
+        "llnwd.net",
+        "lldns.net"
       ],
       "Medianova": [
         "mncdn.com"
@@ -188,19 +188,19 @@
         "cloudapp.net"
       ],
       "Microsoft Azure App Service": [
-        "azurewebsites.net",
-        "azurewebsites.windows.net"
+        "azurewebsites.windows.net",
+        "azurewebsites.net"
       ],
       "Microsoft Azure CDN": [
         "msecnd.net",
         "azureedge.net",
-        "t-msedge.net",
         "mschcdn.com",
-        "v0cdn.net"
+        "v0cdn.net",
+        "t-msedge.net"
       ],
       "Microsoft Azure Front Door CDN": [
-        "tm-azurefd.net",
-        "azurefd.net"
+        "azurefd.net",
+        "tm-azurefd.net"
       ],
       "Microsoft Azure Traffic Manager": [
         "trafficmanager.net"
@@ -216,8 +216,8 @@
         "zenedge.net"
       ],
       "QUANTIL (网宿)": [
-        "mwcloudcdn.com",
-        "mwcname.com"
+        "mwcname.com",
+        "mwcloudcdn.com"
       ],
       "QUIC.Cloud": [
         "quic.cloud"
@@ -227,17 +227,17 @@
         "rncdn1.com"
       ],
       "SpeedyCloud CDN": [
+        "xundayun.com",
         "speedycloud.cc",
-        "xundayun.cn",
-        "xundayun.com"
+        "xundayun.cn"
       ],
       "Stackpath (原 Highwinds)": [
         "hwcdn.net"
       ],
       "Stackpath (原 MaxCDN)": [
+        "netdna.com",
         "netdna-ssl.com",
-        "netdna-cdn.com",
-        "netdna.com"
+        "netdna-cdn.com"
       ],
       "Stackpath CDN": [
         "stackpathcdn.com",
@@ -257,8 +257,8 @@
         "turbobytes.net"
       ],
       "UCloud CDN": [
-        "cdndo.com",
         "ucloud.com.cn",
+        "cdndo.com",
         "ucloud.cn"
       ],
       "UCloud 罗马 Rome 全球网络加速": [
@@ -306,17 +306,17 @@
         ""
       ],
       "Verizon CDN (Edgecast)": [
-        "systemcdn.net",
-        "zetacdn.net",
-        "edgecastcdn.net",
-        "nucdn.net",
         "mucdn.net",
-        "alphacdn.net"
+        "systemcdn.net",
+        "nucdn.net",
+        "zetacdn.net",
+        "alphacdn.net",
+        "edgecastcdn.net"
       ],
       "VeryCloud 云分发": [
+        "verygslb.com",
         "verycloud.cn",
-        "verycdn.net",
-        "verygslb.com"
+        "verycdn.net"
       ],
       "WebLuker (蓝汛)": [
         "xgslb.net",
@@ -327,9 +327,9 @@
         "zeit-cdn.net"
       ],
       "Zenlayer CDN": [
-        "ogslb.com",
+        "zenlogic.net",
         "uxengine.net",
-        "zenlogic.net"
+        "ogslb.com"
       ],
       "akamai": [
         "edgekey.net",
@@ -425,12 +425,12 @@
         "qbox.me",
         "qiniu.com",
         "iniudns.com",
+        "qnssl.com",
+        "qiniucdn.com",
+        "qiniudns.com",
+        "qiniudn.com",
         "clouddn.com",
         "qnydns.com",
-        "qnssl.com",
-        "qiniudn.com",
-        "qiniudns.com",
-        "qiniucdn.com",
         "chinacdnweb.qiniu.com",
         "qiniupic.com"
       ],
@@ -463,13 +463,13 @@
         "zengslb.com"
       ],
       "世纪互联云快线业务": [
-        "21okglb.cn",
         "21cvcdn.com",
-        "21speedcdn.com",
         "okglb.com",
+        "21okglb.cn",
+        "21vianet.com.cn",
         "21vokglb.cn",
         "okcdn.com",
-        "21vianet.com.cn"
+        "21speedcdn.com"
       ],
       "世纪互联旗下上海蓝云（承载 Azure 中国）": [
         "chinacloudsites.cn",
@@ -482,8 +482,8 @@
         "ctyunapi.cn"
       ],
       "中国电信天翼云CDN": [
-        "ctdns.cn",
         "ctxcdn.cn",
+        "ctdns.cn",
         "ctycdn.com",
         "ctadns.cn",
         "ctyunxs.cn",
@@ -575,8 +575,8 @@
         "wscloudcdn.com"
       ],
       "创世云融合 CDN": [
-        "chuangcdn.com",
-        "aocde.com"
+        "aocde.com",
+        "chuangcdn.com"
       ],
       "加速乐 CDN": [
         "cname.365cyd.cn",
@@ -590,10 +590,10 @@
         "clngaa.com"
       ],
       "北京同兴万点网络技术": [
+        "cdnetworks.net",
         "txcdn.cn",
         "cdnnetworks.com",
-        "txnetworks.cn",
-        "cdnetworks.net"
+        "txnetworks.cn"
       ],
       "北京爱奇艺": [
         "71edge.com"
@@ -610,8 +610,8 @@
         "cdnhwc1.com",
         "cdnhwc2.com",
         "cdnhwc3.com",
-        "cdnhwcajk17.com",
         "cdnhwcaoc115.cn",
+        "cdnhwcajk17.com",
         "cdnhwcggk22.com",
         "km3g.cn",
         "kmop-cn-east-3.cn",
@@ -886,11 +886,11 @@
         "toscdn.com"
       ],
       "字节跳动旗下火山引擎": [
+        "volcmcdn[12].com",
         "volcgtm.com",
         "volcgslb.com",
         "vedcdnlb.com",
         "cdnbuild.net",
-        "volcmcdn[12].com",
         "volcmcdn1.com",
         "volcmcdn2.com"
       ],
@@ -943,8 +943,8 @@
         "cdnunion.net"
       ],
       "宝腾互联旗下上海万根网络（YaoCDN）": [
-        "sprycdn.com",
         "mygslb.com",
+        "sprycdn.com",
         "cdnudns.com"
       ],
       "帝联 CDN": [
@@ -953,13 +953,13 @@
         "astcdn.com"
       ],
       "帝联科技": [
+        "fastcdn.com",
         "dnion.com",
-        "tlgslb.com",
-        "flxdns.com",
-        "dlgslb.cn",
-        "globalcdn.cn",
         "ewcache.com",
-        "fastcdn.com"
+        "flxdns.com",
+        "globalcdn.cn",
+        "tlgslb.com",
+        "dlgslb.cn"
       ],
       "广东浩云长盛网络": [
         "hy-clouds.cn",
@@ -983,15 +983,15 @@
         "wanwang.space"
       ],
       "快网 CDN": [
-        "cloudglb.com",
-        "fastwebcdn.com",
-        "hadns.net",
+        "fwdns.net",
         "hacdn.net",
         "fastweb.com",
-        "fwdns.net",
-        "fwcdn.com",
+        "fastwebcdn.com",
         "cloudcdn.net",
+        "fwcdn.com",
         "cachecn.com",
+        "cloudglb.com",
+        "hadns.net",
         "fastweb.com.cn"
       ],
       "搜狐云台CDN": [
@@ -1026,13 +1026,13 @@
         "sinajs.cn"
       ],
       "方能 CDN": [
+        "funnull0[12].vip",
+        "funnullv[1-2][0-9].com",
         "fnvip100.com",
         "funnull3[135].com",
         "fn0[1-3].vip",
-        "funnull0[12].vip",
-        "funnullv[1-2][0-9].com",
-        "funnull.org",
-        "funnullv[89].com"
+        "funnullv[89].com",
+        "funnull.org"
       ],
       "易通锐进（Akamai 中国）由网宿承接": [
         "tl88.net"
@@ -1083,15 +1083,15 @@
         "newdefend.org.cn"
       ],
       "猫云融合 CDN": [
-        "maoyundns.com",
-        "maoyun.tv"
+        "maoyun.tv",
+        "maoyundns.com"
       ],
       "白山云 CDN": [
-        "bsccdn.net",
+        "qingcdn.com",
         "trpcdn.net",
         "bsclink.cn",
         "bsgslb.cn",
-        "qingcdn.com"
+        "bsccdn.net"
       ],
       "白山云科技 CDN": [
         "bsgslb.cn",
@@ -1100,8 +1100,8 @@
         "bsclink.cn"
       ],
       "百度云 CDN": [
-        "bdydns.com",
         "jomodns.com",
+        "bdydns.com",
         "baiduads.com"
       ],
       "百度云其他服务": [
@@ -1141,8 +1141,8 @@
         "365cyd.cn"
       ],
       "知道创宇云安全加速乐CDN": [
-        "jiashule.com",
-        "jiasule.org"
+        "jiasule.org",
+        "jiashule.com"
       ],
       "知道创宇创宇盾CDN-政务专用": [
         "365cyd.cn"
@@ -1173,8 +1173,8 @@
         "51cdn.com",
         "speedcdns.com",
         "wtxcdn.com",
-        "cdngtm.com",
         "cdngtm.cn",
+        "cdngtm.com",
         "ourglb0.com",
         "lxdns.net",
         "wangsu.com",
@@ -1310,11 +1310,11 @@
         "dnsv1.com",
         "tencdns.net",
         "tdnsv5.com",
-        "dnse[0-5].com",
-        "tdnsv[1-9].com",
-        "tdnsstic[1-4].cn.com",
-        "dnsv1.com.cn",
         "cdn-go.cn",
+        "dnse[0-5].com",
+        "tdnsstic[1-4].cn.com",
+        "tdnsv[1-9].com",
+        "dnsv1.com.cn",
         "tdnsv1[0-5].com"
       ],
       "腾讯云 DDoS 防护": [
@@ -1371,8 +1371,8 @@
         "gsadds.com"
       ],
       "腾讯云全球应用加速": [
-        "gaapqcloud.com.cn",
         "gaapqcloud.com",
+        "gaapqcloud.com.cn",
         "gaapqcloudbackup01.com.cn",
         "gaapqcloudbackup02.com.cn",
         "gaapqcloudbackup03.com.cn",
@@ -1663,12 +1663,12 @@
         "yufuid.net"
       ],
       "蓝汛 CDN": [
+        "ccgslb.com.cn",
         "ccgslb.com",
+        "c3dns.net",
         "c3cache.net",
         "ccgslb.net",
-        "ccgslb.com.cn",
         "chinacache.net",
-        "c3dns.net",
         "ccgslb.cn",
         "ccindex.cn",
         "ccindex.com.cn",
@@ -1693,8 +1693,8 @@
         "alipaydns.com"
       ],
       "蛮蛮云 CDN（中联利信）": [
-        "chinamaincloud.com",
-        "mmycdn.cn"
+        "mmycdn.cn",
+        "chinamaincloud.com"
       ],
       "西安明赋云CDN": [
         "mingfucdn.com",
@@ -1736,8 +1736,8 @@
         "west.club"
       ],
       "西部数码虚拟主机": [
-        "gotoip55.com",
-        "vhostgo.com"
+        "vhostgo.com",
+        "gotoip55.com"
       ],
       "贵州白山云": [
         "revivalark.com",
@@ -1780,9 +1780,9 @@
         "scsdns.com"
       ],
       "金山云 CDN": [
-        "ksyuncdn-k1.com",
-        "ks-cdn.com",
         "ksyuncdn.com",
+        "ks-cdn.com",
+        "ksyuncdn-k1.com",
         "ks-cdn1.com",
         "kcdnvip.com"
       ],
@@ -1806,8 +1806,8 @@
         "cdngslb.com",
         "kunluncan.com",
         "alicloudwaf.com",
-        "aliyuncs.com",
         "alikunlun.net",
+        "aliyuncs.com",
         "kunlun[^.]+.com",
         "alicdn.com",
         "aliyun-inc.com",
@@ -2172,8 +2172,8 @@
         "myalicdn.cn"
       ],
       "青云 CDN": [
-        "qingcache.com",
         "qingcloud.com",
+        "qingcache.com",
         "frontwize.com"
       ],
       "青叶云 CDN": [
