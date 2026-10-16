@@ -406,6 +406,12 @@ gtm-a[1-7]b[1-9].com:
 yundunwaf[1-5].com:
   name: 阿里云 WAF
   link: https://yundun.aliyun.com
+initzz.com:
+  name: 阿里云边缘安全加速 ESA
+  link: https://www.aliyun.com/product/esa
+inittt.com:
+  name: 阿里云边缘安全加速 ESA
+  link: https://www.aliyun.com/product/esa
 yunjiasu-cdn.net:
   name: 百度云加速
   link: https://su.baidu.com
@@ -961,3 +967,9 @@ saaswaf.com:
 hcnamedns.com:
   name: 上海云盾 (YUNDUN)
   link: https://www.yundun.com
+wafsudun.com:
+  name: 91盾 CDN
+  link: https://www.91dun.com/
+dun222.com:
+  name: 91盾 CDN
+  link: https://www.91dun.com/
